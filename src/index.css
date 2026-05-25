@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Times New Roman", Times, serif;
+  --font-mono: "Times New Roman", Times, serif;
+  --font-sans: "Times New Roman", Times, serif;
+}
+
+/* Base resets & Ivory document theme styling */
+body {
+  overflow: hidden;
+  background-color: #fcfcfc;
+  color: #111111;
+  font-family: var(--font-serif);
+}
+
+/* Absolutely positioned canvas labels overlays */
+.spatial-label {
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: "Times New Roman", Times, Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: #111111;
+  transition: opacity 0.08s ease, font-size 0.08s ease;
+}
+
+/* Hover/Selection Scientific visual highlight */
+.highlighted-acad {
+  font-size: 18px !important;
+  font-weight: bold !important;
+  text-decoration: underline !important;
+  z-index: 10000 !important;
+}
+
+/* Absolute math axes labels */
+.latex-axis-label {
+  pointer-events: none;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: var(--font-serif);
+}
+
+/* GeoGebra-style numerical rulers ticks styling */
+.latex-grid-number {
+  pointer-events: none;
+  font-size: 10px;
+  color: #334155;
+  font-family: var(--font-serif);
+  opacity: 0.8;
+}
+
+/* Custom class for Times New Roman numbers */
+.font-times-numbers {
+  font-family: "Times New Roman", Times, Georgia, serif !important;
+}
+
+/* Custom range slider styling */
+.custom-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  height: 6px;
+  border-radius: 3px;
+  border: 1px solid #111111;
+  padding: 0px;
+}
+.custom-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #111111;
+  cursor: pointer;
+  border-radius: 50%;
+  margin-top: -3px; /* Track = 6px (with borders, roughly 4px inner), Thumb = 12px. Center = -3px */
+  border: 1px solid #ffffff;
+}
+.custom-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #111111;
+  cursor: pointer;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+}
+.custom-range::-webkit-slider-runnable-track {
+  height: 6px;
+}
+.custom-range::-moz-range-track {
+  height: 6px;
+}
+
+/* Custom layout key visual definitions with 3D keycaps look */
+.key {
+  display: inline-block;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #111111;
+  padding: 4px 8px;
+  border-radius: 3px;
+  color: #000000;
+  font-size: 11px;
+  font-weight: bold;
+  font-family: var(--font-mono);
+  text-align: center;
+  min-width: 24px;
+  box-shadow: 0 2px 0 0 #111111;
+  transform: translateY(0px);
+  transition: transform 0.04s ease, box-shadow 0.04s ease, background 0.04s ease;
+}
+
+.key.active {
+  background: #eaeaea;
+  box-shadow: 0 0px 0 0 #111111;
+  transform: translateY(2px);
+}
