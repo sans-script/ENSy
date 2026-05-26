@@ -59,6 +59,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const labelsContainerRef = useRef<HTMLDivElement>(null);
   const gridNumbersContainerRef = useRef<HTMLDivElement>(null);
+  const minimapCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // States
   const [isLocked, setIsLocked] = useState(false);
@@ -106,6 +107,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   const currentFilterRef = useRef(currentFilter);
   const currentModeRef = useRef(cameraMode);
   const currentFovRef = useRef(fov);
+  const fovFadeProgressRef = useRef(1);
   const projectionTypeRef = useRef(projectionType);
 
   const showXAxisRef = useRef(showXAxis);
@@ -149,6 +151,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
   useEffect(() => {
     currentFovRef.current = fov;
+    fovFadeProgressRef.current = 0;
     updateFovPrivate(fov);
   }, [fov]);
 
@@ -164,8 +167,31 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
+    const resetFlightState = () => {
+      flyRef.current.F = false;
+      flyRef.current.B = false;
+      flyRef.current.L = false;
+      flyRef.current.R = false;
+      flyRef.current.U = false;
+      flyRef.current.D = false;
+    };
+
     const onLockChange = () => {
-      setIsLocked(document.pointerLockElement === container);
+      const locked = document.pointerLockElement === container;
+      setIsLocked(locked);
+      if (!locked) {
+        resetFlightState();
+      }
+    };
+
+    const onWindowBlur = () => {
+      resetFlightState();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") {
+        resetFlightState();
+      }
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -205,9 +231,11 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       targetLerpStateRef.current = null; // Interrupt lerp on mouse move
 
       const LOOK_SPEED = mouseSensitivityRef.current;
+      const clampedMovementX = THREE.MathUtils.clamp(e.movementX, -60, 60);
+      const clampedMovementY = THREE.MathUtils.clamp(e.movementY, -60, 60);
       camera.rotation.order = "YXZ";
-      camera.rotation.y -= e.movementX * LOOK_SPEED;
-      camera.rotation.x -= e.movementY * LOOK_SPEED;
+      camera.rotation.y -= clampedMovementX * LOOK_SPEED;
+      camera.rotation.x -= clampedMovementY * LOOK_SPEED;
       camera.rotation.x = Math.max(
         -Math.PI / 2 + 0.05,
         Math.min(Math.PI / 2 - 0.05, camera.rotation.x),
@@ -234,6 +262,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     };
 
     document.addEventListener("pointerlockchange", onLockChange);
+    window.addEventListener("blur", onWindowBlur);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("keyup", onKeyUp);
     document.addEventListener("mousemove", onMouseMove);
@@ -241,6 +271,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
     return () => {
       document.removeEventListener("pointerlockchange", onLockChange);
+      window.removeEventListener("blur", onWindowBlur);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("keyup", onKeyUp);
       document.removeEventListener("mousemove", onMouseMove);
@@ -460,6 +492,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
           rz: activeCamera.rotation.z,
         });
 
+        drawMinimapPrivate(activeCamera, dt);
+
         // Speed check FPS counter
         frameCount++;
         const currTime = performance.now();
@@ -542,13 +576,22 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
     const fly = flyRef.current;
     const MOVE_SPEED = 14;
-    const vel = MOVE_SPEED * dt;
+    const cappedDt = Math.min(dt, 0.033);
+    const vel = MOVE_SPEED * cappedDt;
 
     const dir = new THREE.Vector3();
     const right = new THREE.Vector3();
 
     activeCamera.getWorldDirection(dir);
-    right.crossVectors(dir, new THREE.Vector3(0, 1, 0));
+    dir.y = 0;
+    if (dir.lengthSq() < 0.0001) {
+      dir.set(0, 0, -1);
+    } else {
+      dir.normalize();
+    }
+
+    right.set(1, 0, 0).applyQuaternion(activeCamera.quaternion);
+    right.y = 0;
     if (right.lengthSq() < 0.0001) {
       right.set(1, 0, 0);
     } else {
@@ -663,26 +706,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   };
 
   const setupParticlesBackground = () => {
-    const pos = [];
-    for (let i = 0; i < 800; i++) {
-      pos.push(
-        (Math.random() - 0.5) * 300,
-        (Math.random() - 0.5) * 300,
-        (Math.random() - 0.5) * 300,
-      );
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    const starPoints = new THREE.Points(
-      geo,
-      new THREE.PointsMaterial({
-        color: 0xcbd5e1,
-        size: 0.15,
-        transparent: true,
-        opacity: 0.4,
-      }),
-    );
-    sceneRef.current?.add(starPoints);
+    return;
   };
 
   const createTokenSystems = () => {
@@ -852,7 +876,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       if (child.geometry) child.geometry.dispose();
       if (child.material) {
         if (Array.isArray(child.material))
-          child.material.forEach((m) => m.dispose());
+          child.material.forEach((m: THREE.Material) => m.dispose());
         else child.material.dispose();
       }
       gridGroup.remove(child);
@@ -1447,8 +1471,17 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     });
 
     if (bestNode) {
-      const pc = getProjectedCoords(bestNode, projectionTypeRef.current);
-      const projectedNode = { ...bestNode, coords: pc };
+      const bn = bestNode as SemanticNode;
+      const pc = getProjectedCoords(bn, projectionTypeRef.current);
+      const projectedNode: SemanticNode = {
+        id: bn.id,
+        token_id: bn.token_id,
+        label: bn.label,
+        cluster: bn.cluster,
+        color: bn.color,
+        coords: { ...bn.coords, ...pc },
+        top5_neighbors: bn.top5_neighbors,
+      };
       onNodeHovered(projectedNode);
     } else {
       onNodeHovered(null);
@@ -1595,6 +1628,269 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     });
   };
 
+  const drawMinimapPrivate = (activeCamera: THREE.Camera, dt: number) => {
+    const canvas = minimapCanvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+    const radius = Math.min(w, h) / 2 - 3;
+    const extent = SIZE / 2;
+    const mapRadius = radius - 2;
+    const unitsToPixels = mapRadius / extent;
+
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Clean background.
+    ctx.fillStyle = "#fcfcfc";
+    ctx.fillRect(0, 0, w, h);
+
+    const cam = activeCamera.position;
+    const dir = new THREE.Vector3();
+    activeCamera.getWorldDirection(dir);
+    dir.y = 0;
+    if (dir.lengthSq() < 0.0001) {
+      dir.set(0, 0, -1);
+    } else {
+      dir.normalize();
+    }
+
+    const rightX = -dir.z;
+    const rightZ = dir.x;
+
+    const worldToRadar = (worldX: number, worldZ: number) => {
+      const dx = worldX - cam.x;
+      const dz = worldZ - cam.z;
+      const localX = dx * rightX + dz * rightZ;
+      const localForward = dx * dir.x + dz * dir.z;
+
+      return {
+        x: cx + localX * unitsToPixels,
+        y: cy - localForward * unitsToPixels,
+      };
+    };
+
+    // Tactical grid in world-space (rotates with camera).
+    const gridSpacingWorld = Math.max(8, Math.round(extent / 6));
+    const gridMinX = cam.x - extent;
+    const gridMaxX = cam.x + extent;
+    const gridMinZ = cam.z - extent;
+    const gridMaxZ = cam.z + extent;
+
+    const startX = Math.floor(gridMinX / gridSpacingWorld) * gridSpacingWorld;
+    const endX = Math.ceil(gridMaxX / gridSpacingWorld) * gridSpacingWorld;
+    const startZ = Math.floor(gridMinZ / gridSpacingWorld) * gridSpacingWorld;
+    const endZ = Math.ceil(gridMaxZ / gridSpacingWorld) * gridSpacingWorld;
+
+    ctx.lineWidth = 1;
+    for (let x = startX; x <= endX; x += gridSpacingWorld) {
+      const a = worldToRadar(x, gridMinZ);
+      const b = worldToRadar(x, gridMaxZ);
+      ctx.strokeStyle = "rgba(17, 17, 17, 0.14)";
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+
+    for (let z = startZ; z <= endZ; z += gridSpacingWorld) {
+      const a = worldToRadar(gridMinX, z);
+      const b = worldToRadar(gridMaxX, z);
+      ctx.strokeStyle = "rgba(17, 17, 17, 0.14)";
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+
+    const pointRadiusPx = 2.5;
+    const pointRadiusWorld = pointRadiusPx / unitsToPixels;
+    const pointsOnMap: Array<{
+      node: SemanticNode;
+      x: number;
+      y: number;
+      localX: number;
+      localForward: number;
+      distanceWorld: number;
+      visible: boolean;
+    }> = [];
+
+    tokenPointsRef.current.forEach((pts) => {
+      if (!pts.visible) return;
+      const node = pts.userData as SemanticNode;
+      const worldX = pts.position.x;
+      const worldZ = pts.position.z;
+      const p = worldToRadar(worldX, worldZ);
+      const localX = worldX - cam.x;
+      const localZ = worldZ - cam.z;
+      const localSide = localX * rightX + localZ * rightZ;
+      const localForward = localX * dir.x + localZ * dir.z;
+
+      const dx = p.x - cx;
+      const dy = p.y - cy;
+      const insideMap = dx * dx + dy * dy <= mapRadius * mapRadius;
+
+      pointsOnMap.push({
+        node,
+        x: p.x,
+        y: p.y,
+        localX: localSide,
+        localForward,
+        distanceWorld: Math.hypot(localSide, localForward),
+        visible: insideMap,
+      });
+    });
+
+    const tipLen = 6;
+    const fovOriginX = cx;
+    const fovOriginY = cy - tipLen;
+
+    const fovDeg = currentFovRef.current;
+    const fovRad = THREE.MathUtils.degToRad(fovDeg);
+    const halfFov = fovRad / 2;
+    const maxFovRangePx = mapRadius * 0.8;
+    const maxFovRangeWorld = maxFovRangePx / unitsToPixels;
+    const rayCount = 80;
+    const rayRanges = Array.from({ length: rayCount }, () => maxFovRangeWorld);
+
+    const toRayIndex = (theta: number) => {
+      const t = (theta + halfFov) / (2 * halfFov);
+      return Math.max(0, Math.min(rayCount - 1, Math.round(t * (rayCount - 1))));
+    };
+
+    pointsOnMap.forEach((point) => {
+      if (!point.visible || point.localForward <= 0.01) return;
+
+      const theta = Math.atan2(point.localX, point.localForward);
+      if (Math.abs(theta) > halfFov + 0.001) return;
+
+      const centerDist = point.distanceWorld;
+      if (centerDist <= 0.001) return;
+
+      const angularRadius = Math.asin(
+        Math.min(0.98, pointRadiusWorld / centerDist),
+      );
+      const minTheta = Math.max(-halfFov, theta - angularRadius);
+      const maxTheta = Math.min(halfFov, theta + angularRadius);
+      const minIdx = toRayIndex(minTheta);
+      const maxIdx = toRayIndex(maxTheta);
+      const stopDist = Math.max(0.001, centerDist - pointRadiusWorld);
+
+      for (let i = minIdx; i <= maxIdx; i += 1) {
+        rayRanges[i] = Math.min(rayRanges[i], stopDist);
+      }
+    });
+
+    fovFadeProgressRef.current = Math.min(
+      1,
+      fovFadeProgressRef.current + dt * 2.2,
+    );
+    const fadeT = fovFadeProgressRef.current;
+    const fadeEase = 1 - Math.pow(1 - fadeT, 3);
+    const fovAlpha = 0.22 * fadeEase;
+    const maxVisibleRangePx = Math.max(...rayRanges) * unitsToPixels;
+
+    ctx.beginPath();
+    ctx.moveTo(fovOriginX, fovOriginY);
+    for (let i = 0; i < rayCount; i += 1) {
+      const theta = -halfFov + (i / (rayCount - 1)) * (2 * halfFov);
+      const rPx = rayRanges[i] * unitsToPixels;
+      const px = fovOriginX + Math.sin(theta) * rPx;
+      const py = fovOriginY - Math.cos(theta) * rPx;
+      ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+
+    ctx.save();
+    ctx.clip();
+    const gradient = ctx.createRadialGradient(
+      fovOriginX,
+      fovOriginY,
+      0,
+      fovOriginX,
+      fovOriginY,
+      maxVisibleRangePx,
+    );
+    gradient.addColorStop(0, `rgba(17, 17, 17, ${fovAlpha.toFixed(3)})`);
+    gradient.addColorStop(0.32, `rgba(17, 17, 17, ${(fovAlpha * 0.72).toFixed(3)})`);
+    gradient.addColorStop(0.7, `rgba(17, 17, 17, ${(fovAlpha * 0.28).toFixed(3)})`);
+    gradient.addColorStop(1, "rgba(17, 17, 17, 0.00)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(
+      fovOriginX - maxVisibleRangePx,
+      fovOriginY - maxVisibleRangePx,
+      maxVisibleRangePx * 2,
+      maxVisibleRangePx * 2,
+    );
+    ctx.restore();
+
+    const focusedPoints = new Set<number>();
+    pointsOnMap.forEach((point, index) => {
+      if (!point.visible || point.localForward <= 0.01) return;
+      const theta = Math.atan2(point.localX, point.localForward);
+      if (Math.abs(theta) > halfFov) return;
+
+      const rayIdx = toRayIndex(theta);
+      const collisionDistance = rayRanges[rayIdx] + pointRadiusWorld * 1.1;
+      if (point.distanceWorld <= collisionDistance) {
+        focusedPoints.add(index);
+      }
+    });
+
+    pointsOnMap.forEach((point, index) => {
+      if (!point.visible) return;
+
+      ctx.beginPath();
+      ctx.fillStyle = point.node.color || "#888780";
+      ctx.arc(point.x, point.y, pointRadiusPx, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (focusedPoints.has(index)) {
+        ctx.beginPath();
+        ctx.strokeStyle = "#111111";
+        ctx.lineWidth = 1;
+        ctx.arc(point.x, point.y, pointRadiusPx + 1.4, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    });
+
+    const cameraBodyWidth = 10;
+    const cameraBodyHeight = 18;
+    const bodyX = cx - cameraBodyWidth / 2;
+    const bodyY = cy - cameraBodyHeight / 2 + 3;
+    const roofHalfWidth = 7;
+    const roofHeight = 6;
+
+    ctx.fillStyle = "#111111";
+    ctx.fillRect(bodyX, bodyY, cameraBodyWidth, cameraBodyHeight);
+
+    ctx.beginPath();
+    ctx.moveTo(cx - roofHalfWidth, bodyY - roofHeight);
+    ctx.lineTo(cx + roofHalfWidth, bodyY - roofHeight);
+    ctx.lineTo(cx, bodyY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+
+    // Single outer border.
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = "#111111";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  };
+
   return (
     <div
       ref={containerRef}
@@ -1630,6 +1926,17 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
           </span>
         </div>
       )}
+
+      <div className="absolute top-3 left-3 z-40 pointer-events-none">
+        <div className="rounded-full">
+          <canvas
+            ref={minimapCanvasRef}
+            width={168}
+            height={168}
+            className="block h-[168px] w-[168px] rounded-full"
+          />
+        </div>
+      </div>
     </div>
   );
 };

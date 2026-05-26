@@ -74,16 +74,16 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
           </span>
           
           <div className="flex flex-col gap-2.5">
-            <div className="text-[13px] flex justify-between items-center text-[#111111]">
+            {/* <div className="text-[13px] flex justify-between items-center text-[#111111]">
               <span className="font-serif">Status</span>
               <span className={`font-times-numbers text-[13.5px] font-semibold ${
-                status === "LOADING" ? "text-amber-600 animate-pulse" :
-                status === "COMPUTING" ? "text-blue-600 animate-pulse" :
-                status === "OFFLINE" ? "text-rose-600" : "text-emerald-700 font-bold"
+                status === "LOADING" ? "text-[#FFA500] animate-pulse" :
+                status === "COMPUTING" ? "text-[#0000FF] animate-pulse" :
+                status === "OFFLINE" ? "text-[#F00000]" : "text-emerald-700 font-bold"
               }`}>
                 {status || "STABLE"}
               </span>
-            </div>
+            </div> */}
             
             <div className="text-[13px] flex flex-col gap-1">
               <div className="flex items-center gap-1.5 font-serif">

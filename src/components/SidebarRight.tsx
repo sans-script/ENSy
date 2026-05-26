@@ -9,13 +9,10 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const matrixRef = useRef<HTMLDivElement>(null);
   const [isTypesetting, setIsTypesetting] = useState(false);
-  const [prevNodeId, setPrevNodeId] = useState<number | undefined>(activeNode?.token_id);
 
-  // Synchronously hide content before paint when activeNode changes
-  if (activeNode?.token_id !== prevNodeId) {
-    setPrevNodeId(activeNode?.token_id);
-    setIsTypesetting(true);
-  }
+  useEffect(() => {
+    setIsTypesetting(!!activeNode);
+  }, [activeNode?.token_id]);
 
   // Re-typeset LaTeX equations when selected node updates
   useEffect(() => {
@@ -54,7 +51,7 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode }) => {
         ) : (
           <div className="flex-1 flex flex-col gap-3.5 min-h-0">
             {/* Vector Equation and Matrix */}
-            <div className={`flex flex-col items-center justify-center text-[22px] font-extrabold text-black tracking-wide my-1 shrink-0 min-h-[110px] transition-opacity ${isTypesetting ? 'opacity-0 duration-0' : 'opacity-100 duration-500'}`}>
+            <div className={`matrix-math flex flex-col items-center justify-center text-[22px] text-black my-1 shrink-0 min-h-[110px] transition-opacity ${isTypesetting ? 'opacity-0 duration-0' : 'opacity-100 duration-500'}`}>
               <div ref={matrixRef} className="w-full text-center">
                 {`$$\\vec{v} = \\begin{bmatrix} ${activeNode.coords.x3d.toFixed(4)} \\\\ ${activeNode.coords.y3d.toFixed(4)} \\\\ ${activeNode.coords.z3d.toFixed(4)} \\end{bmatrix}$$`}
               </div>

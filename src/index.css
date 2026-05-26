@@ -55,6 +55,17 @@ body {
   font-family: "Times New Roman", Times, Georgia, serif !important;
 }
 
+/* Keep MathJax stretch delimiters stable (matrix brackets) */
+.matrix-math .mjx-container,
+.matrix-math mjx-math {
+  letter-spacing: 0 !important;
+  font-weight: 400 !important;
+}
+
+.matrix-math .mjx-container {
+  line-height: normal !important;
+}
+
 /* Custom range slider styling */
 .custom-range {
   -webkit-appearance: none;

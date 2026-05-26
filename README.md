@@ -32,6 +32,15 @@ This application is built with modern web technologies (React, Three.js) and adh
 
 ## Usage Guide
 
+### Development mode
+
+For hot reload on frontend changes, run the app in two terminals:
+
+1. Frontend with Vite: `npm run dev`
+2. Backend API with Python: `npm run dev:backend`
+
+If you prefer a single command for both services, use `npm run dev:all`.
+
 1. **Free Movement:** Click anywhere on the main 3D canvas to engage the pointer-lock mechanism. Use your mouse to orient the camera and `W`, `A`, `S`, `D` to translate. Use `R` for ascension and `F` for descension.
 2. **Preset Views:** Use the left sidebar to smoothly interpolate to rigid orthographic-like axes (Front, Top, Side) or Isometric projections.
 3. **Data Inspection:** Point the central crosshair at any active token label. The right-hand "Manifold Vector Analysis" pane will load the specific semantic identity along with proximity metrics of its immediate subspace.

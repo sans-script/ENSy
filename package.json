@@ -4,9 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run build && python app.py",
+    "dev": "vite --host 0.0.0.0",
+    "dev:backend": ".venv/bin/python app.py",
+    "dev:frontend": "vite --host 0.0.0.0",
+    "dev:all": "concurrently -k -r \".venv/bin/python app.py\" \"vite --host 0.0.0.0\"",
     "build": "vite build",
-    "preview": "python app.py",
+    "preview": ".venv/bin/python app.py",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
@@ -26,8 +29,11 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
     "@types/three": "^0.184.1",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
