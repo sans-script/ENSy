@@ -144,7 +144,9 @@ export default function App() {
   const handleNodeHovered = useCallback((node: SemanticNode | null) => {
     // Keep reference and re-trigger state only on actual node selection changes
     setActiveNode((prev) => {
-      if (prev?.token_id === node?.token_id) return prev;
+      const prevKey = prev?.id ?? prev?.token_id;
+      const nextKey = node?.id ?? node?.token_id;
+      if (prevKey === nextKey) return prev;
       return node;
     });
   }, []);
