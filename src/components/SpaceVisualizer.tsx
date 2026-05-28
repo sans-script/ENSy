@@ -709,6 +709,22 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     return;
   };
 
+  const getNodeDisplayColor = (color?: string) => {
+    if (color === "#378ADD") {
+      return "#1e40af";
+    }
+
+    if (color === "#1D9E75") {
+      return "#065f46";
+    }
+
+    if (color === "#D85A30") {
+      return "#b91c1c";
+    }
+
+    return "#86198f";
+  };
+
   const createTokenSystems = () => {
     const container = labelsContainerRef.current;
     if (!container || !sceneRef.current) return;
@@ -759,16 +775,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       dom.className =
         "spatial-label absolute select-none pointer-events-none transition-all duration-75 text-xs font-serif font-normal italic tracking-wide";
 
-      // Academic specific aesthetic: blues for Technology, greens for Biological, deep crimson for Actions
-      if (node.color === "#378ADD") {
-        dom.style.color = "#1e40af"; // Navy slate
-      } else if (node.color === "#1D9E75") {
-        dom.style.color = "#065f46"; // Dark emerald
-      } else if (node.color === "#D85A30") {
-        dom.style.color = "#b91c1c"; // Crimson red
-      } else {
-        dom.style.color = "#86198f"; // Pink magenta mutant
-      }
+      // Keep the DOM label palette aligned with the minimap and token metadata.
+      dom.style.color = getNodeDisplayColor(node.color);
       dom.textContent = node.label;
       container.appendChild(dom);
 
@@ -1851,7 +1859,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       if (!point.visible) return;
 
       ctx.beginPath();
-      ctx.fillStyle = point.node.color || "#888780";
+      ctx.fillStyle = getNodeDisplayColor(point.node.color);
       ctx.arc(point.x, point.y, pointRadiusPx, 0, Math.PI * 2);
       ctx.fill();
 
