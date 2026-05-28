@@ -74,7 +74,7 @@ export const BottomHUD: React.FC = () => {
             Mouse
           </span>
           <div className="inline-flex gap-2 items-center">
-            <span className="inline-block relative bg-white border border-[#111111] rounded-[3px] py-0.5 px-1.5 text-[9px] font-bold font-mono text-center min-w-[25px] shadow-[0_1.5px_0_0_#111111] top-[-1px] leading-none text-black">
+            <span className={`key ${pressedKeys.has('Escape') ? 'active' : ''} align-middle`}>
               ESC
             </span>
           </div>

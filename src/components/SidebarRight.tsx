@@ -12,7 +12,7 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode }) => {
 
   useEffect(() => {
     setIsTypesetting(!!activeNode);
-  }, [activeNode?.token_id]);
+  }, [activeNode?.id ?? activeNode?.token_id]);
 
   // Re-typeset LaTeX equations when selected node updates
   useEffect(() => {

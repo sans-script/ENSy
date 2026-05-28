@@ -109,6 +109,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   const currentFovRef = useRef(fov);
   const fovFadeProgressRef = useRef(1);
   const projectionTypeRef = useRef(projectionType);
+  const latestDataRef = useRef<SemanticSpace | null>(data ?? null);
+  const unlockBlockUntilRef = useRef(0);
 
   const showXAxisRef = useRef(showXAxis);
   const showYAxisRef = useRef(showYAxis);
@@ -134,15 +136,23 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
   useEffect(() => {
     currentFilterRef.current = currentFilter;
-    filterNodesPrivate();
-    rebuildGridPrivate();
+    applyFilterVisibilityPrivate();
   }, [currentFilter]);
+
+  useEffect(() => {
+    latestDataRef.current = data ?? null;
+  }, [data]);
 
   useEffect(() => {
     projectionTypeRef.current = projectionType;
     // When projection type changes, we trigger position recalculation
     filterNodesPrivate();
   }, [projectionType]);
+
+  useEffect(() => {
+    if (!sceneRef.current || tokenPointsRef.current.length === 0) return;
+    syncProjectionDataPrivate();
+  }, [data]);
 
   useEffect(() => {
     currentModeRef.current = cameraMode;
@@ -180,6 +190,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       const locked = document.pointerLockElement === container;
       setIsLocked(locked);
       if (!locked) {
+        unlockBlockUntilRef.current = performance.now() + 200;
         resetFlightState();
       }
     };
@@ -225,6 +236,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
     const onMouseMove = (e: MouseEvent) => {
       if (document.pointerLockElement !== container) return;
+      if (performance.now() < unlockBlockUntilRef.current) return;
       const camera = activeCameraRef.current;
       if (!camera) return;
 
@@ -467,8 +479,13 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         tokenPointsRef.current.forEach((pts) => {
           if (pts.userData && pts.userData.targetPosition) {
             pts.position.lerp(pts.userData.targetPosition, 0.04);
+            const nodeData = pts.userData as SemanticNode;
             const matchingLabel = labelElementsRef.current.find(
-              (l) => l.userData && l.userData === pts.userData,
+              (l) => {
+                const labelKey = l.userData?.id ?? l.userData?.token_id;
+                const nodeKey = nodeData.id ?? nodeData.token_id;
+                return labelKey === nodeKey;
+              },
             );
             if (matchingLabel) {
               matchingLabel.position.copy(pts.position);
@@ -551,7 +568,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       scene.clear();
       renderer.dispose();
     };
-  }, [data]);
+  }, []);
 
   const handleContainerClick = () => {
     if (document.pointerLockElement !== containerRef.current) {
@@ -732,7 +749,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     let mn = [1e9, 1e9, 1e9];
     let mx = [-1e9, -1e9, -1e9];
 
-    const nodes = data?.nodes || semanticSpaceData.nodes;
+    const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
 
     nodes.forEach((n) => {
       mn[0] = Math.min(mn[0], n.coords.x3d);
@@ -773,7 +790,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       // Generate HTML label elements overlaid on WebGL Canvas (EB Garamond)
       const dom = document.createElement("div");
       dom.className =
-        "spatial-label absolute select-none pointer-events-none transition-all duration-75 text-xs font-serif font-normal italic tracking-wide";
+        "spatial-label absolute select-none pointer-events-none transition-opacity duration-75 text-xs font-serif font-normal italic tracking-wide";
 
       // Keep the DOM label palette aligned with the minimap and token metadata.
       dom.style.color = getNodeDisplayColor(node.color);
@@ -787,6 +804,55 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         type: "token",
       });
     });
+  };
+
+  const syncProjectionDataPrivate = () => {
+    const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
+    const byNodeKey = new Map<number, SemanticNode>();
+
+    nodes.forEach((node) => {
+      const nodeKey = node.id ?? node.token_id;
+      byNodeKey.set(nodeKey, node);
+    });
+
+    tokenPointsRef.current.forEach((pts) => {
+      const currentNode = pts.userData as SemanticNode;
+      const currentKey = currentNode.id ?? currentNode.token_id;
+      const nextNode = byNodeKey.get(currentKey);
+      if (!nextNode) return;
+
+      Object.assign(currentNode, nextNode);
+      const syncedNode = currentNode as SemanticNode & {
+        targetPosition?: THREE.Vector3;
+      };
+      pts.userData = syncedNode;
+
+      const matchingLabel = labelElementsRef.current.find(
+        (l) => {
+          const labelKey = l.userData?.id ?? l.userData?.token_id;
+          const nodeKey = nextNode.id ?? nextNode.token_id;
+          return labelKey === nodeKey;
+        },
+      );
+
+      if (matchingLabel) {
+        matchingLabel.userData = syncedNode;
+        matchingLabel.dom.textContent = nextNode.label;
+
+        if (nextNode.color === "#378ADD") {
+          matchingLabel.dom.style.color = "#1e40af";
+        } else if (nextNode.color === "#1D9E75") {
+          matchingLabel.dom.style.color = "#065f46";
+        } else if (nextNode.color === "#D85A30") {
+          matchingLabel.dom.style.color = "#b91c1c";
+        } else {
+          matchingLabel.dom.style.color = "#86198f";
+        }
+      }
+    });
+
+    filterNodesPrivate();
+    applyFilterVisibilityPrivate();
   };
 
   // Node filtering logic matching target quadrants
@@ -820,7 +886,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
     let mn = [1e9, 1e9, 1e9];
     let mx = [-1e9, -1e9, -1e9];
-    const nodes = data?.nodes || semanticSpaceData.nodes;
+    const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
 
     // First pass to get bounds based on projected coordinates
     nodes.forEach((n) => {
@@ -838,7 +904,11 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     tokenPointsRef.current.forEach((pts) => {
       const node = pts.userData as SemanticNode;
       const matchingLabel = labelElementsRef.current.find(
-        (l) => l.userData && l.userData === node,
+        (l) => {
+          const labelKey = l.userData?.id ?? l.userData?.token_id;
+          const nodeKey = node.id ?? node.token_id;
+          return labelKey === nodeKey;
+        },
       );
 
       const pc = getProjectedCoords(node, projType);
@@ -860,15 +930,45 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
       pts.visible = shouldShow;
       if (matchingLabel) {
-        matchingLabel.dom.style.display = shouldShow ? "block" : "none";
+        matchingLabel.dom.dataset.filterVisible = shouldShow ? "1" : "0";
       }
 
       const targetPos = new THREE.Vector3(vx, vy, vz);
 
       if (!pts.userData.targetPosition) {
+        pts.position.copy(targetPos);
         pts.userData.targetPosition = targetPos.clone();
       } else {
         pts.userData.targetPosition.copy(targetPos);
+      }
+    });
+  };
+
+  const applyFilterVisibilityPrivate = () => {
+    const filter = currentFilterRef.current;
+
+    tokenPointsRef.current.forEach((pts) => {
+      const node = pts.userData as SemanticNode;
+      const matchingLabel = labelElementsRef.current.find(
+        (l) => {
+          const labelKey = l.userData?.id ?? l.userData?.token_id;
+          const nodeKey = node.id ?? node.token_id;
+          return labelKey === nodeKey;
+        },
+      );
+
+      const targetPos = pts.userData.targetPosition || pts.position;
+      let shouldShow = true;
+
+      if (filter === "positive") {
+        if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0) shouldShow = false;
+      } else if (filter === "negative") {
+        if (targetPos.x > 0 || targetPos.y > 0 || targetPos.z > 0) shouldShow = false;
+      }
+
+      pts.visible = shouldShow;
+      if (matchingLabel) {
+        matchingLabel.dom.dataset.filterVisible = shouldShow ? "1" : "0";
       }
     });
   };
@@ -1498,7 +1598,9 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     // Apply underlines and visual highlights to active DOM target texts
     labelElementsRef.current.forEach((tbl) => {
       if (tbl.userData) {
-        if (bestNode && tbl.userData.label === bestNode.label) {
+        const labelKey = tbl.userData.id ?? tbl.userData.token_id;
+        const bestKey = bestNode?.id ?? bestNode?.token_id;
+        if (bestNode && labelKey === bestKey) {
           tbl.dom.classList.add("highlighted-acad");
         } else {
           tbl.dom.classList.remove("highlighted-acad");
@@ -1542,8 +1644,6 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         return;
       }
 
-      if (dom.style.display === "none") return;
-
       if (dom.textContent === "O") {
         const factor = Math.max(0.4, Math.min(4.0, activeCamera.position.length() / 30.0));
         tempV.copy(position).multiplyScalar(factor);
@@ -1576,6 +1676,10 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       const fadeThreshold = type === "token" ? 35 : 55;
       let fade = Math.max(0, Math.min(1, 1 - (dist - fadeThreshold) / 90));
       let scale = Math.max(0.3, 1 - dist / 120);
+
+      if (type === "token" && (dom as HTMLElement).dataset.filterVisible === "0") {
+        fade = 0;
+      }
 
       if (dom.textContent === "O") {
         // Origin label "O" scale grows with distance to remain a visible anchor, capped at 1.3
@@ -1925,9 +2029,9 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       {/* Interactive cursor pointer capture banner */}
       {!isLocked && (
         <div className="absolute top-[20px] left-1/2 -translate-x-1/2 bg-white/98 border border-[#111111] px-5 py-[10px] z-50 shadow-[3px_3px_0px_rgba(0,0,0,1)] font-sans pointer-events-none transition-all duration-200 rounded-[4px] flex items-center justify-center">
-          <span className="font-sans text-[12px] text-[#111111] font-medium tracking-wide">
+          <span className="inline-flex items-center whitespace-nowrap font-sans text-[12px] text-[#111111] font-medium tracking-wide leading-none">
             Click viewport to navigate &nbsp;|&nbsp; Press{" "}
-            <span className="inline-block relative bg-white border border-[#111111] rounded-[3px] py-0.5 px-1.5 text-[9px] font-bold font-mono text-center min-w-[25px] shadow-[0_1.5px_0_0_#111111] mx-1 top-[-1px] leading-none text-black">
+            <span className="key mx-1 align-middle">
               ESC
             </span>{" "}
             to adjust HUD options
