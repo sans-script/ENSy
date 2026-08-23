@@ -121,6 +121,33 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
   const SIZE = 60; // CONSTANT SIZE OF THE COORDINATE BOX
 
+  // Runtime guards for out-of-range coordinates introduced during debugging.
+  const MAX_COORD = 10000; // generous cap to catch runaway values
+  const isValidVector = (v: THREE.Vector3) =>
+    Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z) &&
+    Math.abs(v.x) < MAX_COORD && Math.abs(v.y) < MAX_COORD && Math.abs(v.z) < MAX_COORD;
+
+  const safeApplyPosition = (
+    pts: THREE.Points,
+    target: THREE.Vector3,
+    context = "",
+  ) => {
+    const node = pts.userData as SemanticNode | undefined;
+    if (!isValidVector(target)) {
+      // Helpful console output for tracing provenance in the browser console.
+      // Keep this log lightweight so it can be pasted into the chat if needed.
+      console.warn("SpaceVisualizer: rejected out-of-range position", {
+        node: node ? (node.label ?? node.token_id ?? node.id) : "<unknown>",
+        target: [target.x, target.y, target.z],
+        context,
+        stack: new Error().stack,
+      });
+      return false;
+    }
+    pts.position.copy(target);
+    return true;
+  };
+
   useEffect(() => {
     mouseSensitivityRef.current = mouseSensitivity;
   }, [mouseSensitivity]);
@@ -206,7 +233,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (document.pointerLockElement !== container) return;
+      if (document.pointerLockElement !== container && e.code !== 'KeyP') return;
 
       targetLerpStateRef.current = null; // Interrupt lerp on keyboard movement
 
@@ -220,6 +247,11 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       // Update keyboard indicators in the UI
       const kIndicator = document.getElementById(`key-${e.code}`);
       if (kIndicator) kIndicator.classList.add("active");
+
+      // Debug: press 'P' (while not pointer-locked) to print cloud stats
+      if (e.code === 'KeyP') {
+        logTokenCloudDebug();
+      }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
@@ -232,6 +264,63 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
       const kIndicator = document.getElementById(`key-${e.code}`);
       if (kIndicator) kIndicator.classList.remove("active");
+    };
+
+    const logTokenCloudDebug = () => {
+      const pts = tokenPointsRef.current;
+      if (!pts || pts.length === 0) {
+        // eslint-disable-next-line no-console
+        console.log('Token cloud: no points present');
+        return;
+      }
+
+      let mn = [Infinity, Infinity, Infinity];
+      let mx = [-Infinity, -Infinity, -Infinity];
+      const distances: { idx: number; d: number }[] = [];
+
+      pts.forEach((p, i) => {
+        const x = p.position.x;
+        const y = p.position.y;
+        const z = p.position.z;
+        mn[0] = Math.min(mn[0], x);
+        mn[1] = Math.min(mn[1], y);
+        mn[2] = Math.min(mn[2], z);
+        mx[0] = Math.max(mx[0], x);
+        mx[1] = Math.max(mx[1], y);
+        mx[2] = Math.max(mx[2], z);
+        distances.push({ idx: i, d: Math.hypot(x, y, z) });
+      });
+
+      distances.sort((a, b) => b.d - a.d);
+
+      // Build duplicate position map (rounded to 2 decimals)
+      const dupMap = new Map<string, number>();
+      pts.forEach((p) => {
+        const key = `${p.position.x.toFixed(2)},${p.position.y.toFixed(2)},${p.position.z.toFixed(2)}`;
+        dupMap.set(key, (dupMap.get(key) || 0) + 1);
+      });
+
+      const duplicates = Array.from(dupMap.entries()).filter(([, c]) => c > 1).map(([pos, c]) => ({ pos, count: c }));
+
+      const bboxSize = [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]];
+      const diag = Math.hypot(bboxSize[0], bboxSize[1], bboxSize[2]);
+
+      // Mark outliers as points with distance > diag * 1.5
+      const outlierThreshold = Math.max(1, diag * 1.5);
+      const outliers = distances.filter((d) => d.d > outlierThreshold).slice(0, 24).map((s) => {
+        const p = pts[s.idx];
+        const node = p.userData as SemanticNode;
+        return { idx: s.idx, d: Number(s.d.toFixed(2)), label: node?.label, pos: [Number(p.position.x.toFixed(2)), Number(p.position.y.toFixed(2)), Number(p.position.z.toFixed(2))] };
+      });
+
+      const top = distances.slice(0, 12).map((s) => {
+        const p = pts[s.idx];
+        const node = p.userData as SemanticNode;
+        return { idx: s.idx, d: Number(s.d.toFixed(2)), label: node?.label, pos: [Number(p.position.x.toFixed(2)), Number(p.position.y.toFixed(2)), Number(p.position.z.toFixed(2))] };
+      });
+
+      // eslint-disable-next-line no-console
+      console.log(JSON.stringify({ bounds: { mn, mx, count: pts.length, bboxSize, diag }, duplicates, outliers, farthest: top }, null, 2));
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -782,7 +871,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         geo,
         new THREE.PointsMaterial({ size: 2.5, transparent: true, opacity: 0 }),
       );
-      pts.position.copy(pos);
+      safeApplyPosition(pts, pos, "create");
       pts.userData = node;
       sceneRef.current?.add(pts);
       tokenPointsRef.current.push(pts);
@@ -810,6 +899,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
     const byNodeKey = new Map<number, SemanticNode>();
 
+    const COORD_WARN = 200; // warn when incoming coords exceed this magnitude
+
     nodes.forEach((node) => {
       const nodeKey = node.id ?? node.token_id;
       byNodeKey.set(nodeKey, node);
@@ -820,6 +911,27 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       const currentKey = currentNode.id ?? currentNode.token_id;
       const nextNode = byNodeKey.get(currentKey);
       if (!nextNode) return;
+
+      // If the incoming projection data contains runaway coordinates, log them
+      try {
+        const c = (nextNode as any).coords ?? (nextNode as any);
+        const x = c?.x3d ?? c?.x ?? 0;
+        const y = c?.y3d ?? c?.y ?? 0;
+        const z = c?.z3d ?? c?.z ?? 0;
+        if (
+          !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) ||
+          Math.abs(x) > COORD_WARN || Math.abs(y) > COORD_WARN || Math.abs(z) > COORD_WARN
+        ) {
+          console.warn("SpaceVisualizer: syncProjectionDataPrivate received large coords", {
+            key: currentKey,
+            nextCoords: [x, y, z],
+            sample: JSON.stringify(nextNode).slice(0, 200),
+            stack: new Error().stack,
+          });
+        }
+      } catch (err) {
+        console.warn("SpaceVisualizer: error inspecting nextNode coords", err);
+      }
 
       Object.assign(currentNode, nextNode);
       const syncedNode = currentNode as SemanticNode & {
@@ -857,7 +969,23 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
   // Node filtering logic matching target quadrants
   const getProjectedCoords = (n: SemanticNode, type: string) => {
-    const { x3d: x, y3d: y, z3d: z } = n.coords;
+    // Primary 3D coordinates (most projections will populate these).
+    let x = n.coords.x3d;
+    let y = n.coords.y3d;
+    let z = n.coords.z3d;
+
+    // Some projection payloads only populate 2D coordinates (x2d/y2d).
+    // If the 3D coords are essentially empty (all near-zero), prefer the 2D
+    // coordinates as the projection source to avoid collapsing many points
+    // to the origin when switching projection types (e.g. isomap from server).
+    const smallThreshold = 1e-6;
+    if (Math.abs(x) + Math.abs(y) < smallThreshold &&
+      typeof n.coords.x2d === 'number' && typeof n.coords.y2d === 'number') {
+      x = n.coords.x2d;
+      y = n.coords.y2d;
+      // Keep z as-is if provided; otherwise leave it at 0.
+      z = typeof n.coords.z3d === 'number' ? n.coords.z3d : 0;
+    }
     if (type === "pca") {
       return { x3d: x * 0.8 + y * 0.6, y3d: -x * 0.6 + y * 0.8, z3d: z * 1.2 };
     }
@@ -887,6 +1015,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     let mn = [1e9, 1e9, 1e9];
     let mx = [-1e9, -1e9, -1e9];
     const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
+    const activeNodeKeys = new Set(nodes.map((n) => n.id ?? n.token_id));
 
     // First pass to get bounds based on projected coordinates
     nodes.forEach((n) => {
@@ -920,12 +1049,14 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       const vy = ((y - (mn[1] + mx[1]) / 2) / range) * S;
       const vz = ((z - (mn[2] + mx[2]) / 2) / range) * S;
 
-      let shouldShow = true;
+      let shouldShow = activeNodeKeys.has(node.id ?? node.token_id);
 
-      if (filter === "positive") {
-        if (vx < 0 || vy < 0 || vz < 0) shouldShow = false;
-      } else if (filter === "negative") {
-        if (vx > 0 || vy > 0 || vz > 0) shouldShow = false;
+      if (shouldShow) {
+        if (filter === "positive") {
+          if (vx < 0 || vy < 0 || vz < 0) shouldShow = false;
+        } else if (filter === "negative") {
+          if (vx > 0 || vy > 0 || vz > 0) shouldShow = false;
+        }
       }
 
       pts.visible = shouldShow;
@@ -936,9 +1067,16 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       const targetPos = new THREE.Vector3(vx, vy, vz);
 
       if (!pts.userData.targetPosition) {
-        pts.position.copy(targetPos);
-        pts.userData.targetPosition = targetPos.clone();
+        // initial placement: apply to mesh only if validated
+        if (safeApplyPosition(pts, targetPos, "filter-initial")) {
+          pts.userData.targetPosition = targetPos.clone();
+        } else {
+          // still keep the target for inspection but don't apply unsafe values
+          pts.userData.targetPosition = targetPos.clone();
+        }
       } else {
+        // always update stored target so debugger can inspect it; application to
+        // pts.position is gated by safeApplyPosition where relevant
         pts.userData.targetPosition.copy(targetPos);
       }
     });
@@ -946,6 +1084,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
   const applyFilterVisibilityPrivate = () => {
     const filter = currentFilterRef.current;
+    const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
+    const activeNodeKeys = new Set(nodes.map((n) => n.id ?? n.token_id));
 
     tokenPointsRef.current.forEach((pts) => {
       const node = pts.userData as SemanticNode;
@@ -958,12 +1098,14 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       );
 
       const targetPos = pts.userData.targetPosition || pts.position;
-      let shouldShow = true;
+      let shouldShow = activeNodeKeys.has(node.id ?? node.token_id);
 
-      if (filter === "positive") {
-        if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0) shouldShow = false;
-      } else if (filter === "negative") {
-        if (targetPos.x > 0 || targetPos.y > 0 || targetPos.z > 0) shouldShow = false;
+      if (shouldShow) {
+        if (filter === "positive") {
+          if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0) shouldShow = false;
+        } else if (filter === "negative") {
+          if (targetPos.x > 0 || targetPos.y > 0 || targetPos.z > 0) shouldShow = false;
+        }
       }
 
       pts.visible = shouldShow;
@@ -1628,7 +1770,21 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       ? gridGroupRef.current.children.filter((obj) => obj.name === "bgPlane")
       : [];
 
-    // Projected labels
+    // Projected labels: first compute screen positions for all labels so we
+    // can detect collisions and spread overlapping labels to avoid the
+    // "pile-up" effect at the origin.
+    const projectedLabels: Array<{
+      dom: HTMLDivElement;
+      x: number;
+      y: number;
+      dist: number;
+      fade: number;
+      scale: number;
+      type: string;
+      axisId?: string;
+      isOrigin?: boolean;
+    }> = [];
+
     labelElementsRef.current.forEach(({ dom, position, type, axisId }) => {
       // Check axis visibility
       if (axisId === "x" && !showXAxisRef.current) {
@@ -1681,7 +1837,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         fade = 0;
       }
 
-      if (dom.textContent === "O") {
+      const isOrigin = dom.textContent === "O";
+      if (isOrigin) {
         // Origin label "O" scale grows with distance to remain a visible anchor, capped at 1.3
         scale = Math.min(1.3, 0.7 + dist * 0.012);
         // Ensure "O" doesn't completely fade away easily, remaining a clean anchor
@@ -1692,11 +1849,42 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         fade *= 0.15; // significantly reduce opacity if behind a background plane
       }
 
-      dom.style.left = `${x}px`;
-      dom.style.top = `${y}px`;
-      dom.style.transform = `translate(-50%, -50%) scale(${scale})`;
-      dom.style.opacity = fade.toFixed(2);
-      dom.style.zIndex = Math.max(1, Math.floor(1000 - dist)).toString();
+      projectedLabels.push({ dom, x, y, dist, fade, scale, type, axisId, isOrigin });
+    });
+
+    // Detect collisions by binning screen coords and spread overlapping labels
+    const BIN_PX = 8; // grouping bucket size in pixels
+    const bins = new Map<string, typeof projectedLabels>();
+    projectedLabels.forEach((p) => {
+      if (p.isOrigin) return; // keep origin anchored
+      if (p.fade <= 0) return; // exclude hidden labels from collision detection
+      const bx = Math.round(p.x / BIN_PX);
+      const by = Math.round(p.y / BIN_PX);
+      const key = `${bx}:${by}`;
+      if (!bins.has(key)) bins.set(key, [] as any);
+      bins.get(key)!.push(p);
+    });
+
+    // spread colliding groups
+    bins.forEach((group) => {
+      if (group.length <= 1) return;
+      const count = group.length;
+      const baseRadius = 6; // px
+      for (let i = 0; i < group.length; i++) {
+        const angle = (i / count) * Math.PI * 2;
+        const radius = baseRadius + Math.floor(i / 8) * 6; // increase radius for large groups
+        group[i].x += Math.cos(angle) * radius;
+        group[i].y += Math.sin(angle) * radius;
+      }
+    });
+
+    // Apply computed styles for projected labels
+    projectedLabels.forEach((p) => {
+      p.dom.style.left = `${p.x}px`;
+      p.dom.style.top = `${p.y}px`;
+      p.dom.style.transform = `translate(-50%, -50%) scale(${p.scale})`;
+      p.dom.style.opacity = p.fade.toFixed(2);
+      p.dom.style.zIndex = Math.max(1, Math.floor(1000 - p.dist)).toString();
     });
 
     // Dynamic grid numbers
