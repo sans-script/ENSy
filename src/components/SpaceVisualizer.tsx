@@ -879,11 +879,26 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       // Generate HTML label elements overlaid on WebGL Canvas (EB Garamond)
       const dom = document.createElement("div");
       dom.className =
-        "spatial-label absolute select-none pointer-events-none transition-opacity duration-75 text-xs font-serif font-normal italic tracking-wide";
+        "spatial-label absolute select-none pointer-events-auto cursor-pointer transition-opacity duration-75 text-xs font-serif font-normal italic tracking-wide hover:underline";
+      dom.setAttribute("data-token-label", node.label);
 
       // Keep the DOM label palette aligned with the minimap and token metadata.
       dom.style.color = getNodeDisplayColor(node.color);
       dom.textContent = node.label;
+      dom.onclick = (e) => {
+        e.stopPropagation();
+        const pc = getProjectedCoords(node, projectionTypeRef.current);
+        const projectedNode: SemanticNode = {
+          id: node.id,
+          token_id: node.token_id,
+          label: node.label,
+          cluster: node.cluster,
+          color: node.color,
+          coords: { ...node.coords, ...pc },
+          top5_neighbors: node.top5_neighbors,
+        };
+        onNodeHovered(projectedNode);
+      };
       container.appendChild(dom);
 
       labelElementsRef.current.push({
@@ -893,6 +908,30 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         type: "token",
       });
     });
+
+    // Expose selectToken helper on window
+    (window as any).__selectToken = (target: string | number) => {
+      const nodesList = latestDataRef.current?.nodes || semanticSpaceData.nodes;
+      const targetNode = nodesList.find(
+        (n) => n.label === target || n.token_id === target || n.id === target,
+      ) || nodesList[0];
+      if (targetNode) {
+        const pc = getProjectedCoords(targetNode, projectionTypeRef.current);
+        const projectedNode: SemanticNode = {
+          id: targetNode.id,
+          token_id: targetNode.token_id,
+          label: targetNode.label,
+          cluster: targetNode.cluster,
+          color: targetNode.color,
+          coords: { ...targetNode.coords, ...pc },
+          top5_neighbors: targetNode.top5_neighbors,
+        };
+        onNodeHovered(projectedNode);
+        return true;
+      }
+      return false;
+    };
+
   };
 
   const syncProjectionDataPrivate = () => {
