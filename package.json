@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -11,7 +11,11 @@
     "build": "vite build",
     "preview": ".venv/bin/python app.py",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": ".venv/Scripts/pytest tests/ -v",
+    "test:api": ".venv/Scripts/pytest tests/test_api.py -v -m api",
+    "test:screenshots": ".venv/Scripts/pytest tests/test_screenshots.py -v --headed",
+    "test:screenshots:headless": ".venv/Scripts/pytest tests/test_screenshots.py -v"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

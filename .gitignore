@@ -3,6 +3,7 @@ build/
 dist/
 coverage/
 .venv/
+.venv-tests/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -13,3 +14,4 @@ __pycache__/
 *.log
 .env*
 !.env.example
+playwright-artifacts/
