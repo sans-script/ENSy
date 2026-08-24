@@ -1,51 +1,103 @@
-# Semantic Manifold Vector Visualizer
+# Semantic Manifold Vector Visualizer (SMVV)
+
+![SMVV 3D Workspace](docs/screenshots/01_isometric_full_workspace.png)
 
 ## Overview
 
-The **Semantic Manifold Vector Visualizer** is an interactive, browser-based 3D computational environment designed for the qualitative analysis and geometric interpretation of high-dimensional semantic vector spaces. By projecting embedding tokens (e.g., word embeddings from linguistic models) into a continuous Three.js-powered Cartesian coordinate system, this instrument enables researchers to evaluate cosine similarities and local neighborhood topology in real-time.
+The **Semantic Manifold Vector Visualizer (SMVV)** is an interactive, browser-based 3D computational workbench designed for the qualitative analysis, geometric exploration, and topological interpretation of high-dimensional semantic vector spaces. By projecting neural language model embeddings (e.g., Qwen 2.5 0.5B-Instruct) onto a continuous Three.js-powered Cartesian manifold, researchers and students can evaluate cosine similarities, cluster geometries, and local neighborhood topology in real time.
 
-This application is built with modern web technologies (React, Three.js) and adheres to rigorous academic presentation standards, featuring dynamic heuristic rendering and metric export capabilities for downstream analysis.
+---
+
+## Dimensionality Reduction Projections
+
+The system dynamically reduces 896-dimensional embedding vectors into navigable 3D manifolds via four algorithms:
+
+| **UMAP (Cosine Metric)** | **PCA (Maximum Variance)** |
+|:---:|:---:|
+| ![UMAP Projection](docs/screenshots/02_projection_umap_isometric.png) | ![PCA Projection](docs/screenshots/03_projection_pca_isometric.png) |
+| *Preserves local and global topological structure* | *Linear projection maximizing global variance* |
+
+| **t-SNE (Probabilistic)** | **Isomap (Geodesic Distance)** |
+|:---:|:---:|
+| ![t-SNE Projection](docs/screenshots/04_projection_tsne_isometric.png) | ![Isomap Projection](docs/screenshots/05_projection_isomap_isometric.png) |
+| *Highlights localized cluster segregation* | *Preserves geodesic neighborhood graph distances* |
+
+---
 
 ## Core Capabilities
 
-### 1. 3D Spatial Navigation & Projection
-- **Real-Time Rendering:** Utilizes `WebGL` via `Three.js` to render coordinate spaces at 60 FPS, providing fluid interactions.
-- **Flight Controls:** Unconstrained traversal of the manifold architecture using WASDRF keybindings paired with pitch/yaw mouse lock.
-- **Camera Interpolation:** Implements linear interpolation ($LERP$) and spherical linear interpolation ($SLERP$) for seamless cinematic transitioning between fixed perspectives (Front, Top, Isometric), aiding in intuitive spatial orientation.
+### 1. 3D Spatial Navigation & Camera Optics
+- **Real-Time WebGL Rendering:** Powered by `Three.js` at 60 FPS with exponential depth fog and responsive Cartesian coordinate planes.
+- **6-DOF Flight Controls:** Unconstrained traversal using `WASD` (translation), `R`/`F` (elevation), and mouse pointer-lock (pitch/yaw).
+- **Cinematic Interpolation (LERP / SLERP):** Smooth animated camera transitions between orthogonal presets (Front, Top, Side) and Isometric views.
+
+| **Front (XY Plane)** | **Top (XZ Aerial)** |
+|:---:|:---:|
+| ![Front View](docs/screenshots/front_xy.png) | ![Top View](docs/screenshots/top_xz.png) |
 
 ### 2. Topological Neighborhood Inspection
-- **Vector Reticle Selection:** Aligning the central reticle with any token vector in the space resolves its immediate geometrical context.
-- **Cosine Similarity Mapping:** Dynamically queries and renders the nearest topological neighbors based on vector cosine similarity distances.
-- **Statistical Export:** Facilitates direct data dumps of active local neighborhoods to `.csv` format. This feature is particularly engineered to streamline methodological documentation for researchers and data scientists.
+- **Screen-Space Reticle Selection:** Aligning the central crosshair with any token node locks onto the vector and resolves its immediate metric context.
+- **Cosine Similarity Ranking:** Instantly computes and displays the top-5 nearest semantic neighbors by angular distance.
+- **CSV Data Export:** Direct export of active local neighborhoods to `.csv` manifests for reproducible downstream statistical analysis.
 
 ### 3. Academic-Grade Visual Processing
-- **Dynamic Occlusion (Depth Sorting):** Employs real-time raycasting and dynamic Z-index recalculations corresponding to the Euclidean distance from the camera, ensuring tokens closer to the viewport naturally occlude distant elements without DOM overlap conflicts.
-- **Mathematical Typography:** High-quality typographical rendering of vector formulations (e.g., $$\vec{v}_{\text{token}}$$) using standard academic font pairings, enforcing scientific visualization norms.
-- **Customizable Cartesian Apparatus:** Toggleable dimensional axes (X, Y, Z), underlying grid planes, and dynamic coordinate scales tailored per dataset bounds. Configurable mouse sensitivities and visual properties persist across sessions via local storage.
+- **Dynamic Occlusion & Depth Sorting:** Distance-based Z-indexing and NDC projection ensure readable labels without visual clipping.
+- **Mathematical Typography:** Integrated LaTeX equation rendering (via MathJax 3) for vector coordinates ($\vec{v}$) and metrics.
+- **Cartesian Apparatus:** Toggleable axes (X, Y, Z), reference grids, and adaptive tick resolutions that adjust to camera zoom.
 
-## Technical Architecture
+---
 
-- **Frontend Framework:** React 18+ leveraging Vite
-- **3D Engine:** Three.js
-- **Styling Engine:** Tailwind CSS
-- **Data Handling:** Zero-dependency client-side architecture with scalable internal metric state mappings.
+## Technical Stack
 
-## Usage Guide
+- **Frontend:** React 19, TypeScript, Vite, Three.js, Tailwind CSS, Lucide React, Motion
+- **Backend:** FastAPI, Uvicorn, PyTorch, Transformers (Qwen 2.5 0.5B-Instruct), scikit-learn, UMAP-learn, NumPy
+- **Document Engine:** Playwright, Markdown, MathJax (automated publication PDF generation)
 
-### Development mode
+---
 
-For hot reload on frontend changes, run the app in two terminals:
+## Quick Start
 
-1. Frontend with Vite: `npm run dev`
-2. Backend API with Python: `npm run dev:backend`
+### 1. Install Dependencies
 
-If you prefer a single command for both services, use `npm run dev:all`.
+```bash
+# Frontend
+npm install
 
-1. **Free Movement:** Click anywhere on the main 3D canvas to engage the pointer-lock mechanism. Use your mouse to orient the camera and `W`, `A`, `S`, `D` to translate. Use `R` for ascension and `F` for descension.
-2. **Preset Views:** Use the left sidebar to smoothly interpolate to rigid orthographic-like axes (Front, Top, Side) or Isometric projections.
-3. **Data Inspection:** Point the central crosshair at any active token label. The right-hand "Manifold Vector Analysis" pane will load the specific semantic identity along with proximity metrics of its immediate subspace.
-4. **Metadata Extraction:** With a target localized, click the "Export CSV Dump" button in the right pane to download a comma-separated manifest of the local topological distribution.
+# Backend
+pip install -r requirements.txt
+```
 
-## Scientific Motivation
+### 2. Run the Application
 
-This tooling infrastructure was constructed to provide structural transparency into the traditionally opaque latent spaces of embedding representational models. By bridging multidimensional tensors and interpretable 3-dimensional geometric plots, it serves as a critical interpretability lens for evaluating cluster cohesion, semantic orientation, and linguistic vector alignment in artificial intelligence research.
+```bash
+# Run both Frontend (Vite) and Backend (FastAPI) concurrently
+npm run dev:all
+```
+
+Or run them in separate terminals:
+- **Frontend:** `npm run dev` (available at `http://localhost:5173`)
+- **Backend:** `npm run dev:backend` (available at `http://127.0.0.1:3000`)
+
+---
+
+## Controls Reference
+
+| Control | Action |
+| --- | --- |
+| **Click Canvas** | Engage pointer lock (flight mode) |
+| **`W` / `S`** | Move Forward / Backward |
+| **`A` / `D`** | Strafe Left / Right |
+| **`R` / `F`** | Ascend / Descend |
+| **Mouse Move** | Look around (Pitch / Yaw) |
+| **Scroll Wheel** | Zoom in / out |
+| **`H`** | Toggle Navigation HUD |
+| **`Esc`** | Release pointer lock |
+
+---
+
+## Scientific Documentation
+
+Comprehensive academic documentation, theoretical derivations, and architectural specifications are available in:
+- [`docs/DOCS.md`](docs/DOCS.md) — Complete academic document.
+- [`docs/DOCS.pdf`](docs/DOCS.pdf) — Generated PDF document with rendered MathJax equations.
+- Run `python docs/md_to_pdf.py` to regenerate the PDF.
