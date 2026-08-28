@@ -1,6 +1,6 @@
-# Semantic Manifold Vector Visualizer: Design, Implementation, and Application of an Interactive Three-Dimensional Tool for the Exploration of Neural Language Model Embedding Spaces
+# ENSy: Design, Implementation, and Application of an Interactive Embedding Navigation System for Neural Language Models
 
-**Authors:** Alexandre Santos  
+**Author:** Alexandre da Silva Santos Santos  
 **Institution:** Federal University of Maranhão  
 **Program:** B.Sc. in Science and Technology – Computer Engineering  
 **Date:** August 2026    
@@ -8,11 +8,13 @@
 
 ## Abstract
 
-The internal representations of neural language models, commonly referred to as word embeddings, encode rich semantic and syntactic relationships in high-dimensional vector spaces that resist straightforward human interpretation. This work presents the **Semantic Manifold Vector Visualizer (SMVV)**, an interactive, browser-based computational environment designed to bridge the gap between opaque high-dimensional latent spaces and human geometric intuition. The system integrates a Python-based backend, built with FastAPI and Uvicorn, with a TypeScript and React frontend rendered using the Three.js WebGL engine. Four dimensionality reduction algorithms—UMAP, t-SNE, PCA, and Isomap—project embedding vectors extracted from the Qwen 2.5 0.5B-Instruct language model onto a navigable three-dimensional Cartesian manifold. A central-reticle screen-space raycasting mechanism enables the user to select individual token representations and inspect their five nearest topological neighbors by cosine similarity. Results can be exported as comma-separated value files for downstream statistical analysis. This document provides a comprehensive technical description of the system's architecture, algorithmic foundations, implementation choices, data flow, and user interaction model.
+The internal representations of neural language models, commonly referred to as word embeddings, encode rich semantic and syntactic relationships in high-dimensional vector spaces that resist straightforward human interpretation. This work presents **ENSy (Embedding Navigation System)**, an interactive, browser-based computational environment designed to enable the navigation, exploration, and geometric analysis of high-dimensional semantic spaces. The system integrates a Python-based backend, built with FastAPI and Uvicorn, with a TypeScript and React frontend rendered using the Three.js WebGL engine. Four dimensionality reduction algorithms—UMAP, t-SNE, PCA, and Isomap—project embedding vectors extracted from the Qwen 2.5 0.5B-Instruct language model onto a navigable three-dimensional Cartesian manifold. A central-reticle screen-space raycasting mechanism enables the user to select individual token representations and inspect their five nearest topological neighbors by cosine similarity. Results can be exported as comma-separated value files for downstream statistical analysis. This document provides a comprehensive technical description of the system's architecture, algorithmic foundations, implementation choices, data flow, and user interaction model.
 
-**Keywords:** word embeddings, dimensionality reduction, vector space visualization, UMAP, t-SNE, PCA, Isomap, cosine similarity, Three.js, FastAPI, Qwen 2.5, interpretability.
+**Keywords:** word embeddings, embedding navigation, dimensionality reduction, vector space visualization, UMAP, t-SNE, PCA, Isomap, cosine similarity, Three.js, FastAPI, Qwen 2.5, interpretability.
 
 ---
+
+---columns{count=2}---
 
 ## 1. Introduction
 
@@ -26,32 +28,28 @@ Despite the theoretical richness of these spaces, their high dimensionality—ra
 
 Dimensionality reduction techniques such as Principal Component Analysis (PCA), t-distributed Stochastic Neighbor Embedding (t-SNE), Uniform Manifold Approximation and Projection (UMAP), and Isomap offer a bridge between the native high-dimensional space and lower-dimensional projections that preserve topological or statistical structure to varying degrees. However, existing tools for applying these techniques to language model embeddings are often limited to static 2D scatter plots, require specialized data science environments, or lack interactive inspection capabilities.
 
-This work addresses these limitations by presenting the **Semantic Manifold Vector Visualizer (SMVV)**: a full-stack, interactive application that renders the embedding space of the Qwen 2.5 0.5B-Instruct model as a navigable three-dimensional manifold in the browser. The system enables researchers to:
+This work addresses these limitations by presenting **ENSy (Embedding Navigation System)**: a full-stack, interactive application that renders the embedding space of the Qwen 2.5 0.5B-Instruct model as a navigable three-dimensional manifold in the browser. The system empowers researchers to interactively explore high-dimensional semantic geometries through real-time first-person flight controls, inspect local topological neighborhoods using screen-space reticle raycasting, contrast four foundational projection algorithms (UMAP, t-SNE, PCA, Isomap) within a unified visual framework, and export neighborhood subsets to standardized CSV format for downstream statistical verification.
 
-1. Explore the geometric structure of token embeddings in real-time through first-person flight navigation;
-2. Select individual token nodes using a screen-space reticle mechanism and inspect their five nearest neighbors by cosine similarity;
-3. Switch between four projection algorithms (UMAP, t-SNE, PCA, Isomap) and observe the resulting structural differences;
-4. Export local topological neighborhoods as CSV files for reproducible analysis.
-
-![Figure 1: Full SMVV 3D Workspace in Isometric Alignment](screenshots/01_isometric_full_workspace.png)
+![Figure 1: Full ENSy 3D Workspace in Isometric Alignment](screenshots/01_isometric_full_workspace.png)
 _Figure 1: Complete 1920×1080 workspace in Isometric viewing alignment, illustrating the Left Control Dashboard, central Three.js 3D Manifold Canvas with central crosshair reticle targeting a semantic token, and the populated Right Vector Inspector._
 
-The contribution of this work is both theoretical and practical: it provides a concrete implementation of an XAI instrument for language model geometry, demonstrates the architectural patterns required to couple a machine learning inference pipeline with a real-time 3D rendering engine, and offers an accessible platform for pedagogical exploration of embedding spaces at the undergraduate and graduate levels.
+The contribution of this work is both theoretical and practical. It provides a concrete implementation of an XAI instrument for language model geometry, demonstrates the architectural patterns required to couple a machine learning inference pipeline with a real-time 3D rendering engine, and offers an accessible platform for pedagogical exploration of embedding spaces at the undergraduate and graduate levels.
 
 ### 1.1 Research Objectives
 
-The primary objectives of this work are:
+The research program guiding this work is articulated through four specific objectives:
 
-- **O1:** To design and implement a full-stack interactive system capable of rendering language model embeddings as a navigable 3D manifold;
-- **O2:** To integrate four dimensionality reduction algorithms through a unified REST API, allowing algorithmic comparison within a single visual context;
-- **O3:** To implement a proximity-based token selection mechanism that exposes topological neighborhood structure through cosine similarity;
-- **O4:** To demonstrate the system's utility as an interpretability and pedagogical tool for exploring embedding geometry.
+**O1 — Full-Stack Manifold Rendering.** To design and implement an interactive web architecture capable of extracting language model embeddings and rendering them as a navigable 3D Riemannian manifold approximation.
+
+**O2 — Multi-Algorithmic Comparative Analysis.** To integrate linear (PCA) and non-linear (t-SNE, UMAP, Isomap) dimensionality reduction engines behind a unified asynchronous API, enabling real-time comparative inspection.
+
+**O3 — Topological Neighborhood Inspection.** To implement a screen-space proximity selection mechanism that dynamically computes and exposes local topological structures via cosine similarity metrics.
+
+**O4 — Interpretability and Pedagogical Utility.** To demonstrate the system's practical efficacy as an explainable AI tool for interrogating latent cluster organization and geometric semantic relationships.
 
 ### 1.2 Document Organization
 
 This document is organized as follows. Section 2 provides the theoretical background on word embeddings, dimensionality reduction algorithms, and the cosine similarity metric. Section 3 describes the system architecture in full, encompassing the technology stack, component model, and data flow. Section 4 details the backend implementation, including the embedding pipeline and projection endpoints. Section 5 describes the frontend implementation, with emphasis on the Three.js rendering engine, camera control model, and raycasting selection mechanism. Section 6 discusses user interaction design and interface layout. Section 7 presents the data model and static fallback mechanism. Section 8 discusses limitations and directions for future work. Section 9 concludes.
-
----
 
 ## 2. Theoretical Background
 
@@ -75,11 +73,11 @@ $$
 
 The cosine similarity ranges in the interval $[-1, 1]$, where a value of $+1$ indicates identical orientation, $0$ indicates orthogonality, and $-1$ indicates opposite orientation. This metric is particularly well-suited for embedding spaces because it is invariant to vector magnitude, focusing exclusively on the angular relationship between vectors. This invariance is crucial because embedding models often produce vectors of varying norms that do not encode semantic information.
 
-In the SMVV, cosine similarity is computed for all pairs of tokens using scikit-learn's `cosine_similarity` function on the embedding matrix, yielding a similarity matrix $S \in \mathbb{R}^{N \times N}$ where $N$ is the number of active tokens. The five tokens with the highest similarity scores relative to any given query token constitute its **topological neighborhood**.
+In ENSy, cosine similarity is computed for all pairs of tokens using scikit-learn's `cosine_similarity` function on the embedding matrix, yielding a similarity matrix $S \in \mathbb{R}^{N \times N}$ where $N$ is the number of active tokens. The five tokens with the highest similarity scores relative to any given query token constitute its **topological neighborhood**.
 
 ### 2.3 Dimensionality Reduction
 
-Since the native embedding dimension $d = 896$ cannot be directly visualized, dimensionality reduction is required. The SMVV implements four distinct algorithms, each offering different preservation guarantees and structural emphases.
+Since the native embedding dimension $d = 896$ cannot be directly visualized, dimensionality reduction is required. ENSy implements four distinct algorithms, each offering different preservation guarantees and structural emphases.
 
 #### 2.3.1 Principal Component Analysis (PCA)
 
@@ -91,7 +89,7 @@ $$
 
 selecting the $k$ eigenvectors corresponding to the $k$ largest eigenvalues as the projection axes. PCA is **globally structure-preserving**: the first principal component captures the maximum variance, and subsequent components capture progressively less variance. However, PCA is a linear transformation and cannot capture nonlinear manifold structure that many high-dimensional datasets exhibit.
 
-In the SMVV, PCA is applied independently for 2D and 3D projections using scikit-learn's `PCA(n_components=k, random_state=42)`.
+In ENSy, PCA is applied independently for 2D and 3D projections using scikit-learn's `PCA(n_components=k, random_state=42)`.
 
 ![Figure 2: PCA 3D Manifold Projection](screenshots/03_projection_pca_isometric.png)
 _Figure 2: Linear Principal Component Analysis (PCA) 3D projection of the 896-dimensional embedding space in Isometric perspective._
@@ -104,7 +102,7 @@ $$
 \mathcal{L}_{\text{t-SNE}} = \text{KL}(P \parallel Q) = \sum_{i \neq j} p_{ij} \log \frac{p_{ij}}{q_{ij}}
 $$
 
-The **perplexity** hyperparameter controls the effective number of neighbors considered. In the SMVV backend, perplexity is dynamically adapted to the token count as:
+The **perplexity** hyperparameter controls the effective number of neighbors considered. In the ENSy backend, perplexity is dynamically adapted to the token count as:
 
 $$
 \text{perplexity} = \min\left(5, \max\left(2, \left\lfloor \frac{N}{4} \right\rfloor\right)\right)
@@ -119,10 +117,13 @@ _Figure 3: Non-linear t-SNE 3D projection highlighting localized cluster segrega
 
 UMAP is a manifold learning technique grounded in Riemannian geometry and algebraic topology. UMAP constructs a weighted graph representation of the high-dimensional data, approximating the manifold on which the data lies, then optimizes a low-dimensional layout by minimizing the cross-entropy between the high- and low-dimensional fuzzy topological representations. UMAP preserves both **local and global structure** better than t-SNE and is significantly faster for large datasets.
 
-The SMVV applies UMAP with the following configuration:
+ENSy applies UMAP with the following parameterization:
 
 $$
-\text{UMAP}(n\_\text{components}=k,\; n\_\text{neighbors}=\min(4, N-1),\; \text{min\_dist}=0.5,\; \text{metric}=\text{"cosine"},\; \text{random\_state}=42)
+\begin{aligned}
+\text{UMAP}\big(&n\_\text{components}=k,\; n\_\text{neighbors}=\min(4, N-1), \\
+&\text{min\_dist}=0.5,\; \text{metric}=\text{"cosine"}\big)
+\end{aligned}
 $$
 
 The `cosine` metric is specified explicitly, ensuring that UMAP's neighborhood graph is constructed using angular distances consistent with the semantic similarity metric used throughout the system.
@@ -134,40 +135,30 @@ _Figure 4: Default UMAP 3D manifold projection constructed using angular cosine 
 
 Isomap is a nonlinear method that extends classical multidimensional scaling (MDS) to preserve **geodesic distances** on the data manifold. Isomap first constructs a neighborhood graph with $k$ nearest neighbors, then estimates geodesic distances as shortest path lengths in this graph using Dijkstra's algorithm. Finally, classical MDS is applied to the geodesic distance matrix to produce the low-dimensional embedding. Isomap is particularly effective for data lying on a smoothly curved low-dimensional manifold.
 
-In the SMVV, Isomap uses $n\_\text{neighbors} = \min(5, N-1)$ and the `cosine` metric for graph construction.
+In ENSy, Isomap uses $n\_\text{neighbors} = \min(5, N-1)$ and the `cosine` metric for graph construction.
 
 ![Figure 5: Isomap Geodesic 3D Manifold Projection](screenshots/05_projection_isomap_isometric.png)
 _Figure 5: Non-linear Isomap 3D projection preserving geodesic neighborhood graph distances._
 
 ### 2.4 The Semantic Manifold
 
-The term "manifold" in the SMVV's nomenclature refers to the mathematical concept of a topological manifold: a space that locally resembles Euclidean space but may have complex global topology. The embedding vectors of a language model are hypothesized to lie near a low-dimensional manifold embedded in the high-dimensional vector space $\mathbb{R}^{896}$. The dimensionality reduction algorithms described above are manifestations of the **manifold hypothesis**: the assumption that high-dimensional data of natural origin concentrates near a low-dimensional manifold, and that this manifold structure encodes meaningful relationships.
-
----
+The concept of "manifold" in ENSy's nomenclature refers to the mathematical concept of a topological manifold: a space that locally resembles Euclidean space but may possess complex global geometry. The embedding vectors of a language model are hypothesized to lie near a low-dimensional manifold embedded in the high-dimensional vector space $\mathbb{R}^{896}$. The dimensionality reduction algorithms described above are manifestations of the **manifold hypothesis**: the assumption that high-dimensional data of natural origin concentrates near a low-dimensional manifold, and that this manifold structure encodes meaningful relationships.
 
 ## 3. System Architecture
 
-The SMVV follows a two-tier client-server architecture, separating the computationally intensive embedding extraction and dimensionality reduction from the interactive rendering and user interface.
+ENSy follows a two-tier client-server architecture, separating the computationally intensive embedding extraction and dimensionality reduction from the interactive rendering and user interface.
 
 ### 3.1 Technology Stack
 
-| Layer                    | Technology             | Version        | Role                                            |
-| ------------------------ | ---------------------- | -------------- | ----------------------------------------------- |
-| Frontend framework       | React                  | 19.0.1         | Component-based UI and state management         |
-| Type system              | TypeScript             | ~5.8.2         | Static typing across all frontend modules       |
-| 3D rendering engine      | Three.js               | 0.184.0        | WebGL-based 3D scene graph and renderer         |
-| Build tool               | Vite                   | 6.2.3          | Development server, HMR, and production bundler |
-| CSS framework            | Tailwind CSS           | 4.1.14         | Utility-first responsive styling                |
-| Mathematical typography  | MathJax                | 3 (CDN)        | LaTeX equation rendering in the browser         |
-| Icon library             | Lucide React           | 0.546.0        | UI icons for controls                           |
-| Animation library        | Motion                 | 12.23.24       | UI micro-animations                             |
-| Backend framework        | FastAPI                | 0.115.8        | Asynchronous REST API server                    |
-| ASGI server              | Uvicorn                | 0.34.0         | Production-grade ASGI runner                    |
-| Embeddings model         | Qwen 2.5-0.5B-Instruct | —              | Source of token embedding vectors               |
-| ML inference             | PyTorch + Transformers | 2.6.0 / 4.49.0 | Tensor operations and model loading             |
-| Dimensionality reduction | scikit-learn + UMAP    | 1.6.1 / 0.5.7  | PCA, t-SNE, Isomap, UMAP implementations        |
-| Numerical computation    | NumPy                  | 2.1.3          | Vector arithmetic and normalization             |
-| Testing framework        | Pytest + Playwright    | 8.3.5 / 1.48.0 | API validation and automated UI screenshots     |
+ENSy leverages modern web and scientific computing frameworks structured across four primary layers:
+
+**Frontend and Graphics Engine.** React (v19.0.1) and TypeScript (~v5.8.2) orchestrate component state and static type verification, while Three.js (v0.184.0) manages the WebGL 3D scene graph, shader routines, and canvas rendering. Vite (v6.2.3) serves as the high-throughput development bundler, Tailwind CSS (v4.1.14) and Motion (v12.23.24) govern responsive layout and micro-animations, MathJax (v3) provides client-side LaTeX equation rendering, and Lucide React (v0.546.0) delivers vector iconography.
+
+**Backend and Asynchronous Serving.** High-throughput REST API serving is provided by FastAPI (v0.115.8) running on the asynchronous Uvicorn (v0.34.0) ASGI server.
+
+**Machine Learning and Reduction Pipeline.** Token embedding extraction is performed on Qwen 2.5 0.5B-Instruct using PyTorch (v2.6.0) and HuggingFace Transformers (v4.49.0). Dimensionality reduction algorithms (PCA, t-SNE, Isomap, UMAP) are executed via scikit-learn (v1.6.1) and UMAP (v0.5.7), supported by vectorized NumPy (v2.1.3) linear algebra.
+
+**Verification and Quality Assurance.** Automated endpoint validation and visual regression testing are conducted using Pytest (v8.3.5) and headless Playwright (v1.48.0).
 
 ### 3.2 Data Flow
 
@@ -187,8 +178,6 @@ The system's data flow proceeds through the following stages:
 
 **Stage 7 — Offline Fallback.** If the API request fails, `App.tsx` catches the exception and loads the static `semanticSpaceData` from `src/data/semanticSpace.ts`, ensuring the application remains fully functional at all times.
 
----
-
 ## 4. Backend Implementation
 
 ### 4.1 Server Entrypoint and Dependency Management
@@ -197,126 +186,61 @@ The backend server (`app.py`) begins with a self-bootstrapping dependency manage
 
 ### 4.2 Data Configuration: Cluster Taxonomy and Token Registry
 
-The backend defines a curated vocabulary of 36 tokens organized into three semantic clusters:
+The backend defines a curated vocabulary of 36 tokens organized into three semantic clusters: the **Technology/File** cluster (`#378ADD`), covering computing concepts such as `document`, `file`, `hardware`, `memory`, `binary`, `database`, and `network`; the **Biological/Fruit** cluster (`#1D9E75`), encompassing natural entities including `apple`, `banana`, `orange`, `fruit`, `tree`, and `seed`; and the **Action/Verb** cluster (`#D85A30`), representing procedural semantics like `write`, `read`, `parse`, `encode`, `plant`, `compile`, and `analyze`.
 
-| Cluster            | Domain                          | Sample Members                                                    |
-| ------------------ | ------------------------------- | ----------------------------------------------------------------- |
-| `Technology/File`  | Computing and data management   | `document`, `file`, `pdf`, `code`, `hardware`, `memory`, `binary` |
-| `Biological/Fruit` | Natural language, edible plants | `apple`, `banana`, `orange`, `fruit`, `grape`, `cherry`           |
-| `Action/Verb`      | Procedural operations           | `write`, `read`, `parse`, `encode`, `eat`, `plant`, `harvest`     |
-
-Each cluster is assigned a unique hexadecimal color code (`#378ADD`, `#1D9E75`, `#D85A30`) used consistently across both the 3D scene and the minimap.
-
-A `token_registry` dictionary maps each word to its token ID and cluster membership, enabling $\mathcal{O}(1)$ metadata lookup during JSON serialization.
+Each cluster is assigned a unique hexadecimal color code (`#378ADD`, `#1D9E75`, `#D85A30`) used consistently across both the 3D scene and the minimap. A `token_registry` dictionary maps each word to its token ID and cluster membership, enabling $\mathcal{O}(1)$ metadata lookup during JSON serialization.
 
 ### 4.3 Bootstrap Vector Initialization
 
-To guarantee zero-latency API responses before the language model finishes loading, the backend initializes a set of **bootstrap vectors**:
-
-```python
-bootstrap_vectors = np.random.RandomState(42).normal(0, 1, (len(all_words), 896))
-bootstrap_vectors /= np.linalg.norm(bootstrap_vectors, axis=1, keepdims=True)
-```
+To guarantee zero-latency API responses before the language model finishes loading, the backend initializes a set of **bootstrap vectors** via seeded pseudo-random normal sampling with $L_2$ unit normalization (see Appendix D, Listing D.1).
 
 The use of a fixed random seed ($42$) ensures reproducibility across server restarts. $L_2$ normalization to unit length is necessary because the cosine similarity metric operates on the angular component of vectors; unnormalized bootstrap vectors would exhibit arbitrary magnitude variation that artificially inflates or deflates similarity scores.
 
 ### 4.4 Asynchronous Model Loading
 
-The model loading procedure is implemented as a Python daemon thread launched at FastAPI startup:
+The model loading procedure is executed asynchronously via a Python daemon thread spawned upon server startup (see Appendix D, Listing D.2).
 
-```python
-@app.on_event("startup")
-def startup_event():
-    threading.Thread(target=load_model_background, daemon=True).start()
-```
+The background initialization sequence executes five sequential stages:
 
-The `load_model_background()` function performs:
+**Tokenizer and Architecture Instantiation.** The pipeline instantiates the HuggingFace `AutoTokenizer` and `AutoModelForCausalLM` using half-precision (`float16`) to minimize memory footprint on host CPU execution.
 
-1. **Tokenizer instantiation:** `AutoTokenizer.from_pretrained(MODEL_ID)`
-2. **Model instantiation:** `AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float16, device_map="cpu", low_cpu_mem_usage=True)`
-3. **Embedding matrix extraction:** `model.get_input_embeddings().weight.detach().float().numpy()`
-4. **Token validation:** Words producing more than one subword token are added to `dropped_tokens` and excluded from the active set. This ensures each visualized point corresponds to a true single-token embedding.
-5. **Atomic pointer swap:** The global `active_words`, `active_vectors`, and `token_registry` are atomically replaced. Python's Global Interpreter Lock (GIL) ensures atomic assignment of object references, making this thread-safe without explicit locking.
+**Embedding Matrix Extraction.** The input embedding weights $E \in \mathbb{R}^{151936 \times 896}$ are decoupled from the PyTorch computation graph via `get_input_embeddings().weight` and cast to float32 NumPy arrays.
+
+**Single-Token Validation.** Each candidate vocabulary term is evaluated with the tokenizer. Words decomposing into multiple subwords are registered into `dropped_tokens` and excluded, guaranteeing that visualized points represent atomic semantic tokens.
+
+**Atomic Pointer Replacement.** Following validation, the global references `active_words`, `active_vectors`, and `token_registry` are updated simultaneously. Python's Global Interpreter Lock (GIL) ensures atomic reference reassignment, maintaining thread safety without locking overhead.
 
 ### 4.5 Projection Endpoint
 
 The core API endpoint is `GET /api/projection/{engine_type}`, accepting `umap`, `pca`, `tsne`, or `isomap`.
 
-For each algorithm, the backend instantiates both a 2D and a 3D reducer, applies `fit_transform(vectors)`, and computes the full cosine similarity matrix. Algorithm-specific hyperparameter adaptation:
+For each algorithm, the backend instantiates both a 2D and a 3D reducer, applies `fit_transform(vectors)`, and computes the full cosine similarity matrix. Adaptive safeguards are applied dynamically to guarantee algorithmic stability with finite token sets: UMAP enforces $n\_\text{neighbors} = \min(4, N-1)$; t-SNE bounds perplexity via $\text{perplexity} = \min(5, \max(2, \lfloor N / 4 \rfloor))$; and Isomap constrains graph connectivity with $n\_\text{neighbors} = \min(5, N-1)$.
 
-- **UMAP:** $n\_\text{neighbors} = \min(4, N-1)$ prevents errors when $N$ is small.
-- **t-SNE:** $\text{perplexity} = \min(5, \max(2, \lfloor N / 4 \rfloor))$ prevents perplexity from exceeding $N-1$.
-- **Isomap:** $n\_\text{neighbors} = \min(5, N-1)$ ensures the neighborhood graph is connected.
-
-The response JSON per node:
-
-```json
-{
-  "id": 0,
-  "label": "document",
-  "token_id": 6062,
-  "cluster": "Technology/File",
-  "color": "#378ADD",
-  "coords": {
-    "x2d": 9.547721,
-    "y2d": 7.391323,
-    "x3d": 5.423237,
-    "y3d": 2.238469,
-    "z3d": 6.157989
-  },
-  "top5_neighbors": [
-    { "label": "scan document", "cosine_similarity": 0.645582 }
-  ]
-}
-```
+The endpoint packages the projected 2D and 3D coordinates, cluster labels, and top-5 cosine neighbors for each node into a serialized response conforming to the `SemanticSpace` data contract (see Appendix B and Appendix D, Listing D.3).
 
 ### 4.6 Static File Serving and SPA Routing
 
 In production mode, FastAPI mounts the `dist/` directory and serves the React SPA. The fallback route `GET /{rest_of_path:path}` returns `index.html` for any non-API path, enabling client-side React navigation.
 
----
-
 ## 5. Frontend Implementation
 
 ### 5.1 Component Architecture
 
-The frontend is organized as four React functional components orchestrated by the root `App.tsx`:
+The frontend architecture is partitioned across four specialized React components coordinated by the root `App.tsx`. The root orchestrator maintains global application state (`selectedEngine`, `selectedNode`, `semanticSpace`), handles HTTP communication with the backend API, and manages fallback routing. `SidebarLeft.tsx` hosts algorithm toggles, model metadata badges, and server connectivity monitors. `SpaceVisualizer.tsx` encapsulates the Three.js WebGL canvas, 6-DOF camera mechanics, and HUD overlays. `SidebarRight.tsx` inspects node coordinates, presents top-5 cosine neighbors, and provides CSV exports. `BottomHUD.tsx` renders non-intrusive navigation indicators.
 
-```
-App.tsx
-├── SidebarLeft.tsx     — Control panel and model metadata dashboard
-├── SpaceVisualizer.tsx — Three.js WebGL viewport and flight controls
-├── SidebarRight.tsx    — Node inspector and CSV export
-└── BottomHUD.tsx       — Keyboard navigation indicator
-```
-
-All inter-component communication occurs through props passed from `App.tsx`, which maintains the entire application state via React's built-in `useState` and `useCallback` hooks.
+All inter-component communication occurs through unidirectional props and callbacks, preserving deterministic state propagation via `useState` and `useCallback` hooks.
 
 #### 5.1.1 State Persistence
 
-Settings are persisted to `localStorage` at one-second intervals to avoid performance degradation during the 60 FPS rendering loop:
-
-- `projectionType` — selected dimensionality reduction algorithm
-- `currentFilter` — spatial filter (all / positive octant / negative octant)
-- `cameraMode` — rendering mode (perspective / parallel / two-point)
-- `fov` — field of view angle
-- `showXAxis`, `showYAxis`, `showZAxis` — axis visibility
-- `showGridPlanes`, `showPlaneBackground` — reference geometry
-- `mouseSensitivity` — mouse rotation speed coefficient
-- `cameraCoords` — camera position and rotation (6-DOF)
+Application settings are debounced and serialized to `localStorage` at one-second intervals to prevent frame drops during the 60 FPS animation loop. Persisted attributes include the active reduction engine (`projectionType`), octant spatial filter (`currentFilter`), camera projection geometry (`cameraMode`), field of view (`fov`), coordinate axis visibility flags (`showXAxis`, `showYAxis`, `showZAxis`), reference grid planes, mouse sensitivity coefficients, and 6-DOF camera coordinates.
 
 ### 5.2 Three.js Scene Construction
 
-The `SpaceVisualizer` component initializes and manages the Three.js rendering pipeline within a React `useEffect` hook with an empty dependency array (executed once on mount), decoupling the Three.js scene lifecycle from React's rendering cycle.
+The `SpaceVisualizer` component initializes the Three.js rendering pipeline within an empty-dependency `useEffect` hook, isolating the WebGL scene graph from React reconciliation cycles.
 
 #### 5.2.1 Scene Graph
 
-The Three.js scene graph consists of:
-
-- **`THREE.Scene`** with exponential fog $\text{FogExp2}(0xfcfcfc, 0.003)$: provides atmospheric depth cues.
-- **`THREE.AmbientLight(0xffffff, 1)`**: uniform ambient illumination (no directional shadows).
-- **`gridGroup` (`THREE.Group`)**: contains all grid planes, axis lines, vector arrows, and tick marks. Rebuilt when the spatial filter or axis visibility changes.
-- **Token point objects (`THREE.Points`)**: one instance per token with a single-vertex `BufferGeometry`. Each point has zero opacity and serves exclusively as a raycasting spatial anchor.
+The Three.js scene graph consists of a primary `THREE.Scene` configured with exponential atmospheric fog ($\text{FogExp2}(0xfcfcfc, 0.003)$), an ambient illumination source (`THREE.AmbientLight(0xffffff, 1)`), a composite `gridGroup` containing reference planes, axis arrows, and tick markers, and a collection of zero-opacity `THREE.Points` single-vertex proxies serving as raycasting targets.
 
 #### 5.2.2 Dual Camera System
 
@@ -327,11 +251,7 @@ Three distinct camera modes require both a perspective and an orthographic camer
 **Parallel (Orthographic) mode** (`THREE.OrthographicCamera`): orthographic projection for engineering views. Bounds are dynamically synchronized to the perspective camera's current frustum:
 
 $$
-\text{halfHeight} = \|\vec{p}_{\text{cam}}\| \cdot \tan\left(\frac{\text{FOV}}{2} \cdot \frac{\pi}{180}\right)
-$$
-
-$$
-\text{halfWidth} = \text{halfHeight} \cdot \text{aspect}
+\text{halfHeight} = \|\vec{p}_{\text{cam}}\| \cdot \tan\left(\frac{\text{FOV}}{2} \cdot \frac{\pi}{180}\right), \quad \text{halfWidth} = \text{halfHeight} \cdot \text{aspect}
 $$
 
 **Two-point perspective mode**: approximation of architectural two-point perspective, implemented by injecting a vertical shear into the projection matrix:
@@ -340,9 +260,9 @@ $$
 persp.projectionMatrix.elements[9] = Math.tan(persp.rotation.x);
 ```
 
-### 5.3 Flight Navigation Model
+### 5.3 Camera Controller: 6-DOF Flight Mechanics
 
-The SMVV implements a **six-degrees-of-freedom (6-DOF) first-person flight control scheme** using the browser's Pointer Lock API. When the user clicks the viewport, `requestPointerLock()` captures the mouse cursor.
+ENSy implements a **six-degrees-of-freedom (6-DOF) first-person flight control scheme** using the browser's Pointer Lock API. When the user clicks the viewport, `requestPointerLock()` captures the mouse cursor.
 
 Mouse movement updates camera orientation in `YXZ` Euler rotation order:
 
@@ -376,76 +296,44 @@ Camera preset transitions use a **damped interpolation** scheme per-frame:
 **Position LERP** (Linear Interpolation):
 
 $$
-\vec{p}_{t+1} = \vec{p}_t + 0.06 \cdot (\vec{p}_{\text{target}} - \vec{p}_t)
-$$
-
-**Rotation SLERP** (Spherical Linear Interpolation):
-
-$$
-q_{t+1} = \operatorname{SLERP}(q_t, q_{\text{target}}, 0.06)
+\begin{aligned}
+\vec{p}_{t+1} &= \vec{p}_t + 0.06 \cdot (\vec{p}_{\text{target}} - \vec{p}_t) \\[3pt]
+q_{t+1} &= \operatorname{SLERP}(q_t, q_{\text{target}}, 0.06)
+\end{aligned}
 $$
 
 Quaternion-based SLERP is used for rotation to prevent gimbal lock. Interpolation terminates when position distance $< 0.01$ and rotation angle $< 0.01\text{ rad}$.
 
-Preset target positions:
-
-| Preset    | Position       | Rotation                                                                     |
-| --------- | -------------- | ---------------------------------------------------------------------------- |
-| Front     | $(0, 0, 45)$   | $(0, 0, 0)$                                                                  |
-| Top       | $(0, 45, 0)$   | $(-\pi/2, 0, 0)$                                                             |
-| Side      | $(45, 0, 0)$   | $(0, \pi/2, 0)$                                                              |
-| Isometric | $(24, 18, 24)$ | $\left(\arctan\left(-\frac{18}{\sqrt{1152}}\right), \frac{\pi}{4}, 0\right)$ |
+Preset camera transitions align the viewport to canonical orthogonal and perspective projections: **Front** view targets position $(0, 0, 45)$ with rotation $(0, 0, 0)$; **Top** view targets $(0, 45, 0)$ with rotation $(-\pi/2, 0, 0)$; **Side** view targets $(45, 0, 0)$ with rotation $(0, \pi/2, 0)$; and **Isometric** view targets $(24, 18, 24)$ with pitch $\arctan(-18/\sqrt{1152})$ and yaw $\pi/4$.
 
 ### 5.5 Token Rendering and Label Overlay System
 
-Token labels are rendered through a **hybrid CSS/WebGL overlay architecture**:
-
-1. An invisible `THREE.Points` object per token serves as the 3D spatial anchor and raycasting proxy.
-2. A corresponding `<div>` HTML element is positioned absolutely over the WebGL canvas.
-3. Each frame, 3D world positions are projected to 2D screen coordinates via NDC conversion:
+Token labels are rendered through a hybrid CSS/WebGL overlay architecture. An invisible `THREE.Points` object per token acts as a 3D spatial anchor and raycasting target, while a corresponding `<div>` HTML element is positioned absolutely over the WebGL canvas. Each animation frame, 3D world coordinates are projected into 2D Normalized Device Coordinates (NDC) and converted to screen pixels:
 
 $$
-x_{\text{screen}} = \left(\frac{x_{\text{ndc}} + 1}{2}\right) \cdot W, \quad y_{\text{screen}} = \left(\frac{-y_{\text{ndc}} + 1}{2}\right) \cdot H
+\begin{aligned}
+x_{\text{screen}} &= \left(\frac{x_{\text{ndc}} + 1}{2}\right) \cdot W \\[4pt]
+y_{\text{screen}} &= \left(\frac{-y_{\text{ndc}} + 1}{2}\right) \cdot H
+\end{aligned}
 $$
 
-4. **Depth sorting:** $\text{z-index} = \lfloor 1000 - d \rfloor$ ensures closer labels render above farther ones.
-5. **Distance-based opacity:**
+Visual clarity is maintained through dynamic depth sorting, where $\text{z-index} = \lfloor 1000 - d \rfloor$ guarantees that foreground labels correctly occlude background points. Label transparency is governed by a distance attenuation function:
 
 $$
-\text{opacity} = \max\left(0, \min\left(1, 1 - \frac{d - d_{\text{threshold}}}{90}\right)\right)
+\text{opacity} = \max\left(0, \min\left(1, 1 - \frac{d - d_{\text{thresh}}}{90}\right)\right)
 $$
 
-6. **Occlusion testing:** labels behind background planes have their opacity multiplied by $0.15$.
-7. **Collision spreading:** labels are binned into 8-pixel spatial buckets; groups in the same bin are spread radially.
-8. **Projection-specific transforms:**
-   - **PCA:** rotation by $36.87^\circ$ with Z-axis scale amplification.
-   - **t-SNE:** power-law compression $f(x) = \operatorname{sign}(x) \cdot |x|^{0.8} \cdot 1.5$.
-   - **Isomap:** polar-to-Cartesian transformation with radial offset.
+Additionally, labels positioned behind reference planes have opacity attenuated by a factor of $0.15$. Visual clutter in dense clusters is mitigated through an 8-pixel spatial binning system that radially spreads conflicting labels. Algorithm-specific visual enhancements are applied dynamically: PCA incorporates a $36.87^\circ$ rotational offset with Z-axis amplification; t-SNE applies a signed power-law compression $f(x) = \operatorname{sign}(x) \cdot |x|^{0.8} \cdot 1.5$; and Isomap enforces polar-to-Cartesian radial spacing.
 
 ### 5.6 Node Selection by Central Reticle
 
-The SMVV uses a **screen-space proximity selection mechanism** per animation frame:
-
-1. Determine the screen-space reticle center:
-
-$$
-(c_x, c_y) = \left(\frac{W}{2}, \frac{H}{2}\right)
-$$
-
-2. For each visible token point $p_i$:
-   a. Project to screen coordinates $(x_i, y_i)$.
-   b. Verify it is in front of the camera: $(\vec{p}_i - \vec{p}_{\text{cam}}) \cdot \hat{d}_{\text{cam}} > 0$.
-   c. Compute 2D Euclidean distance:
+ENSy implements a screen-space reticle selection mechanism evaluated on every animation frame. The viewport center is established as $(c_x, c_y) = (W/2, H/2)$. For each candidate point $\vec{p}_i$ verified to lie in front of the camera plane ($(\vec{p}_i - \vec{p}_{\text{cam}}) \cdot \hat{d}_{\text{cam}} > 0$), the 2D Euclidean screen distance is computed:
 
 $$
 d_i = \sqrt{(x_i - c_x)^2 + (y_i - c_y)^2}
 $$
 
-3. Select the token $p^*$ with minimum $d_i$ among tokens with $d_i < 25\text{ px}$.
-4. Call `onNodeHovered(projectedNode)` or `onNodeHovered(null)`.
-5. Apply CSS class `highlighted-acad` to the selected label.
-
-Screen-space selection is preferred over Three.js ray-geometry intersection because invisible single-vertex `THREE.Points` objects are unreliable raycasting targets due to floating-point precision issues and absence of surface area.
+The token $p^*$ that minimizes $d_i$ within an activation radius of $25\text{ px}$ is selected, triggering the `onNodeHovered` state transition and highlighting the corresponding label with the `.highlighted-acad` CSS class. Screen-space proximity selection is substantially more robust than Three.js geometric raycasting, as single-vertex point proxies lack surface area and suffer from floating-point collision failures.
 
 ### 5.7 Token Position Interpolation on Projection Switch
 
@@ -459,120 +347,55 @@ This LERP factor produces a transition of approximately $50$–$100$ frames ($0.
 
 ### 5.8 Adaptive Grid Resolution
 
-Grid tick density adapts to camera distance from origin:
-
-| Camera Distance        | Tick Interval   |
-| ---------------------- | --------------- |
-| $< 15\text{ units}$    | $0.5$           |
-| $15$–$30\text{ units}$ | $1.0$           |
-| $30$–$50\text{ units}$ | $2.0$           |
-| $50$–$80\text{ units}$ | $6.0$ (default) |
-| $> 80\text{ units}$    | $12.0$          |
+Grid tick density dynamically adapts to camera distance $d$ from the origin to maintain visual clarity: intervals are configured as $0.5$ for $d < 15\text{ units}$, $1.0$ for $15 \le d < 30\text{ units}$, $2.0$ for $30 \le d < 50\text{ units}$, $6.0$ for $50 \le d < 80\text{ units}$ (default scale), and $12.0$ for $d \ge 80\text{ units}$.
 
 ### 5.9 Minimap
 
 A 2D circular minimap is rendered each frame on a `<canvas>` element overlaid on the viewport. It depicts all token positions projected onto the XZ plane, colored by cluster, with a camera orientation indicator.
 
----
-
 ## 6. User Interface Design
 
 ### 6.1 Layout Philosophy
 
-The interface adopts a **three-panel editorial layout**:
+The interface adopts a three-panel editorial layout designed for scholarly rigor: a 280-pixel Left Sidebar hosting engine controls and model metrics; a central WebGL viewport for full-fidelity 3D exploration; and a 280-pixel Right Sidebar functioning as a topological vector inspector. Typography is strictly structured using **EB Garamond** for editorial prose, **Fira Code** for monospaced metrics, and **MathJax 3** for mathematical expressions.
 
-- **Left sidebar** ($280\text{ px}$): control dashboard.
-- **Central viewport**: 3D interactive canvas.
-- **Right sidebar** ($280\text{ px}$): data inspector.
+### 6.2 Left Sidebar: Control Dashboard
 
-Typography uses **EB Garamond** for primary text, **Fira Mono** for monospaced elements, and **MathJax 3** for LaTeX-rendered equations. The color scheme is achromatic (`#111111` on `#fcfcfc`).
+The control dashboard organizes administrative controls across four functional groups:
 
-### 6.2 Left Sidebar: Control Panel
+**Manifold Properties.** Displays active model architecture ($\mathcal{M}$), embedding dimensionality ($\mathbb{R}^{896}$), vocabulary scale ($N=36$), and real-time animation FPS performance.
 
-**Manifold Properties panel:**
+**Projection Engine.** Provides interactive switching between UMAP, t-SNE, PCA, and Isomap algorithms, accompanied by spatial octant filters (Positive, Negative, or Full volume).
 
-- Model architecture identifier ($\mathcal{M}$)
-- Embedding dimensionality ($\mathbb{R}^n$)
-- Active token count
-- Real-time FPS counter
+**Camera Optics.** Hosts projection mode selectors (Perspective, Parallel orthographic, Two-point perspective), field-of-view sliders ($10^\circ$–$120^\circ$), and direct preset triggers (Front, Top, Side, Isometric).
 
-**Projection Engine panel:**
-
-- Algorithm selector (UMAP / t-SNE / PCA / Isomap)
-- Coordinate filter (All / Positive octant / Negative octant)
-
-**Camera Optics panel:**
-
-- Camera mode selector (Perspective / Parallel / Two-point)
-- Field of View slider ($10^\circ$–$120^\circ$)
-- Preset view buttons (Front / Top / Side / Isometric)
-
-**Cartesian Apparatus panel:**
-
-- Axis visibility toggles (X, Y, Z)
-- Grid planes and plane background toggles
-- Mouse sensitivity slider
-- Bottom HUD toggle
+**Cartesian Apparatus.** Allows fine-grained toggling of coordinate axes (X, Y, Z), reference plane grids, mouse navigation sensitivity, and HUD indicators.
 
 ### 6.3 Right Sidebar: Vector Inspector
 
-When a token is selected:
-
-1. **Vector equation** (MathJax):
+Upon selecting a token, the inspector renders the token's coordinate vector:
 
 $$
 \vec{v} = \begin{bmatrix} x_{\text{3d}} \\ y_{\text{3d}} \\ z_{\text{3d}} \end{bmatrix}
 $$
 
-2. **Vector Matrix Index**: integer token ID in model vocabulary
-3. **Sub-Manifold Cluster**: semantic cluster label
-4. **Local Neighbors table**: top-5 tokens by cosine similarity (4 decimal places)
-5. **CSV Export button**: downloads `vector_{label}_neighbors.csv`
+alongside its global vocabulary matrix index, semantic cluster badge, and a ranked table of the top-5 nearest neighbors by cosine similarity (evaluated to four decimal precision). A dedicated export trigger facilitates downloading neighborhood data as comma-separated values (`vector_{label}_neighbors.csv`).
 
-### 6.4 Bottom HUD
+### 6.4 Bottom Navigation HUD
 
-Floating panel showing real-time key state for W, A, S, D, R, F, ESC with visual highlighting on press.
-
----
+A minimal floating overlay monitors real-time keypress states (W, A, S, D, R, F, ESC) with instantaneous typographic highlights, providing immediate visual feedback during flight navigation.
 
 ## 7. Data Model
 
 ### 7.1 TypeScript Interfaces
 
-```typescript
-interface Coords3D {
-  x2d: number;
-  y2d: number;
-  x3d: number;
-  y3d: number;
-  z3d: number;
-}
-interface Neighbor {
-  label: string;
-  cosine_similarity: number;
-}
-interface SemanticNode {
-  id?: number;
-  token_id: number;
-  label: string;
-  cluster: string;
-  color: string;
-  coords: Coords3D;
-  top5_neighbors: Neighbor[];
-}
-interface SemanticSpace {
-  meta: SemanticMeta;
-  nodes: SemanticNode[];
-}
-```
+The frontend data model is structured around a set of TypeScript interfaces (`Coords3D`, `Neighbor`, `SemanticNode`, `SemanticSpace`) defined in `src/types.ts` that enforce compile-time verification across coordinate payloads, similarity scores, and model metadata (see Appendix D, Listing D.4).
 
 Both `id` (sequential index) and `token_id` (vocabulary index) fields address the discrepancy between sequential node ordering and actual model vocabulary identifiers.
 
 ### 7.2 Static Fallback Dataset
 
 `src/data/semanticSpace.ts` contains 74 pre-computed semantic nodes with UMAP-projected coordinates derived from actual Qwen 2.5 0.5B-Instruct execution ($n\_\text{neighbors}=4$, $\text{min\_dist}=0.5$, $\text{metric}=\text{"cosine"}$). This ensures a meaningful experience even without the Python backend.
-
----
 
 ## 8. Limitations and Future Work
 
@@ -584,7 +407,7 @@ Both `id` (sequential index) and `token_id` (vocabulary index) fields address th
 
 **L3 — Context-free embeddings.** Static input embeddings do not incorporate contextual information from attention layers. Contextualized representations (hidden states from intermediate layers) would require a more complex inference pipeline.
 
-**L4 — 2D projection underutilization.** The backend computes both 2D and 3D projections but the frontend exclusively uses 3D coordinates. A 2D/3D toggle would expose both representations.
+**L4 — Viewport projection mode toggle.** While 2D planar coordinates ($x_{\text{2d}}, y_{\text{2d}}$) are computed alongside 3D coordinates and leveraged for the tactical minimap and export payloads, the primary Three.js viewport operates in 3D flight mode. A dedicated toggle between full-screen 2D planar scatter views and 3D manifold flight would provide alternative analytical perspectives.
 
 **L5 — Single-machine deployment.** Production deployment would require containerization (Docker) and production ASGI server configuration.
 
@@ -600,17 +423,17 @@ Both `id` (sequential index) and `token_id` (vocabulary index) fields address th
 
 **F5 — Quantitative metrics.** Integration of silhouette coefficient, Davies-Bouldin index, and Calinski-Harabász index would provide quantitative cluster validation.
 
----
-
 ## 9. Conclusion
 
-This work presented the **Semantic Manifold Vector Visualizer (SMVV)**, a full-stack interactive system for the three-dimensional exploration of neural language model embedding spaces. The system integrates a FastAPI backend that extracts token embeddings from Qwen 2.5 0.5B-Instruct and applies UMAP, t-SNE, PCA, and Isomap dimensionality reduction, with a React and Three.js frontend rendering the resulting projections as a navigable first-person 3D manifold.
+This work presented **ENSy (Embedding Navigation System)**, a full-stack interactive system for the three-dimensional navigation, exploration, and analysis of neural language model embedding spaces. The system integrates a FastAPI backend that extracts token embeddings from Qwen 2.5 0.5B-Instruct and applies UMAP, t-SNE, PCA, and Isomap dimensionality reduction, with a React and Three.js frontend rendering the resulting projections as a navigable first-person 3D manifold.
 
-The SMVV addresses a genuine gap in the explainable AI tooling landscape: the absence of accessible, interactive, browser-native instruments for exploring the geometric structure of language model embedding spaces. By coupling a Python machine learning pipeline with a WebGL rendering engine through a simple REST API, the system demonstrates a replicable architectural pattern for research-grade interactive AI visualization tools.
+ENSy addresses a genuine gap in the explainable AI tooling landscape: the absence of accessible, interactive, browser-native instruments for actively navigating and analyzing the geometric structure of language model embedding spaces. By coupling a Python machine learning pipeline with a WebGL rendering engine through a clean REST API, the system establishes a scalable paradigm for interactive AI interpretability platforms.
 
 The system's design priorities—zero-dependency frontend fallback, bootstrap vector initialization for instant startup, adaptive grid resolution, damped interpolation for smooth algorithm transitions, and publication-quality mathematical typography—reflect a commitment to both scientific rigor and user experience quality.
 
----
+---/columns---
+
+
 
 ## Appendix A: File Structure Reference
 
@@ -635,6 +458,8 @@ manifold/
     └── data/
         └── semanticSpace.ts       Static fallback dataset (74 nodes, 2,718 lines)
 ```
+
+:::pagebreak
 
 ## Appendix B: API Reference
 
@@ -675,19 +500,94 @@ manifold/
 }
 ```
 
+:::pagebreak
+
 ## Appendix C: Keyboard Controls Reference
 
-| Key                  | Action                                        |
-| -------------------- | --------------------------------------------- |
-| Click viewport       | Engage pointer lock (enter navigation mode)   |
-| W                    | Move forward (XZ plane)                       |
-| S                    | Move backward (XZ plane)                      |
-| A                    | Strafe left                                   |
-| D                    | Strafe right                                  |
-| R                    | Ascend (positive Y)                           |
-| F                    | Descend (negative Y)                          |
-| Mouse (while locked) | Camera orientation (pitch/yaw)                |
-| Scroll wheel         | Zoom (translate Z / orthographic zoom)        |
-| H                    | Toggle bottom HUD visibility                  |
-| P                    | Print debug token cloud statistics to console |
-| Escape               | Exit pointer lock                             |
+:::booktabs
+| Input Binding | Subsystem / Operation | Functional Description |
+| :--- | :--- | :--- |
+| **Click Viewport** | Input Management | Engages browser pointer lock mode (`requestPointerLock()`) to capture mouse orientation. |
+| **`W` / `S`** | 6-DOF Flight Camera | Translates the camera position forward or backward along the horizontal XZ world plane. |
+| **`A` / `D`** | 6-DOF Flight Camera | Strafes the camera position left or right perpendicular to the current gaze direction vector. |
+| **`R` / `F`** | 6-DOF Flight Camera | Translates the camera position vertically along the global Cartesian Y-axis (ascend / descend). |
+| **Mouse Motion** | 6-DOF Flight Camera | Adjusts camera orientation (pitch and yaw) with clamped pitch angle to eliminate gimbal lock. |
+| **Scroll Wheel** | Optical Controls | Adjusts focal distance zoom (translates along the local Z-axis in perspective mode; scales orthographic frustum). |
+| **`H`** | User Interface | Toggles visibility of the bottom flight navigation HUD overlay. |
+| **`P`** | Developer Diagnostics | Outputs point cloud memory metrics, raycasting statistics, and vector state to the browser console. |
+| **`Escape`** | Input Management | Releases browser pointer lock and restores standard cursor interaction mode. |
+:::
+
+
+:::pagebreak
+
+## Appendix D: Implementation Listings
+
+### Listing D.1 — Bootstrap Vector Initialization (`app.py`)
+
+```python
+bootstrap_vectors = np.random.RandomState(42).normal(0, 1, (len(all_words), 896))
+bootstrap_vectors /= np.linalg.norm(bootstrap_vectors, axis=1, keepdims=True)
+```
+
+### Listing D.2 — Asynchronous Model Loading (`app.py`)
+
+```python
+@app.on_event("startup")
+def startup_event():
+    threading.Thread(target=load_model_background, daemon=True).start()
+```
+
+### Listing D.3 — Node Schema Serialization (`app.py`)
+
+```json
+{
+  "id": 0,
+  "label": "document",
+  "token_id": 6062,
+  "cluster": "Technology/File",
+  "color": "#378ADD",
+  "coords": {
+    "x2d": 9.547721,
+    "y2d": 7.391323,
+    "x3d": 5.423237,
+    "y3d": 2.238469,
+    "z3d": 6.157989
+  },
+  "top5_neighbors": [
+    { "label": "scan document", "cosine_similarity": 0.645582 }
+  ]
+}
+```
+
+### Listing D.4 — TypeScript Data Model Interfaces (`src/types.ts`)
+
+```typescript
+interface Coords3D {
+  x2d: number;
+  y2d: number;
+  x3d: number;
+  y3d: number;
+  z3d: number;
+}
+
+interface Neighbor {
+  label: string;
+  cosine_similarity: number;
+}
+
+interface SemanticNode {
+  id?: number;
+  token_id: number;
+  label: string;
+  cluster: string;
+  color: string;
+  coords: Coords3D;
+  top5_neighbors: Neighbor[];
+}
+
+interface SemanticSpace {
+  meta: SemanticMeta;
+  nodes: SemanticNode[];
+}
+```
