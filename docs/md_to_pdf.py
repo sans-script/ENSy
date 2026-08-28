@@ -160,29 +160,72 @@ def preprocess_theorems(md_content: str) -> str:
 
 def preprocess_booktabs(md_content: str) -> str:
     """
-    Wrap :::booktabs ... ::: blocks with a marker div that uses markdown='1'
-    so that the Python-Markdown md_in_html extension processes the inner table.
+    Wrap :::booktabs ... ::: blocks with a marker div that uses markdown='1'.
+    Supports :::booktabs[wide] for full-width spanning tables.
     """
-    pattern = re.compile(r':::booktabs\s*\n(.*?)\n:::', re.DOTALL)
+    pattern = re.compile(r':::booktabs(?:\[(?P<mode>[^\]]*)\])?\s*\n(?P<body>.*?)\n:::', re.DOTALL)
 
     def replace_bt(m: re.Match) -> str:
-        inner = m.group(1).strip()
-        return f'<div class="booktabs-wrapper" markdown="1">\n\n{inner}\n\n</div>'
+        mode = (m.group("mode") or "").strip().lower()
+        inner = m.group("body").strip()
+        cls = "booktabs-wrapper booktabs-wide" if mode == "wide" else "booktabs-wrapper"
+        return f'<div class="{cls}" markdown="1">\n\n{inner}\n\n</div>'
 
     return pattern.sub(replace_bt, md_content)
 
 
 def preprocess_pagebreaks(md_content: str) -> str:
     """
-    Replace :::pagebreak, :::page-break, or ---pagebreak--- directives
-    with clean <div class="page-break"></div> elements.
+    Replace pagebreak and columnbreak directives with clean HTML elements.
+    Supports:
+      :::pagebreak, :::page-break, ---pagebreak---, <!-- pagebreak -->
+      :::columnbreak, :::column-break, ---columnbreak---, <!-- columnbreak -->
     """
-    return re.sub(
-        r'(?::::+page-?break|---page-?break---)',
-        '<div class="page-break"></div>',
+    # Column break directive
+    md_content = re.sub(
+        r'(?::::+col(?:umn)?-?break|---col(?:umn)?-?break---|<!--\s*col(?:umn)?-?break\s*-->)',
+        '\n\n<div class="column-break"></div>\n\n',
         md_content,
         flags=re.IGNORECASE,
     )
+    # Page break directive
+    md_content = re.sub(
+        r'(?::::+page-?break|---page-?break---|<!--\s*page-?break\s*-->)',
+        '\n\n<div class="page-break"></div>\n\n',
+        md_content,
+        flags=re.IGNORECASE,
+    )
+    return md_content
+
+
+def preprocess_references(md_content: str) -> str:
+    """
+    Wrap the ## References section (and everything after it) in a
+    <div class="references-section" markdown="1"> block so that:
+      - a page break is forced before it
+      - list items are rendered without bullet points
+      - text is justified with hanging indent (academic style)
+    """
+    marker = '\n## References'
+    idx = md_content.rfind(marker)
+    if idx == -1:
+        # try at the very start of the string
+        if md_content.startswith('## References'):
+            idx = 0
+            before = ''
+            refs_block = md_content
+        else:
+            return md_content
+    else:
+        before = md_content[:idx]
+        refs_block = md_content[idx:].lstrip('\n')
+
+    wrapped = (
+        '\n<div class="references-section" markdown="1">\n\n'
+        + refs_block
+        + '\n\n</div>\n'
+    )
+    return before + wrapped
 
 
 # Unique tokens that Python-Markdown will wrap in <p> tags, preserving
@@ -290,29 +333,30 @@ def preprocess_images(md_content: str, docs_dir: str, base_dir: str) -> str:
 
 
 def fix_em_dashes(html: str) -> str:
-    """Add typographic thin-spaces around em-dashes, skipping code/math spans."""
+    """Use standard flexible spacing around em-dashes to avoid non-breaking justification rivers."""
     parts = re.split(
         r'(<(?:pre|code|script|span\s+class="arithmatex")[^>]*>.*?</(?:pre|code|script|span)>)',
         html,
         flags=re.DOTALL,
     )
     for i in range(0, len(parts), 2):
-        parts[i] = re.sub(r'\s*—\s*', '&thinsp;—&thinsp;', parts[i])
+        parts[i] = re.sub(r'\s*—\s*', ' — ', parts[i])
     return ''.join(parts)
 
 
 def fix_inline_code_breaks(html: str) -> str:
     """
     Insert <wbr> break opportunities inside inline <code> tags (not in <pre>)
-    after delimiters like /, ., _, -, :, {, }, (, ), etc. and at camelCase boundaries
-    so long identifiers and endpoints wrap cleanly without causing white rivers.
+    only for long identifiers (> 16 chars) like method chains or URLs,
+    so short terms like `min_dist` or `n_neighbors` never break mid-word.
     """
     def inject_wbr(m: re.Match) -> str:
         code_text = m.group(1)
-        # Add <wbr> after symbols: / . _ - : { } ( ) , = ? &
-        code_text = re.sub(r'([/._\-:{}(),?=&])', r'\1<wbr>', code_text)
-        # Add <wbr> at camelCase transitions
-        code_text = re.sub(r'([a-z0-9])([A-Z])', r'\1<wbr>\2', code_text)
+        if len(code_text) > 14:
+            # Add <wbr> after symbols: / . _ - : { } ( ) , = ? &
+            code_text = re.sub(r'([/._\-:{}(),?=&])', r'\1<wbr>', code_text)
+            # Add <wbr> at camelCase transitions
+            code_text = re.sub(r'([a-z0-9])([A-Z])', r'\1<wbr>\2', code_text)
         return f'<code>{code_text}</code>'
 
     parts = re.split(r'(<pre[^>]*>.*?</pre>)', html, flags=re.DOTALL)
@@ -320,6 +364,37 @@ def fix_inline_code_breaks(html: str) -> str:
         parts[i] = re.sub(r'<code>(.*?)</code>', inject_wbr, parts[i], flags=re.DOTALL)
     return ''.join(parts)
 
+
+def postprocess_heading_hyphens(html: str) -> str:
+    """
+    Inside <h2>, <h3>, <h4> tags, replace hyphens specifically in digit-word
+    compounds (e.g. '6-DOF', '3-D') with the non-breaking hyphen (&#8209;)
+    so digits are never separated from their acronyms, while allowing standard
+    hyphenated words like 'Co-ranking' to flow and hyphenate naturally.
+    """
+    def fix_hyphens_in_heading(m: re.Match) -> str:
+        tag     = m.group(1)   # h2 / h3 / h4
+        content = m.group(2)
+        segments = re.split(
+            r'(<(?:code|span[^>]*)>.*?</(?:code|span)>|<mjx-container[^>]*>.*?</mjx-container>)',
+            content, flags=re.DOTALL
+        )
+        fixed = []
+        for j, seg in enumerate(segments):
+            if j % 2 == 1:
+                fixed.append(seg)
+            else:
+                # Protect digit-dash-letter (e.g. 6-DOF)
+                seg = re.sub(r'(\d)-([A-Za-z])', r'\1&#8209;\2', seg)
+                fixed.append(seg)
+        return f'<{tag}>{"" .join(fixed)}</{tag}>'
+
+    return re.sub(
+        r'<(h[234])>(.*?)</h[234]>',
+        fix_hyphens_in_heading,
+        html,
+        flags=re.DOTALL,
+    )
 
 # ---------------------------------------------------------------------------
 # HTML builder
@@ -346,6 +421,7 @@ def build_html(input_path: str = DOCS_MD_PATH,
     md_content = preprocess_theorems(md_content)
     md_content = preprocess_booktabs(md_content)
     md_content = preprocess_pagebreaks(md_content)
+    md_content = preprocess_references(md_content)
     md_content = preprocess_images(md_content, docs_dir, base_dir)
 
     # --- Markdown → HTML ---
@@ -367,6 +443,7 @@ def build_html(input_path: str = DOCS_MD_PATH,
 
     html_body = fix_em_dashes(html_body)
     html_body = fix_inline_code_breaks(html_body)
+    html_body = postprocess_heading_hyphens(html_body)
 
     # Post-process: inject column divs now that Markdown is already HTML
     html_body = postprocess_columns(html_body)
@@ -401,7 +478,7 @@ window.MathJax = {{
     scale: 1,
   }},
   options: {{
-    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
   }},
   startup: {{
     pageReady: () => {{
@@ -419,9 +496,10 @@ window.MathJax = {{
             const mathWidth = mathEl.scrollWidth || mathEl.getBoundingClientRect().width;
 
             if (mathWidth > parentWidth - 4) {{
-              const scale = Math.min(1.0, (parentWidth - 6) / mathWidth);
+              const scale = Math.min(1.0, Math.max(0.70, (parentWidth - 6) / mathWidth));
               container.style.setProperty('font-size', (scale * 100).toFixed(1) + '%', 'important');
               container.style.maxWidth = '100%';
+              container.style.overflowX = 'hidden';
             }}
           }});
         }};
@@ -514,38 +592,41 @@ h2 {{
   font-weight: 700;
   color: #111111;
   text-align: left !important;
-  text-wrap: balance;
+  text-wrap: pretty;
   margin-top: 20pt;
   margin-bottom: 6pt;
   border-bottom: none;
   padding-bottom: 0;
   page-break-after: avoid;
   break-after: avoid;
-  hyphens: none;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }}
 h3 {{
   font-size: 11.5pt;
   font-weight: 700;
   color: #222222;
   text-align: left !important;
-  text-wrap: balance;
+  text-wrap: pretty;
   margin-top: 14pt;
   margin-bottom: 5pt;
   page-break-after: avoid;
   break-after: avoid;
-  hyphens: none;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }}
 h4 {{
   font-size: 11pt;
   font-weight: 600;
   color: #333333;
   text-align: left !important;
-  text-wrap: balance;
+  text-wrap: pretty;
   margin-top: 10pt;
   margin-bottom: 4pt;
   page-break-after: avoid;
   break-after: avoid;
-  hyphens: none;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }}
 
 /* ── Body text ──────────────────────────────────────────── */
@@ -587,103 +668,101 @@ ul, ol {{
 li {{ margin-bottom: 3pt; }}
 
 /* ── Standard tables ────────────────────────────────────── */
-table {{
-  width: 100%;
-  border-collapse: collapse;
-  margin: 14pt 0;
-  font-size: 10pt;
-  page-break-inside: avoid;
-}}
-th, td {{
-  border: 1px solid #d0d0d0;
-  padding: 6pt 8pt;
-  text-align: left;
-}}
-th {{
-  background: #f1f3f5;
-  font-weight: 700;
-  color: #111111;
-}}
-tr:nth-child(even) {{ background: #fafbfc; }}
-
-/* ── Booktabs tables ────────────────────────────────────── */
+/* ── Academic Booktabs tables (Applied to all tables) ─────── */
+table,
 .booktabs-wrapper table {{
   width: 100%;
   border-collapse: collapse;
-  margin: 14pt 0;
-  font-size: 10pt;
+  margin: 10pt 0;
+  font-size: 8.5pt;
   font-variant-numeric: tabular-nums;
   page-break-inside: avoid;
-  border-top: 2px solid #111111;
-  border-bottom: 2px solid #111111;
+  border-top: 1.8px solid #111111;
+  border-bottom: 1.8px solid #111111;
 }}
+th, td,
 .booktabs-wrapper th,
 .booktabs-wrapper td {{
-  border: none;
-  border-bottom: none;
-  padding: 5pt 10pt;
+  border: none !important;
+  border-bottom: none !important;
+  padding: 4pt 6pt;
   text-align: left;
-  background: transparent;
+  background: transparent !important;
 }}
+th,
 .booktabs-wrapper th {{
   font-weight: 600;
-  border-bottom: 1px solid #111111;
-  background: transparent;
+  border-bottom: 1px solid #111111 !important;
+  background: transparent !important;
+  color: #111111;
 }}
-.booktabs-wrapper tr:nth-child(even) {{ background: transparent; }}
+tr:nth-child(even),
+.booktabs-wrapper tr:nth-child(even) {{ background: transparent !important; }}
 
-/* ── Code ───────────────────────────────────────────────── */
+/* ── Code ──────────────────────────────────────────── */
 pre, code {{
   font-family: 'Fira Code', 'Courier New', monospace;
   font-variant-ligatures: none !important;
   font-feature-settings: "liga" 0, "calt" 0 !important;
-  border-radius: 0 !important;
+  font-weight: 400 !important;
 }}
-code {{
-  font-size: 8pt;
-  background: transparent;
-  padding: 0.5pt 1.5pt;
-  color: #87132d;
-  white-space: normal !important;
-  word-break: break-word !important;
-  overflow-wrap: anywhere !important;
-}}
-code:not(pre code) {{
-  font-size: 8pt;
-  background: transparent !important;
-  padding: 0;
-  color: #87132d;
-  white-space: normal !important;
-  word-break: break-word !important;
-  overflow-wrap: anywhere !important;
-  line-break: anywhere !important;
-}}
-pre {{
-  background: #ffffff;
+
+/* ONLY inline code — zero vertical expansion to maintain exact font baseline rhythm */
+code:not(pre code),
+p code,
+li code,
+td code,
+th code,
+span code,
+figcaption code,
+a code {{
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 8pt !important;
+  font-weight: 400 !important;
+  line-height: inherit !important;
+  vertical-align: baseline !important;
+  display: inline !important;
+  padding: 0 2.5pt !important;
+  margin: 0 !important;
   border: none !important;
-  padding: 6pt 0;
-  font-size: 7.8pt;
-  line-height: 1.35;
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-  overflow-wrap: break-word !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  margin: 8pt 0;
-  page-break-inside: avoid;
+  border-radius: 2px !important;
+  background: #f0f0f2 !important;
+  color: #2e3440 !important;
+  white-space: nowrap !important;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }}
-pre code {{
-  background: transparent;
-  padding: 0;
-  color: #24292e;
-  font-size: 7.8pt;
+
+/* Block code containers and everything inside pre: completely transparent and borderless */
+pre,
+pre code,
+pre span,
+pre * {{
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: #24292e !important;
+  font-size: 7.8pt !important;
+  line-height: 1.35 !important;
+  font-weight: 400 !important;
   white-space: pre-wrap !important;
   word-break: break-word !important;
   overflow-wrap: break-word !important;
 }}
 
-/* Syntax highlighting */
-.codehilite {{ background: #ffffff; }}
+pre {{
+  margin: 6pt 0 !important;
+  padding: 4pt 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  page-break-inside: avoid;
+}}
+
+/* Syntax highlighting — transparent bg to inherit from pre */
+.codehilite {{ background: transparent; }}
 .codehilite .k,  .codehilite .kd, .codehilite .kn, .codehilite .kr {{ color: #d73a49; font-weight: 600; }}
 .codehilite .s,  .codehilite .s1, .codehilite .s2, .codehilite .sb, .codehilite .sc {{ color: #032f62; }}
 .codehilite .c,  .codehilite .c1, .codehilite .cm {{ color: #6a737d; font-style: italic; }}
@@ -869,40 +948,171 @@ mjx-container[jax="CHTML"][display="true"] {{
   font-size: 9pt;
   color: #901633;
   margin: 10pt 0;
-}}
-
 /* ── Multi-column layout ────────────────────────────────── */
 .columns-layout {{
   column-gap: 8mm;
+  column-fill: balance !important;
   text-align: justify;
   hyphens: auto;
   -webkit-hyphens: auto;
   word-break: normal;
   overflow-wrap: break-word;
   text-wrap: pretty;
-  orphans: 3;
-  widows: 3;
 }}
+
+/* Top alignment: eliminate top margin on first element to align both columns flush to the top */
+.columns-layout > *:first-child,
+.columns-layout > h2:first-child,
+.columns-layout > h3:first-child,
+.columns-layout > p:first-child {{
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}}
+
+/* White-river mitigation & exact baseline alignment */
+.columns-layout p,
+.columns-layout li {{
+  line-height: 14pt !important;
+  margin-top: 0 !important;
+  margin-bottom: 6pt !important;
+  word-spacing: -0.03em;
+  hyphenate-limit-chars: 5 2 3;
+  -webkit-hyphenate-limit-before: 2;
+  -webkit-hyphenate-limit-after: 3;
+  orphans: 2 !important;
+  widows: 2 !important;
+}}
+
+.columns-layout h1,
 .columns-layout h2,
 .columns-layout h3,
-.columns-layout h4 {{
+.columns-layout h4,
+.columns-layout h5,
+.columns-layout h6 {{
   text-align: left !important;
-  text-wrap: balance;
+  text-wrap: pretty !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
   column-span: none;
+  break-before: auto !important;
+  page-break-before: auto !important;
   break-after: avoid;
   page-break-after: avoid;
+  margin-top: 8pt !important;
+  margin-bottom: 3pt !important;
+  line-height: 1.25 !important;
 }}
+
+/* Headings or paragraphs immediately following a full-width spanning block */
+.columns-layout .booktabs-wide + h2,
+.columns-layout .booktabs-wide + h3,
+.columns-layout .booktabs-wide + h4,
+.columns-layout .booktabs-wide + p,
+.columns-layout pre + h2,
+.columns-layout pre + h3,
+.columns-layout pre + h4,
+.columns-layout .academic-figure + h2,
+.columns-layout .academic-figure + h3,
+.columns-layout .academic-figure + h4,
+.columns-layout .mermaid + h2,
+.columns-layout .mermaid + h3,
+.columns-layout .mermaid + h4 {{
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}}
+
+/* Standard small tables and code snippets stay in-column */
+.columns-layout table,
+.columns-layout .booktabs-wrapper,
+.columns-layout .booktabs-wrapper table,
+.columns-layout pre,
+.columns-layout .codehilite {{
+  column-span: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-top: 6pt;
+  margin-bottom: 6pt;
+}}
+
+/* --- Elements that must span both columns (academic full-width) --- */
+.columns-layout .booktabs-wide,
+.columns-layout .booktabs-wide table,
+.columns-layout table.wide-table,
+.columns-layout .academic-figure,
 .columns-layout figure,
 .columns-layout .plot-figure,
-.columns-layout .mermaid,
-.columns-layout table,
+.columns-layout .mermaid {{
+  column-span: all;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-top: 12pt;
+  margin-bottom: 12pt;
+}}
+
+/* Theorem blocks stay within one column */
 .columns-layout .theorem-block {{
   break-inside: avoid;
   page-break-inside: avoid;
 }}
 
-/* ── Page Break Utilities ───────────────────────────────── */
-.page-break, .page-break-before {{
+/* Display equations in narrow columns: prevent overflow clipping and scale smoothly */
+.columns-layout mjx-container[jax="CHTML"][display="true"] {{
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  font-size: 92% !important;
+  margin: 5pt 0 !important;
+  display: block !important;
+  clear: both !important;
+}}
+
+/* Engine-level handling: when equations, code, or tables directly follow a heading */
+.columns-layout h2 + .arithmatex,
+.columns-layout h3 + .arithmatex,
+.columns-layout h4 + .arithmatex,
+.columns-layout h2 + mjx-container[display="true"],
+.columns-layout h3 + mjx-container[display="true"],
+.columns-layout h4 + mjx-container[display="true"],
+.columns-layout h2 + div.arithmatex,
+.columns-layout h3 + div.arithmatex,
+.columns-layout h4 + div.arithmatex {{
+  display: block !important;
+  clear: both !important;
+  margin-top: 8pt !important;
+  margin-bottom: 6pt !important;
+}}
+
+.columns-layout h2 + pre,
+.columns-layout h3 + pre,
+.columns-layout h4 + pre,
+.columns-layout h2 + table,
+.columns-layout h3 + table,
+.columns-layout h4 + table,
+.columns-layout h2 + ul,
+.columns-layout h3 + ul,
+.columns-layout h4 + ul {{
+  margin-top: 6pt !important;
+}}
+
+/* ── Column & Page Break Directives ─────────────────────── */
+.column-break,
+.columnbreak,
+.col-break {{
+  break-before: column !important;
+  -webkit-column-break-before: always !important;
+  display: block;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}}
+
+.page-break,
+.pagebreak,
+.page-break-before {{
   page-break-before: always !important;
   break-before: page !important;
   display: block;
@@ -917,6 +1127,48 @@ mjx-container[jax="CHTML"][display="true"] {{
   height: 0;
   margin: 0;
   padding: 0;
+}}
+
+/* ── References section ──────────────────────────────────────── */
+.references-section {{
+  page-break-before: always !important;
+  break-before: page !important;
+  column-count: 2;
+  column-gap: 8mm;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}}
+.references-section h2 {{
+  column-span: all;
+  text-align: left !important;
+  margin-top: 0 !important;
+  margin-bottom: 12pt !important;
+  page-break-after: avoid;
+  break-after: avoid;
+}}
+.references-section ul {{
+  list-style: none !important;
+  list-style-type: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}}
+.references-section li {{
+  text-align: justify !important;
+  text-justify: inter-word !important;
+  hyphens: auto !important;
+  -webkit-hyphens: auto !important;
+  word-break: normal;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+  margin-bottom: 7pt;
+  padding-left: 0 !important;
+  text-indent: 0 !important;
+  font-size: 9.5pt;
+  line-height: 1.45;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }}
 </style>
 </head>
@@ -1022,7 +1274,7 @@ def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
         )
 
         file_uri = "file:///" + os.path.abspath(html_path).replace("\\", "/")
-        page.goto(file_uri, wait_until="networkidle")
+        page.goto(file_uri, wait_until="domcontentloaded", timeout=60000)
 
         # Wait for MathJax
         try:

@@ -1,16 +1,16 @@
-# ENSy: Design, Implementation, and Application of an Interactive Embedding Navigation System for Neural Language Models
+# ENSy: Design, Implementation, and Application of an Interactive Embedding Navigation System for Large Language Models
 
 **Author:** Alexandre da Silva Santos Santos  
 **Institution:** Federal University of Maranhão  
 **Program:** B.Sc. in Science and Technology – Computer Engineering  
 **Date:** August 2026    
-**Version:** 1.0.0
+**Version:** 2.0.0
 
 ## Abstract
 
-The internal representations of neural language models, commonly referred to as word embeddings, encode rich semantic and syntactic relationships in high-dimensional vector spaces that resist straightforward human interpretation. This work presents **ENSy (Embedding Navigation System)**, an interactive, browser-based computational environment designed to enable the navigation, exploration, and geometric analysis of high-dimensional semantic spaces. The system integrates a Python-based backend, built with FastAPI and Uvicorn, with a TypeScript and React frontend rendered using the Three.js WebGL engine. Four dimensionality reduction algorithms—UMAP, t-SNE, PCA, and Isomap—project embedding vectors extracted from the Qwen 2.5 0.5B-Instruct language model onto a navigable three-dimensional Cartesian manifold. A central-reticle screen-space raycasting mechanism enables the user to select individual token representations and inspect their five nearest topological neighbors by cosine similarity. Results can be exported as comma-separated value files for downstream statistical analysis. This document provides a comprehensive technical description of the system's architecture, algorithmic foundations, implementation choices, data flow, and user interaction model.
+The internal representations of large language models, commonly referred to as word embeddings, encode rich semantic and syntactic relationships in high-dimensional vector spaces that resist straightforward human inspection. This work presents **ENSy (Embedding Navigation System)**, an interactive, browser-based computational environment designed to enable the navigation, exploration, and geometric analysis of high-dimensional embedding spaces extracted from three large language model architectures: Qwen 2.5 0.5B-Instruct (decoder-only, $d=896$), Gemma 2B (decoder-only), and BERT base uncased (encoder-only). The system integrates a Python-based backend, built with FastAPI and Uvicorn, with a TypeScript and React frontend rendered using the Three.js WebGL engine. Four dimensionality reduction algorithms—UMAP, t-SNE, PCA, and Isomap—project embedding vectors extracted from each model's input embedding matrix onto a navigable three-dimensional Cartesian manifold. Projection quality is assessed through a co-ranking framework (Lee & Verleysen, 2009), computing Trustworthiness, Continuity, the behavioral indicator $B_{NX}(K)$, and the general preservation metric $Q_{NX}(K)$ over a shared lexical dataset derived from the Penn Treebank. A per-token decomposition $B_{NX,i}(K)$ drives a thermal-camera color overlay enabling local geometric distortion inspection. A central-reticle screen-space raycasting mechanism enables the user to select individual token representations and inspect their topological neighborhood through a three-layer color system distinguishing true, false, and missing neighbors. This document provides a comprehensive technical description of the system's architecture, algorithmic foundations, implementation choices, data flow, and user interaction model.
 
-**Keywords:** word embeddings, embedding navigation, dimensionality reduction, vector space visualization, UMAP, t-SNE, PCA, Isomap, cosine similarity, Three.js, FastAPI, Qwen 2.5, interpretability.
+**Keywords:** word embeddings, embedding navigation, dimensionality reduction, co-ranking, trustworthiness, continuity, $B_{NX}$, Penn Treebank, UMAP, t-SNE, PCA, Isomap, cosine similarity, Three.js, FastAPI, Qwen 2.5, Gemma 2B, BERT, interpretability.
 
 ---
 
@@ -18,7 +18,7 @@ The internal representations of neural language models, commonly referred to as 
 
 ## 1. Introduction
 
-Modern neural language models (NLMs) rely on embedding matrices to map discrete tokens—linguistic units such as words, subwords, or characters—into continuous, dense vectors in a high-dimensional real-valued space $\mathbb{R}^d$. These embedding vectors serve as the primary substrate through which NLMs encode semantic similarity, syntactic relations, and contextual meaning. The geometric structure of these spaces is not arbitrary: tokens with related meanings tend to occupy proximal regions, forming clusters, sub-manifolds, and directional orientations that encode analogical relationships, such as:
+Modern large language models (LLMs) rely on embedding matrices to map discrete tokens—linguistic units such as words, subwords, or characters—into continuous, dense vectors in a high-dimensional real-valued space $\mathbb{R}^d$. These embedding vectors serve as the primary substrate through which LLMs encode semantic similarity, syntactic relations, and contextual meaning. The geometric structure of these spaces is not arbitrary: tokens with related meanings tend to occupy proximal regions, forming clusters, sub-manifolds, and directional orientations that encode analogical relationships, such as:
 
 $$
 \vec{v}_{\text{king}} - \vec{v}_{\text{man}} + \vec{v}_{\text{woman}} \approx \vec{v}_{\text{queen}}
@@ -26,30 +26,29 @@ $$
 
 Despite the theoretical richness of these spaces, their high dimensionality—ranging from $128$ to $4096$ dimensions in contemporary models—makes them inherently opaque to direct human inspection. Researchers analyzing model behavior for the purposes of interpretability, bias detection, or curriculum learning must rely on mathematical abstractions and indirect proxies. This opacity represents a significant bottleneck in the field of explainable artificial intelligence (XAI), where understanding the internal geometry of a model is prerequisite to understanding its behavior.
 
-Dimensionality reduction techniques such as Principal Component Analysis (PCA), t-distributed Stochastic Neighbor Embedding (t-SNE), Uniform Manifold Approximation and Projection (UMAP), and Isomap offer a bridge between the native high-dimensional space and lower-dimensional projections that preserve topological or statistical structure to varying degrees. However, existing tools for applying these techniques to language model embeddings are often limited to static 2D scatter plots, require specialized data science environments, or lack interactive inspection capabilities.
+Dimensionality reduction techniques such as Principal Component Analysis (PCA), t-distributed Stochastic Neighbor Embedding (t-SNE), Uniform Manifold Approximation and Projection (UMAP), and Isomap offer a bridge between the native high-dimensional space and lower-dimensional projections that preserve topological or statistical structure to varying degrees. However, these transformations introduce distortions whose nature and magnitude vary across algorithms and datasets. Existing tools for applying these techniques to language model embeddings are often limited to static 2D scatter plots, require specialized data science environments, or lack quantitative assessment of projection fidelity.
 
-This work addresses these limitations by presenting **ENSy (Embedding Navigation System)**: a full-stack, interactive application that renders the embedding space of the Qwen 2.5 0.5B-Instruct model as a navigable three-dimensional manifold in the browser. The system empowers researchers to interactively explore high-dimensional semantic geometries through real-time first-person flight controls, inspect local topological neighborhoods using screen-space reticle raycasting, contrast four foundational projection algorithms (UMAP, t-SNE, PCA, Isomap) within a unified visual framework, and export neighborhood subsets to standardized CSV format for downstream statistical verification.
-
-![Figure 1: Full ENSy 3D Workspace in Isometric Alignment](screenshots/01_isometric_full_workspace.png)
-_Figure 1: Complete 1920×1080 workspace in Isometric viewing alignment, illustrating the Left Control Dashboard, central Three.js 3D Manifold Canvas with central crosshair reticle targeting a semantic token, and the populated Right Vector Inspector._
+This work addresses these limitations by presenting **ENSy (Embedding Navigation System)**: a full-stack, interactive platform that renders large language model embedding spaces as navigable 3D manifolds in the browser and quantifies geometric distortions through the rank-based co-ranking framework of Lee & Verleysen (2009). ENSy empowers researchers to explore high-dimensional geometries via 6-DOF flight controls, inspect local neighborhoods using screen-space reticle raycasting, contrast four projection algorithms (UMAP, t-SNE, PCA, Isomap), assess projection quality through co-ranking metrics, and visualize local distortion contributions via a thermal camera overlay.
 
 The contribution of this work is both theoretical and practical. It provides a concrete implementation of an XAI instrument for language model geometry, demonstrates the architectural patterns required to couple a machine learning inference pipeline with a real-time 3D rendering engine, and offers an accessible platform for pedagogical exploration of embedding spaces at the undergraduate and graduate levels.
 
 ### 1.1 Research Objectives
 
-The research program guiding this work is articulated through four specific objectives:
+The research program guiding this work is articulated through five specific objectives:
 
-**O1 — Full-Stack Manifold Rendering.** To design and implement an interactive web architecture capable of extracting language model embeddings and rendering them as a navigable 3D Riemannian manifold approximation.
+**O1 — Full-Stack Manifold Rendering.** To design and implement an interactive web architecture capable of extracting language model embeddings from multiple large language model architectures and rendering them as navigable 3D Riemannian manifold approximations.
 
-**O2 — Multi-Algorithmic Comparative Analysis.** To integrate linear (PCA) and non-linear (t-SNE, UMAP, Isomap) dimensionality reduction engines behind a unified asynchronous API, enabling real-time comparative inspection.
+**O2 — Multi-Algorithmic and Multi-Model Comparative Analysis.** To integrate linear (PCA) and non-linear (t-SNE, UMAP, Isomap) dimensionality reduction engines behind a unified asynchronous API, enabling comparative inspection across four algorithms and three model architectures (Qwen 2.5 0.5B-Instruct, Gemma 2B, BERT base uncased), yielding 12 experimental configurations.
 
-**O3 — Topological Neighborhood Inspection.** To implement a screen-space proximity selection mechanism that dynamically computes and exposes local topological structures via cosine similarity metrics.
+**O3 — Quantitative Projection Quality Assessment.** To implement the rank-based co-ranking framework (Lee & Verleysen, 2009) computing Trustworthiness $M_T(K)$, Continuity $M_C(K)$, the behavioral indicator $B_{NX}(K)$, and general preservation $Q_{NX}(K)$ as curves over $K \in \{5, 10, 15, 20\}$, complemented by a Silhouette score with the reference linguistic partition.
 
-**O4 — Interpretability and Pedagogical Utility.** To demonstrate the system's practical efficacy as an explainable AI tool for interrogating latent cluster organization and geometric semantic relationships.
+**O4 — Topological Neighborhood Inspection.** To implement a screen-space proximity selection mechanism that dynamically exposes local topological structures through a three-layer color system (reference partition, thermal camera $B_{NX,i}(K)$, neighborhood probing $T_K / F_K / M_K$).
+
+**O5 — Interpretability and Methodological Rigor.** To demonstrate the system's practical efficacy as an explainable AI tool while maintaining a reproducible experimental protocol with a fixed dataset derived from the Penn Treebank, congelated hyperparameter tables, and seed-fixed stochastic algorithms.
 
 ### 1.2 Document Organization
 
-This document is organized as follows. Section 2 provides the theoretical background on word embeddings, dimensionality reduction algorithms, and the cosine similarity metric. Section 3 describes the system architecture in full, encompassing the technology stack, component model, and data flow. Section 4 details the backend implementation, including the embedding pipeline and projection endpoints. Section 5 describes the frontend implementation, with emphasis on the Three.js rendering engine, camera control model, and raycasting selection mechanism. Section 6 discusses user interaction design and interface layout. Section 7 presents the data model and static fallback mechanism. Section 8 discusses limitations and directions for future work. Section 9 concludes.
+This document is organized as follows. Section 2 provides the theoretical background on word embeddings, dimensionality reduction algorithms, and the co-ranking quality assessment framework. Section 3 describes the system architecture in full, encompassing the technology stack, component model, and data flow. Section 4 details the backend implementation, including the embedding pipeline, projection endpoints, and metrics computation. Section 5 describes the frontend implementation, with emphasis on the Three.js rendering engine, camera control model, raycasting selection mechanism, and visualization layers. Section 6 discusses user interaction design and interface layout. Section 7 presents the data model. Section 8 discusses limitations and directions for future work. Section 9 concludes.
 
 ## 2. Theoretical Background
 
@@ -61,7 +60,19 @@ $$
 f: \mathcal{V} \to \mathbb{R}^d
 $$
 
-mapping each token $w_i \in \mathcal{V}$ to a dense vector $\vec{v}_i \in \mathbb{R}^d$, where $d \ll |\mathcal{V}|$. In the specific case of autoregressive transformer models such as Qwen 2.5, this mapping is implemented through a **token embedding matrix** $E \in \mathbb{R}^{|\mathcal{V}| \times d}$, where each row $E_i$ constitutes the input embedding for token $i$. For Qwen 2.5 0.5B-Instruct, the embedding dimensionality is $d = 896$ and the vocabulary size is $|\mathcal{V}| = 151{,}936$.
+mapping each token $w_i \in \mathcal{V}$ to a dense vector $\vec{v}_i \in \mathbb{R}^d$, where $d \ll |\mathcal{V}|$.
+
+ENSy extracts exclusively the **input embedding matrix** of each model — `get_input_embeddings().weight` for Qwen 2.5 and Gemma 2B (decoder-only), and `word_embeddings.weight` for BERT (encoder-only). This representation is directly comparable across the three architectures because it corresponds to the token-to-vector mapping applied before any contextual attention layer, making it architecture-agnostic at the point of extraction. Extracting hidden states from intermediate transformer layers would require decisions about layer depth, context, and pooling strategy that would compromise cross-architecture comparability.
+
+The three models differ not only in architecture (decoder-only vs. encoder-only) but also in embedding dimensionality, vocabulary size, tokenizer, pre-training objective, corpus, and training recipe. ENSy's experimental design therefore permits observing whether distortion patterns of dimensionality reduction algorithms are consistent or variable across different models and architectures, without attributing causality exclusively to any single factor.
+
+:::booktabs
+| Model | Architecture | Embedding dimension $d$ | Vocab. size $\lvert\mathcal{V}\rvert$ |
+|---|---|---|---|
+| Qwen 2.5 0.5B-Instruct | Decoder-only (Transformer) | 896 | 151,936 |
+| Gemma 2B | Decoder-only (Transformer) | 2,048 | 256,000 |
+| BERT base uncased | Encoder-only (Transformer) | 768 | 30,522 |
+:::
 
 ### 2.2 Cosine Similarity
 
@@ -71,82 +82,172 @@ $$
 \text{sim}_{\cos}(\vec{u}, \vec{v}) = \frac{\vec{u} \cdot \vec{v}}{\|\vec{u}\| \|\vec{v}\|} = \frac{\sum_{k=1}^{d} u_k v_k}{\sqrt{\sum_{k=1}^{d} u_k^2} \sqrt{\sum_{k=1}^{d} v_k^2}}
 $$
 
-The cosine similarity ranges in the interval $[-1, 1]$, where a value of $+1$ indicates identical orientation, $0$ indicates orthogonality, and $-1$ indicates opposite orientation. This metric is particularly well-suited for embedding spaces because it is invariant to vector magnitude, focusing exclusively on the angular relationship between vectors. This invariance is crucial because embedding models often produce vectors of varying norms that do not encode semantic information.
+The cosine similarity ranges in the interval $[-1, 1]$, where a value of $+1$ indicates identical orientation, $0$ indicates orthogonality, and $-1$ indicates opposite orientation. This metric is particularly well-suited for embedding spaces because it is invariant to vector magnitude, focusing exclusively on the angular relationship between vectors.
 
-In ENSy, cosine similarity is computed for all pairs of tokens using scikit-learn's `cosine_similarity` function on the embedding matrix, yielding a similarity matrix $S \in \mathbb{R}^{N \times N}$ where $N$ is the number of active tokens. The five tokens with the highest similarity scores relative to any given query token constitute its **topological neighborhood**.
+All embedding vectors are subjected to **mandatory $L_2$ normalization** after extraction and before any metric computation. This normalization renders cosine similarity equivalent to Euclidean distance on the unit hypersphere ($\|\hat{u} - \hat{v}\|^2 = 2(1 - \cos\theta)$), ensuring consistent distance semantics throughout the pipeline. Normalization does not eliminate anisotropy in the embedding space; it solely establishes geometric equivalence between cosine and Euclidean metrics for the purpose of distance computation.
+
+In ENSy, the high-dimensional neighborhood structure used by all co-ranking metrics is computed using the cosine distance matrix $D_X = D_{\cos}(X)$. Projection algorithms that accept a metric parameter (t-SNE, UMAP, Isomap) are explicitly configured with `metric="cosine"` to ensure consistency between the neighborhood graph construction and the metric used for quality assessment.
 
 ### 2.3 Dimensionality Reduction
 
-Since the native embedding dimension $d = 896$ cannot be directly visualized, dimensionality reduction is required. ENSy implements four distinct algorithms, each offering different preservation guarantees and structural emphases.
+Since native embedding dimensions ($d = 768$ to $d = 2048$) cannot be directly visualized, dimensionality reduction to $k = 3$ is required for the interactive 3D manifold. ENSy implements four distinct algorithms, each offering different preservation guarantees and structural emphases. All algorithm parameters are fixed prior to any data collection as specified in the congelated parameter table (Section 4.5).
 
 #### 2.3.1 Principal Component Analysis (PCA)
 
-PCA is a classical linear method that projects data onto a lower-dimensional subspace defined by the directions of maximum variance in the original data. Given a centered data matrix $X \in \mathbb{R}^{N \times d}$, PCA computes the eigendecomposition of the covariance matrix:
+PCA is a classical linear method that projects data onto a lower-dimensional subspace defined by the directions of maximum variance in the original data. Given the centered data matrix $X_c = X - \mu \in \mathbb{R}^{N \times d}$, PCA is implemented via direct Singular Value Decomposition:
 
 $$
-C = \frac{1}{N} X^\top X
+X_c = U \Sigma V^\top, \qquad Y = X_c V_{1:3}
 $$
 
-selecting the $k$ eigenvectors corresponding to the $k$ largest eigenvalues as the projection axes. PCA is **globally structure-preserving**: the first principal component captures the maximum variance, and subsequent components capture progressively less variance. However, PCA is a linear transformation and cannot capture nonlinear manifold structure that many high-dimensional datasets exhibit.
+selecting the $k=3$ right singular vectors corresponding to the three largest singular values as the projection axes. Constructing the explicit covariance matrix $C = \frac{1}{N} X^\top X$ is avoided for numerical stability. PCA is **globally structure-preserving**: the first principal component captures the maximum variance, and subsequent components capture progressively less variance. However, PCA is a linear transformation and cannot capture nonlinear manifold structure.
 
-In ENSy, PCA is applied independently for 2D and 3D projections using scikit-learn's `PCA(n_components=k, random_state=42)`.
-
-![Figure 2: PCA 3D Manifold Projection](screenshots/03_projection_pca_isometric.png)
-_Figure 2: Linear Principal Component Analysis (PCA) 3D projection of the 896-dimensional embedding space in Isometric perspective._
+A **PCA-NC (non-centered)** variant, which omits the centering step $X_c = X - \mu$, is available as an explicit ablation mode. PCA-NC is never reported as "PCA" without qualification; results from this ablation are documented and reported separately from the 12 principal experimental configurations.
 
 #### 2.3.2 t-Distributed Stochastic Neighbor Embedding (t-SNE)
 
-t-SNE is a nonlinear probabilistic method that preserves **local neighborhood structure** in the projection. t-SNE constructs a probability distribution $P$ over pairs of points in the high-dimensional space, where the probability $p_{ij}$ reflects how likely points $i$ and $j$ are to be neighbors under a Gaussian kernel. In the low-dimensional space, a similar distribution $Q$ is defined using a Student's t-distribution with one degree of freedom. The projection is optimized by minimizing the Kullback-Leibler divergence between $P$ and $Q$:
+t-SNE is a nonlinear probabilistic method that preserves **local neighborhood structure** in the projection. t-SNE constructs a probability distribution $P$ over pairs of points in the high-dimensional space, where the probability $p_{ij}$ reflects how likely points $i$ and $j$ are to be neighbors under a Gaussian kernel with the cosine distance metric. In the low-dimensional space, a similar distribution $Q$ is defined using a Student's t-distribution with one degree of freedom. The projection is optimized by minimizing the Kullback-Leibler divergence between $P$ and $Q$:
 
 $$
 \mathcal{L}_{\text{t-SNE}} = \text{KL}(P \parallel Q) = \sum_{i \neq j} p_{ij} \log \frac{p_{ij}}{q_{ij}}
 $$
 
-The **perplexity** hyperparameter controls the effective number of neighbors considered. In the ENSy backend, perplexity is dynamically adapted to the token count as:
-
-$$
-\text{perplexity} = \min\left(5, \max\left(2, \left\lfloor \frac{N}{4} \right\rfloor\right)\right)
-$$
-
-to prevent instability with small datasets. A key limitation of t-SNE is that it does not preserve global distances: cluster separations in the t-SNE projection are not directly interpretable.
-
-![Figure 3: t-SNE 3D Manifold Projection](screenshots/04_projection_tsne_isometric.png)
-_Figure 3: Non-linear t-SNE 3D projection highlighting localized cluster segregation._
+The **perplexity** is fixed at $5$ for all experimental configurations, adopted due to the small sample size of the experiment. The high-dimensional neighborhood graph is constructed using $D_X = D_{\cos}(X)$; the evaluation and visualization operate on $D_Y = D_{\text{euclidean}}(Y)$ in the projected space $\mathbb{R}^3$. A key limitation of t-SNE is that it does not preserve global distances: cluster separations in the t-SNE projection are not directly interpretable as inter-cluster distances in the original space.
 
 #### 2.3.3 Uniform Manifold Approximation and Projection (UMAP)
 
 UMAP is a manifold learning technique grounded in Riemannian geometry and algebraic topology. UMAP constructs a weighted graph representation of the high-dimensional data, approximating the manifold on which the data lies, then optimizes a low-dimensional layout by minimizing the cross-entropy between the high- and low-dimensional fuzzy topological representations. UMAP preserves both **local and global structure** better than t-SNE and is significantly faster for large datasets.
 
-ENSy applies UMAP with the following parameterization:
+ENSy applies UMAP with the following congelated parameterization (library defaults):
 
 $$
 \begin{aligned}
-\text{UMAP}\big(&n\_\text{components}=k,\; n\_\text{neighbors}=\min(4, N-1), \\
-&\text{min\_dist}=0.5,\; \text{metric}=\text{"cosine"}\big)
+\text{UMAP}\big(&n_{\text{components}}=3, \\
+&n_{\text{neighbors}}=15,\; \text{min\_dist}=0.1, \\
+&\text{metric}=\text{"cosine"},\; \text{random\_state}=42\big)
 \end{aligned}
 $$
 
-The `cosine` metric is specified explicitly, ensuring that UMAP's neighborhood graph is constructed using angular distances consistent with the semantic similarity metric used throughout the system.
-
-![Figure 4: UMAP 3D Manifold Projection](screenshots/02_projection_umap_isometric.png)
-_Figure 4: Default UMAP 3D manifold projection constructed using angular cosine metric._
+The library default values for `n_neighbors` and `min_dist` are adopted deliberately: using documented defaults rather than values selected to produce visually appealing projections protects against the criticism that hyperparameters were adjusted post-hoc to favor a particular result.
 
 #### 2.3.4 Isomap
 
-Isomap is a nonlinear method that extends classical multidimensional scaling (MDS) to preserve **geodesic distances** on the data manifold. Isomap first constructs a neighborhood graph with $k$ nearest neighbors, then estimates geodesic distances as shortest path lengths in this graph using Dijkstra's algorithm. Finally, classical MDS is applied to the geodesic distance matrix to produce the low-dimensional embedding. Isomap is particularly effective for data lying on a smoothly curved low-dimensional manifold.
+Isomap is a nonlinear method that extends classical multidimensional scaling (MDS) to preserve **geodesic distances** on the data manifold. Isomap first constructs a neighborhood graph with $k$ nearest neighbors using the cosine metric, then estimates geodesic distances as shortest path lengths in this graph using Dijkstra's algorithm. Finally, classical MDS is applied to the geodesic distance matrix to produce the low-dimensional embedding. Isomap is particularly effective for data lying on a smoothly curved low-dimensional manifold.
 
-In ENSy, Isomap uses $n\_\text{neighbors} = \min(5, N-1)$ and the `cosine` metric for graph construction.
+In ENSy, Isomap uses $n_{\text{neighbors}} = 15$ and `metric="cosine"` for graph construction. The neighborhood scale of 15 is adopted to ensure approximate comparability with UMAP's neighborhood graph, not as a canonical value for the algorithm.
 
-![Figure 5: Isomap Geodesic 3D Manifold Projection](screenshots/05_projection_isomap_isometric.png)
-_Figure 5: Non-linear Isomap 3D projection preserving geodesic neighborhood graph distances._
+### 2.4 Co-ranking Framework and Projection Quality Metrics
 
-### 2.4 The Semantic Manifold
+ENSy adopts the rank-based co-ranking framework of Lee & Verleysen (2009) as the primary quantitative instrument for assessing the geometric fidelity of each dimensionality reduction, following the implementation order: $Q$ matrix → Trustworthiness/Continuity → $B_{NX}$ → $Q_{NX}$ → Silhouette.
 
-The concept of "manifold" in ENSy's nomenclature refers to the mathematical concept of a topological manifold: a space that locally resembles Euclidean space but may possess complex global geometry. The embedding vectors of a language model are hypothesized to lie near a low-dimensional manifold embedded in the high-dimensional vector space $\mathbb{R}^{896}$. The dimensionality reduction algorithms described above are manifestations of the **manifold hypothesis**: the assumption that high-dimensional data of natural origin concentrates near a low-dimensional manifold, and that this manifold structure encodes meaningful relationships.
+#### 2.4.1 Co-ranking Matrix
+
+Given $N$ points, let $r_{ij}$ denote the rank of point $j$ with respect to point $i$ in the high-dimensional space (under $D_X = D_{\cos}$), and $\hat{r}_{ij}$ the corresponding rank in the projected space (under $D_Y = D_{\text{euclidean}}$). The co-ranking matrix is defined as:
+
+$$
+\begin{aligned}
+Q &= [q_{kl}]_{1 \le k,l \le N-1}, \\
+q_{kl} &= \lvert\{(i,j) : r_{ij}=k \;\text{and}\; \hat{r}_{ij}=l\}\rvert
+\end{aligned}
+$$
+
+The computational cost is $O(N^2 \log N)$ (two sorting operations). The matrix $Q$ is partitioned into four blocks of size $K$: $UL_K$ (upper-left), $UR_K$ (upper-right), $LL_K$ (lower-left), $LR_K$ (lower-right). The block $UL_K$ is further divided into diagonal $D_K$, lower triangle $LT_K = \{(k,l): 1 < k \le K,\; l < k\}$, and upper triangle $UT_K = \{(k,l): 1 \le k < K,\; l > k\}$.
+
+**Intrusions and Extrusions.** An **intrusion** occurs when $\hat{r}_{ij} \le K < r_{ij}$: point $j$ appears as a false neighbor of $i$ in the projected $K$-neighborhood without being a genuine neighbor in the high-dimensional space. An **extrusion** occurs when $r_{ij} \le K < \hat{r}_{ij}$: a genuine high-dimensional neighbor is displaced outside the projected $K$-neighborhood. Mild (light) intrusions satisfy $\hat{r}_{ij} < r_{ij} \le K$; mild extrusions satisfy $r_{ij} < \hat{r}_{ij} \le K$.
+
+#### 2.4.2 Trustworthiness and Continuity
+
+Trustworthiness $M_T(K)$ quantifies the absence of false neighbors, while Continuity $M_C(K)$ quantifies the preservation of original neighbors:
+
+$$
+M_T(K) = 1 - \frac{2}{G_K} \sum_{(k,l) \in LL_K} (k-K)\, q_{kl}
+$$
+
+$$
+M_C(K) = 1 - \frac{2}{G_K} \sum_{(k,l) \in UR_K} (l-K)\, q_{kl}
+$$
+
+$$
+G_K = \begin{cases} NK(2N-3K-1) & \text{if } K < N/2 \\ N(N-K)(N-K-1) & \text{if } K \ge N/2 \end{cases}
+$$
+
+Trustworthiness is penalized by severe $K$-intrusions (distant vectors becoming false neighbors); Continuity is penalized by severe $K$-extrusions (genuine neighbors displaced to far-away projected positions).
+
+#### 2.4.3 Behavioral Indicator $B_{NX}(K)$
+
+The mild intrusion and extrusion fractions are defined as (Lee & Verleysen, 2009, Eq. 22–23):
+
+$$
+U_N(K) = \frac{1}{KN}\sum_{(k,l)\in LT_K} q_{kl}
+$$
+
+(fraction of mild $K$-intrusions)
+
+$$
+U_X(K) = \frac{1}{KN}\sum_{(k,l)\in UT_K} q_{kl}
+$$
+
+(fraction of mild $K$-extrusions)
+
+$$
+\boxed{B_{NX}(K) = U_X(K) - U_N(K)}
+$$
+
+A positive value indicates **intrusive** behavior (crowding, as characteristically produced by t-SNE in sparse regions); a negative value indicates **extrusive** behavior (tearing, as produced by Isomap under component collapse); a value near zero indicates approximately balanced behavior. The apparently counterintuitive sign convention—where intrusive behavior yields $B_{NX} > 0$ from a formula involving $U_X$ (mild extrusions)—is explained structurally: the number of severe $K$-intrusions always equals the number of severe $K$-extrusions (a property of every row and column of $Q$ summing to exactly $N$), so a single severe intrusion produces multiple mild extrusions proportional to the intrusion's severity. The magnitude of $U_X$ therefore indirectly measures the severity of intrusions, and vice versa (Lee & Verleysen, 2009, Section 4, Fig. 2).
+
+#### 2.4.4 General Preservation $Q_{NX}(K)$
+
+The overall preservation of $K$-ary neighborhoods against both intrusive and extrusive distortions is quantified by $Q_{NX}(K)$:
+
+$$
+\begin{aligned}
+Q_{NX}(K) &= U_P(K) + U_N(K) + U_X(K) \\
+&= Q_{LC}(K) + \frac{K}{N-1}
+\end{aligned}
+$$
+
+where $U_P(K) = \frac{1}{KN}\sum_{(k,l)\in D_K} q_{kl}$ is the fraction of pairs maintaining exactly the same rank in both neighborhoods, and $Q_{LC}(K)$ is the Local Continuity Meta-Criterion (LCMC). $Q_{NX}(K)$ decreases only with severe $K$-intrusions and $K$-extrusions.
+
+#### 2.4.5 Per-Token Behavioral Indicator $B_{NX,i}(K)$
+
+The thermal camera visualization requires a per-token local score. Each entry $q_{kl}$ decomposes as $q_{kl} = \sum_{i=1}^N q_{kl}^{(i)}$, where $q_{kl}^{(i)}$ counts, for a fixed point $i$, the $j$ such that $r_{ij}=k$ and $\hat{r}_{ij}=l$. Applying the same triangular masks of Section 2.4.3 to $q_{kl}^{(i)}$:
+
+$$
+\begin{aligned}
+U_{N,i}(K) &= \frac{1}{K}\sum_{(k,l)\in LT_K} q_{kl}^{(i)} \\
+U_{X,i}(K) &= \frac{1}{K}\sum_{(k,l)\in UT_K} q_{kl}^{(i)}
+\end{aligned}
+$$
+
+$$
+\boxed{B_{NX,i}(K) = U_{X,i}(K) - U_{N,i}(K)}
+$$
+
+This definition satisfies the **consistency property** (verified as an automated test before thermal camera deployment):
+
+$$
+B_{NX}(K) = \frac{1}{N}\sum_{i=1}^{N} B_{NX,i}(K)
+$$
+
+The local score ranges approximately in $[-1, 1]$, enabling a fixed bipolar scale for the thermal camera that does not require per-frame or per-projection dynamic normalization.
+
+#### 2.4.6 Silhouette Score
+
+For each projected token $i$, the Silhouette coefficient $s(i)$ evaluates cluster tightness and category separation:
+
+$$
+s(i) = \frac{b(i)-a(i)}{\max(a(i),b(i))}
+$$
+
+where $a(i)$ is the mean intra-category distance and $b(i)$ is the mean nearest-category distance (Rousseeuw, 1987), computed over the projected coordinates $Y_i \in \mathbb{R}^3$ using `content_noun`/`content_verb`/`function_word` as the reference linguistic partition. The Silhouette provides a complementary measure of inter-category separation in the projected space; it measures separation, not the cause (crowding, tearing, etc.). Class-Conditional Centering is never applied before this computation, as using class labels to center prior to an unsupervised projection algorithm would artificially inflate inter-category separation and invalidate the metric.
+
+### 2.5 The Semantic Manifold
+
+The concept of "manifold" in ENSy's nomenclature refers to the mathematical concept of a topological manifold: a space that locally resembles Euclidean space but may possess complex global geometry. The embedding vectors of a language model are hypothesized to lie near a low-dimensional manifold embedded in the high-dimensional vector space $\mathbb{R}^d$. The dimensionality reduction algorithms described above are manifestations of the **manifold hypothesis**: the assumption that high-dimensional data of natural origin concentrates near a low-dimensional manifold, and that this manifold structure encodes meaningful relationships.
 
 ## 3. System Architecture
 
-ENSy follows a two-tier client-server architecture, separating the computationally intensive embedding extraction and dimensionality reduction from the interactive rendering and user interface.
+ENSy follows a two-tier client-server architecture, separating the computationally intensive embedding extraction, dimensionality reduction, and co-ranking metric computation from the interactive rendering and user interface.
 
 ### 3.1 Technology Stack
 
@@ -156,27 +257,29 @@ ENSy leverages modern web and scientific computing frameworks structured across 
 
 **Backend and Asynchronous Serving.** High-throughput REST API serving is provided by FastAPI (v0.115.8) running on the asynchronous Uvicorn (v0.34.0) ASGI server.
 
-**Machine Learning and Reduction Pipeline.** Token embedding extraction is performed on Qwen 2.5 0.5B-Instruct using PyTorch (v2.6.0) and HuggingFace Transformers (v4.49.0). Dimensionality reduction algorithms (PCA, t-SNE, Isomap, UMAP) are executed via scikit-learn (v1.6.1) and UMAP (v0.5.7), supported by vectorized NumPy (v2.1.3) linear algebra.
+**Machine Learning and Reduction Pipeline.** Token embedding extraction is performed on Qwen 2.5 0.5B-Instruct, Gemma 2B, and BERT base uncased using PyTorch (v2.6.0) and HuggingFace Transformers (v4.49.0). Dimensionality reduction algorithms (PCA, t-SNE, Isomap, UMAP) are executed via scikit-learn (v1.6.1) and UMAP (v0.5.7), supported by vectorized NumPy (v2.1.3) linear algebra.
 
-**Verification and Quality Assurance.** Automated endpoint validation and visual regression testing are conducted using Pytest (v8.3.5) and headless Playwright (v1.48.0).
+**Verification and Quality Assurance.** Automated endpoint validation and visual regression testing are conducted using Pytest (v8.3.5) and headless Playwright (v1.48.0). Synthetic co-ranking test cases (Section 4.6) provide pre-deployment validation of all metric implementations.
 
 ### 3.2 Data Flow
 
 The system's data flow proceeds through the following stages:
 
-**Stage 1 — Application Initialization.** Upon server startup (`app.py`), the dependency installer verifies and installs missing Python packages. The bootstrap vector set ($36 \text{ tokens} \times 896 \text{ dimensions}$) is generated using a seeded pseudo-random normal distribution and normalized to unit length. A daemon thread is immediately launched to load the Qwen 2.5 model in the background.
+**Stage 1 — Dataset Construction.** Prior to any embedding extraction or metric computation, the lexical dataset is built from the Penn Treebank (Section 4.2). The resulting `dataset.json` is versioned and its SHA-256 hash is recorded. This file is congelated and serves as a fixed experimental input.
 
-**Stage 2 — Model Loading (Background).** The background thread loads the Qwen 2.5 tokenizer and model via the HuggingFace Transformers library. The full embedding matrix $E \in \mathbb{R}^{151936 \times 896}$ is extracted from `model.get_input_embeddings().weight`. Each target word is validated: words that tokenize to multiple subword tokens are excluded from the active set (denoted as `dropped_tokens`). Upon successful loading, the global `active_vectors` and `active_words` pointers are atomically updated.
+**Stage 2 — Application Initialization.** Upon server startup (`app.py`), the dependency installer verifies and installs missing Python packages. The cached embedding matrices for all three models are loaded from memory if available; otherwise, a daemon thread is launched to load each model sequentially.
 
-**Stage 3 — API Request.** The React frontend issues an HTTP GET request to `/api/projection/{engine_type}` whenever the user changes the projection algorithm. The Vite development server proxies this request to the FastAPI backend at `http://127.0.0.1:3000`.
+**Stage 3 — Model Loading (Background).** The background thread loads each model's tokenizer and weights via the HuggingFace Transformers library. The input embedding matrix $E$ is extracted via `get_input_embeddings().weight` (Qwen/Gemma) or `bert.embeddings.word_embeddings.weight` (BERT), cast from `float16` to `float32`, and $L_2$-normalized. Only lexical items satisfying the single-token criterion for that model's tokenizer are retained. Upon successful loading, the global `active_vectors` pointer for that model is atomically updated.
 
-**Stage 4 — Projection and Similarity Computation.** The backend applies the requested dimensionality reduction algorithm to `active_vectors`, producing 2D coordinates ($x_{\text{2d}}, y_{\text{2d}}$) and 3D coordinates ($x_{\text{3d}}, y_{\text{3d}}, z_{\text{3d}}$) for each token. It then computes the $N \times N$ cosine similarity matrix and extracts the top-5 neighbors for each token.
+**Stage 4 — API Request.** The React frontend issues an HTTP GET request to `/api/projection/{model_id}/{engine_type}` whenever the user changes the model or projection algorithm.
 
-**Stage 5 — JSON Response.** The backend returns a JSON object conforming to the `SemanticSpace` interface. The frontend's `App.tsx` stores this in the `semanticSpace` state variable.
+**Stage 5 — Projection and Metric Computation.** The backend applies the requested dimensionality reduction algorithm to `active_vectors` for the selected model, producing 3D coordinates for each token. It then computes the full co-ranking matrix $Q$ and derives all quality metrics: $M_T(K)$, $M_C(K)$, $B_{NX}(K)$, $Q_{NX}(K)$, $B_{NX,i}(K)$ for $K \in \{5, 10, 15, 20\}$, and the Silhouette score.
 
-**Stage 6 — 3D Scene Update.** `SpaceVisualizer` detects the updated data and calls `syncProjectionDataPrivate()`, which linearly interpolates each token's 3D point towards its new projected position over subsequent animation frames.
+**Stage 6 — JSON Response.** The backend returns a JSON object conforming to the `SemanticSpace` interface. The frontend's `App.tsx` stores this in the `semanticSpace` state variable.
 
-**Stage 7 — Offline Fallback.** If the API request fails, `App.tsx` catches the exception and loads the static `semanticSpaceData` from `src/data/semanticSpace.ts`, ensuring the application remains fully functional at all times.
+**Stage 7 — 3D Scene Update.** `SpaceVisualizer` detects the updated data and calls `syncProjectionDataPrivate()`, which linearly interpolates each token's 3D point towards its new projected position over subsequent animation frames. Token colors are updated by rewriting the `BufferGeometry` vertex color attribute.
+
+**Stage 8 — Offline Fallback.** If the API request fails, `App.tsx` catches the exception and loads the static `semanticSpaceData` from `src/data/semanticSpace.ts`, ensuring the application remains functional.
 
 ## 4. Backend Implementation
 
@@ -184,41 +287,96 @@ The system's data flow proceeds through the following stages:
 
 The backend server (`app.py`) begins with a self-bootstrapping dependency management routine (`install_deps()`). Before importing any scientific computing library, the function iterates over a required package list (`fastapi`, `uvicorn`, `transformers`, `torch`, `scikit-learn`, `umap-learn`) and attempts an import for each. Any package that fails the import test is installed via `subprocess.check_call([sys.executable, "-m", "pip", "install", ...])`. This strategy eliminates the need for a pre-configured environment.
 
-### 4.2 Data Configuration: Cluster Taxonomy and Token Registry
+### 4.2 Lexical Dataset — Penn Treebank Pipeline
 
-The backend defines a curated vocabulary of 36 tokens organized into three semantic clusters: the **Technology/File** cluster (`#378ADD`), covering computing concepts such as `document`, `file`, `hardware`, `memory`, `binary`, `database`, and `network`; the **Biological/Fruit** cluster (`#1D9E75`), encompassing natural entities including `apple`, `banana`, `orange`, `fruit`, `tree`, and `seed`; and the **Action/Verb** cluster (`#D85A30`), representing procedural semantics like `write`, `read`, `parse`, `encode`, `plant`, `compile`, and `analyze`.
+ENSy's experimental vocabulary is a **lexical dataset derived from the Penn Treebank**, not a fixed hardcoded word list. The dataset is built by the following 10-step pipeline before any embedding extraction or metric computation:
 
-Each cluster is assigned a unique hexadecimal color code (`#378ADD`, `#1D9E75`, `#D85A30`) used consistently across both the 3D scene and the minimap. A `token_registry` dictionary maps each word to its token ID and cluster membership, enabling $\mathcal{O}(1)$ metadata lookup during JSON serialization.
+1. Extract all token surface forms from the Penn Treebank corpus and normalize (lowercasing, punctuation removal).
+2. Assign each candidate form a reference linguistic category: `content_noun`, `content_verb`, or `function_word`.
+3. Resolve homographs appearing under multiple categories using a fixed rule: the category of highest frequency of occurrence in the corpus is assigned. Forms whose category cannot be determined unambiguously by this rule are **excluded** from the dataset (not assigned an ad-hoc category).
+4. Apply the single-token criterion independently to each of the three tokenizers (Qwen, Gemma, BERT): a lexical form is retained only if it maps to **exactly one token ID** in every tokenizer and that ID corresponds to a valid row of each model's input embedding matrix.
+5. Deduplicate: each normalized form appears at most once.
+6. Balance the dataset across the three categories.
+7. Record the final set as `dataset.json` with its SHA-256 hash.
 
-### 4.3 Bootstrap Vector Initialization
+The final token count $N$ is reported as the result of this pipeline — it is not forced to any predetermined target. The `dataset.json` file is versioned in the repository as a fixed experimental input.
 
-To guarantee zero-latency API responses before the language model finishes loading, the backend initializes a set of **bootstrap vectors** via seeded pseudo-random normal sampling with $L_2$ unit normalization (see Appendix D, Listing D.1).
+**Taxonomy note.** The partition `content_noun`/`content_verb`/`function_word` is designated the **reference linguistic partition** — not "grammatical classes" or "stopwords." The label assigned to each form in the dataset represents the chosen category in the curated set, not an inference from model representations.
 
-The use of a fixed random seed ($42$) ensures reproducibility across server restarts. $L_2$ normalization to unit length is necessary because the cosine similarity metric operates on the angular component of vectors; unnormalized bootstrap vectors would exhibit arbitrary magnitude variation that artificially inflates or deflates similarity scores.
+### 4.3 Embedding Cache
+
+Upon model loading, embedding vectors for the $N$ dataset tokens are extracted, cast to `float32`, and $L_2$-normalized. The normalized matrices are stored in an in-memory cache keyed by:
+
+```python
+cache_key = (
+    model_id,
+    dataset_hash,
+    extraction_config,
+    preprocessing_config,
+)
+```
+
+This cache guarantees zero recomputation when the user switches projection algorithms for the same model, while ensuring that any change to the dataset or extraction configuration triggers a full recomputation. No disk-based cache is used; reproducibility is guaranteed by the `dataset_hash` and fixed `random_state=42` for stochastic algorithms.
 
 ### 4.4 Asynchronous Model Loading
 
 The model loading procedure is executed asynchronously via a Python daemon thread spawned upon server startup (see Appendix D, Listing D.2).
 
-The background initialization sequence executes five sequential stages:
+The background initialization sequence executes three sequential stages per model:
 
-**Tokenizer and Architecture Instantiation.** The pipeline instantiates the HuggingFace `AutoTokenizer` and `AutoModelForCausalLM` using half-precision (`float16`) to minimize memory footprint on host CPU execution.
+**Tokenizer and Architecture Instantiation.** The pipeline instantiates the HuggingFace `AutoTokenizer` and `AutoModelForCausalLM` (Qwen, Gemma) or `AutoModel` (BERT) using half-precision (`float16`) to minimize memory footprint.
 
-**Embedding Matrix Extraction.** The input embedding weights $E \in \mathbb{R}^{151936 \times 896}$ are decoupled from the PyTorch computation graph via `get_input_embeddings().weight` and cast to float32 NumPy arrays.
+**Embedding Matrix Extraction.** The input embedding weights $E$ are decoupled from the PyTorch computation graph via `get_input_embeddings().weight` (Qwen/Gemma) or `bert.embeddings.word_embeddings.weight` (BERT), cast to `float32` NumPy arrays, and $L_2$-normalized.
 
-**Single-Token Validation.** Each candidate vocabulary term is evaluated with the tokenizer. Words decomposing into multiple subwords are registered into `dropped_tokens` and excluded, guaranteeing that visualized points represent atomic semantic tokens.
+**Single-Token Validation.** Each candidate dataset term is evaluated with the model's tokenizer. Forms that decompose into multiple subwords are excluded, consistent with the dataset construction criterion of Section 4.2.
 
-**Atomic Pointer Replacement.** Following validation, the global references `active_words`, `active_vectors`, and `token_registry` are updated simultaneously. Python's Global Interpreter Lock (GIL) ensures atomic reference reassignment, maintaining thread safety without locking overhead.
+**Atomic Pointer Replacement.** Following validation, the global references `active_words`, `active_vectors`, and model metadata are updated simultaneously. Python's Global Interpreter Lock (GIL) ensures atomic reference reassignment.
 
-### 4.5 Projection Endpoint
+**Note on Gemma 2B.** Gemma 2B is a gated model on HuggingFace Hub, requiring license acceptance and token-based authentication before programmatic download. Credentials must be configured before server startup.
 
-The core API endpoint is `GET /api/projection/{engine_type}`, accepting `umap`, `pca`, `tsne`, or `isomap`.
+### 4.5 Projection Endpoint and Congelated Parameter Table
 
-For each algorithm, the backend instantiates both a 2D and a 3D reducer, applies `fit_transform(vectors)`, and computes the full cosine similarity matrix. Adaptive safeguards are applied dynamically to guarantee algorithmic stability with finite token sets: UMAP enforces $n\_\text{neighbors} = \min(4, N-1)$; t-SNE bounds perplexity via $\text{perplexity} = \min(5, \max(2, \lfloor N / 4 \rfloor))$; and Isomap constrains graph connectivity with $n\_\text{neighbors} = \min(5, N-1)$.
+The core API endpoint is `GET /api/projection/{model_id}/{engine_type}`, accepting `qwen`, `gemma`, or `bert` as `model_id` and `umap`, `pca`, `tsne`, or `isomap` as `engine_type`.
 
-The endpoint packages the projected 2D and 3D coordinates, cluster labels, and top-5 cosine neighbors for each node into a serialized response conforming to the `SemanticSpace` data contract (see Appendix B and Appendix D, Listing D.3).
+All algorithm parameters are fixed prior to data collection and are not modified during experimentation:
 
-### 4.6 Static File Serving and SPA Routing
+:::booktabs
+| Algorithm | Parameter | Value |
+|---|---|---|
+| PCA | n_components | 3 |
+| PCA | centering | yes (ablation: PCA-NC, non-centered) |
+| t-SNE | perplexity | 5 (fixed; adopted for small sample size) |
+| t-SNE | random_state | 42 |
+| t-SNE | metric (high-dim) | cosine |
+| UMAP | n_neighbors | 15 (library default) |
+| UMAP | min_dist | 0.1 (library default) |
+| UMAP | metric | cosine |
+| UMAP | random_state | 42 |
+| Isomap | n_neighbors | 15 (comparable scale to UMAP) |
+| Isomap | metric | cosine |
+:::
+
+For stochastic algorithms (t-SNE, UMAP): a fixed seed guarantees reproducibility of the reported result but does not characterize stability. Sensitivity analysis with multiple seeds is a separate analysis, never mixed with the 12 principal experimental results.
+
+The endpoint returns 3D projected coordinates and all co-ranking metrics for the requested (model, algorithm) configuration.
+
+### 4.6 Co-ranking Metrics Pipeline
+
+Following projection, the backend computes the full co-ranking metric suite for $K \in \{5, 10, 15, 20\}$.
+
+**Co-ranking matrix computation** ($O(N^2 \log N)$): rank matrices $R$ and $\hat{R}$ are built by sorting $D_X$ and $D_Y$ independently for each point; $q_{kl}$ is accumulated by iterating over all pairs.
+
+**Trustworthiness and Continuity** ($M_T(K)$, $M_C(K)$): computed from the $LL_K$ and $UR_K$ blocks of $Q$ per the formulas of Section 2.4.2.
+
+**Behavioral indicator** $B_{NX}(K) = U_X(K) - U_N(K)$: computed from the $LT_K$ and $UT_K$ triangular blocks of $Q$ per the source definition (Lee & Verleysen, 2009, Eq. 22–23).
+
+**Per-token decomposition** $B_{NX,i}(K)$: computed by decomposing $q_{kl}^{(i)}$ per point before aggregation. The consistency property $B_{NX}(K) = \frac{1}{N}\sum_i B_{NX,i}(K)$ is verified as an automated test (tolerance $\epsilon < 10^{-6}$) before any thermal camera deployment.
+
+**Silhouette score**: computed over the projected $\mathbb{R}^3$ coordinates using the reference linguistic partition, without any Class-Conditional Centering applied beforehand.
+
+Results for all 12 configurations (3 models × 4 algorithms) are versioned alongside the `dataset_hash` and the library version manifest.
+
+### 4.7 Static File Serving and SPA Routing
 
 In production mode, FastAPI mounts the `dist/` directory and serves the React SPA. The fallback route `GET /{rest_of_path:path}` returns `index.html` for any non-API path, enabling client-side React navigation.
 
@@ -226,13 +384,13 @@ In production mode, FastAPI mounts the `dist/` directory and serves the React SP
 
 ### 5.1 Component Architecture
 
-The frontend architecture is partitioned across four specialized React components coordinated by the root `App.tsx`. The root orchestrator maintains global application state (`selectedEngine`, `selectedNode`, `semanticSpace`), handles HTTP communication with the backend API, and manages fallback routing. `SidebarLeft.tsx` hosts algorithm toggles, model metadata badges, and server connectivity monitors. `SpaceVisualizer.tsx` encapsulates the Three.js WebGL canvas, 6-DOF camera mechanics, and HUD overlays. `SidebarRight.tsx` inspects node coordinates, presents top-5 cosine neighbors, and provides CSV exports. `BottomHUD.tsx` renders non-intrusive navigation indicators.
+The frontend architecture is partitioned across four specialized React components coordinated by the root `App.tsx`. The root orchestrator maintains global application state (`selectedModel`, `selectedEngine`, `selectedNode`, `semanticSpace`, `activeColorLayer`), handles HTTP communication with the backend API, and manages fallback routing. `SidebarLeft.tsx` hosts model and algorithm selectors, co-ranking metric panels, and server connectivity monitors. `SpaceVisualizer.tsx` encapsulates the Three.js WebGL canvas, 6-DOF camera mechanics, HUD overlays, and the three-layer color system. `SidebarRight.tsx` inspects node coordinates, presents co-ranking metrics for the selected token, and provides CSV exports. `BottomHUD.tsx` renders non-intrusive navigation indicators.
 
 All inter-component communication occurs through unidirectional props and callbacks, preserving deterministic state propagation via `useState` and `useCallback` hooks.
 
 #### 5.1.1 State Persistence
 
-Application settings are debounced and serialized to `localStorage` at one-second intervals to prevent frame drops during the 60 FPS animation loop. Persisted attributes include the active reduction engine (`projectionType`), octant spatial filter (`currentFilter`), camera projection geometry (`cameraMode`), field of view (`fov`), coordinate axis visibility flags (`showXAxis`, `showYAxis`, `showZAxis`), reference grid planes, mouse sensitivity coefficients, and 6-DOF camera coordinates.
+Application settings are debounced and serialized to `localStorage` at one-second intervals to prevent frame drops during the 60 FPS animation loop. Persisted attributes include the active model (`modelId`), reduction engine (`projectionType`), active color layer (`colorLayer`), octant spatial filter (`currentFilter`), camera projection geometry (`cameraMode`), field of view (`fov`), coordinate axis visibility flags (`showXAxis`, `showYAxis`, `showZAxis`), reference grid planes, mouse sensitivity coefficients, and 6-DOF camera coordinates.
 
 ### 5.2 Three.js Scene Construction
 
@@ -240,7 +398,7 @@ The `SpaceVisualizer` component initializes the Three.js rendering pipeline with
 
 #### 5.2.1 Scene Graph
 
-The Three.js scene graph consists of a primary `THREE.Scene` configured with exponential atmospheric fog ($\text{FogExp2}(0xfcfcfc, 0.003)$), an ambient illumination source (`THREE.AmbientLight(0xffffff, 1)`), a composite `gridGroup` containing reference planes, axis arrows, and tick markers, and a collection of zero-opacity `THREE.Points` single-vertex proxies serving as raycasting targets.
+The Three.js scene graph consists of a primary `THREE.Scene` configured with exponential atmospheric fog ($\text{FogExp2}(0xfcfcfc, 0.003)$), an ambient illumination source (`THREE.AmbientLight(0xffffff, 1)`), a composite `gridGroup` containing reference planes, axis arrows, and tick markers, and a single `THREE.Points` object backed by a `BufferGeometry` containing all token positions and vertex colors.
 
 #### 5.2.2 Dual Camera System
 
@@ -251,14 +409,13 @@ Three distinct camera modes require both a perspective and an orthographic camer
 **Parallel (Orthographic) mode** (`THREE.OrthographicCamera`): orthographic projection for engineering views. Bounds are dynamically synchronized to the perspective camera's current frustum:
 
 $$
-\text{halfHeight} = \|\vec{p}_{\text{cam}}\| \cdot \tan\left(\frac{\text{FOV}}{2} \cdot \frac{\pi}{180}\right), \quad \text{halfWidth} = \text{halfHeight} \cdot \text{aspect}
+\begin{aligned}
+\text{halfHeight} &= \|\vec{p}_{\text{cam}}\| \cdot \tan\left(\frac{\text{FOV}}{2} \cdot \frac{\pi}{180}\right) \\
+\text{halfWidth} &= \text{halfHeight} \cdot \text{aspect}
+\end{aligned}
 $$
 
-**Two-point perspective mode**: approximation of architectural two-point perspective, implemented by injecting a vertical shear into the projection matrix:
-
-```javascript
-persp.projectionMatrix.elements[9] = Math.tan(persp.rotation.x);
-```
+**Two-point perspective mode**: approximation of architectural two-point perspective, implemented by injecting a vertical shear into the projection matrix: `persp.projectionMatrix.elements[9] = Math.tan(persp.rotation.x)`.
 
 ### 5.3 Camera Controller: 6-DOF Flight Mechanics
 
@@ -287,7 +444,7 @@ p_{y,\text{cam}} &\mathrel{\pm}= v \cdot \Delta t \quad (\text{R/F keys})
 \end{aligned}
 $$
 
-where $v = 14\text{ units/second}$ and $\Delta t$ is capped at $33\text{ ms}$. The forward direction is projected onto the XZ plane to ensure horizontal movement regardless of pitch.
+where $v = 14\text{ u/s}$ and $\Delta t$ is capped at $33\text{ ms}$. The forward direction is projected onto the XZ plane to ensure horizontal movement regardless of pitch.
 
 ### 5.4 Camera Preset Transitions (LERP/SLERP)
 
@@ -308,14 +465,9 @@ Preset camera transitions align the viewport to canonical orthogonal and perspec
 
 ### 5.5 Token Rendering and Label Overlay System
 
-Token labels are rendered through a hybrid CSS/WebGL overlay architecture. An invisible `THREE.Points` object per token acts as a 3D spatial anchor and raycasting target, while a corresponding `<div>` HTML element is positioned absolutely over the WebGL canvas. Each animation frame, 3D world coordinates are projected into 2D Normalized Device Coordinates (NDC) and converted to screen pixels:
+All $N$ token positions are stored as vertices in a single `THREE.BufferGeometry`, with colors stored as a vertex attribute array (`geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3))`), and the material configured with `vertexColors: true`. This consolidation produces a single draw call for the entire point cloud regardless of $N$, compared to $N$ individual draw calls in a per-token object approach.
 
-$$
-\begin{aligned}
-x_{\text{screen}} &= \left(\frac{x_{\text{ndc}} + 1}{2}\right) \cdot W \\[4pt]
-y_{\text{screen}} &= \left(\frac{-y_{\text{ndc}} + 1}{2}\right) \cdot H
-\end{aligned}
-$$
+Token labels are rendered as canvas sprites (`THREE.Sprite` + `CanvasTexture`), where each label is drawn as text into an offscreen `<canvas>` and uploaded as a GPU texture billboarded toward the camera. This approach eliminates the per-frame DOM update cost of the CSS2DRenderer pattern ($N$ `<div>` elements repositioned via JavaScript every frame), at the cost of texture memory and draw calls that scale significantly better than DOM manipulation for the expected $N$ range (150–200 tokens).
 
 Visual clarity is maintained through dynamic depth sorting, where $\text{z-index} = \lfloor 1000 - d \rfloor$ guarantees that foreground labels correctly occlude background points. Label transparency is governed by a distance attenuation function:
 
@@ -323,65 +475,98 @@ $$
 \text{opacity} = \max\left(0, \min\left(1, 1 - \frac{d - d_{\text{thresh}}}{90}\right)\right)
 $$
 
-Additionally, labels positioned behind reference planes have opacity attenuated by a factor of $0.15$. Visual clutter in dense clusters is mitigated through an 8-pixel spatial binning system that radially spreads conflicting labels. Algorithm-specific visual enhancements are applied dynamically: PCA incorporates a $36.87^\circ$ rotational offset with Z-axis amplification; t-SNE applies a signed power-law compression $f(x) = \operatorname{sign}(x) \cdot |x|^{0.8} \cdot 1.5$; and Isomap enforces polar-to-Cartesian radial spacing.
+### 5.6 Three-Layer Color System
 
-### 5.6 Node Selection by Central Reticle
+Token colors are managed through three distinct visual layers with a strict precedence rule: **Probing (Layer 3) > Thermal Camera (Layer 2) > Reference Partition (Layer 1)**. Switching layers is implemented by rewriting the vertex color array and marking `colorAttribute.needsUpdate = true` — an $O(N)$ operation, not a material swap per token.
 
-ENSy implements a screen-space reticle selection mechanism evaluated on every animation frame. The viewport center is established as $(c_x, c_y) = (W/2, H/2)$. For each candidate point $\vec{p}_i$ verified to lie in front of the camera plane ($(\vec{p}_i - \vec{p}_{\text{cam}}) \cdot \hat{d}_{\text{cam}} > 0$), the 2D Euclidean screen distance is computed:
+**Layer 1 — Reference Linguistic Partition (default).** Each token is colored by its dataset category:
 
-$$
-d_i = \sqrt{(x_i - c_x)^2 + (y_i - c_y)^2}
-$$
+:::booktabs
+| Category | Color |
+|---|---|
+| `content_noun` | Blue |
+| `content_verb` | Orange |
+| `function_word` | Teal |
+:::
 
-The token $p^*$ that minimizes $d_i$ within an activation radius of $25\text{ px}$ is selected, triggering the `onNodeHovered` state transition and highlighting the corresponding label with the `.highlighted-acad` CSS class. Screen-space proximity selection is substantially more robust than Three.js geometric raycasting, as single-vertex point proxies lack surface area and suffer from floating-point collision failures.
+**Layer 2 — Thermal Camera / $B_{NX,i}(K)$ (global toggle F2).** The per-token behavioral indicator $B_{NX,i}(K)$ (Section 2.4.5) is mapped to a fixed bipolar scale $[-1, 1]$:
 
-### 5.7 Token Position Interpolation on Projection Switch
+:::booktabs
+| Range of $B_{NX,i}(K)$ | Color | Interpretation |
+|---|---|---|
+| $< 0$ | Blue/Cyan | Extrusive behavior (tearing) |
+| $\approx 0$ | Light grey (never green) | High fidelity / neutral |
+| $> 0$ | Red/Orange | Intrusive behavior (crowding) |
+:::
 
-When switching projection algorithms, new coordinates arrive from the API asynchronously. The `syncProjectionDataPrivate()` function updates each token's `targetPosition`, and the animation loop smoothly interpolates:
+Grey is reserved for the neutral point; green is reserved exclusively for Layer 3. The scale is global and fixed — it does not normalize dynamically per frame or per projection. Two algorithms with the same local value always receive the same color, enabling direct comparison.
 
-$$
-\vec{p}_{t+1} = \vec{p}_t + 0.04 \cdot (\vec{p}_{\text{target}} - \vec{p}_t)
-$$
+**Layer 3 — Neighborhood Probing (active only on the reticle-selected token, F3).**
 
-This LERP factor produces a transition of approximately $50$–$100$ frames ($0.8$–$1.7\text{ s}$ at $60\text{ FPS}$), allowing the user to observe the topological reorganization of the embedding space.
+:::booktabs
+| Color | Category | Definition |
+|---|---|---|
+| Green | True Neighbors ($T_K$) | Genuine high-dim neighbors preserved in projection |
+| Red | False Neighbors ($F_K$) | False neighbors introduced by projection |
+| Translucent blue | Missing Neighbors ($M_K$) | Genuine neighbors displaced outside neighborhood |
+:::
 
-### 5.8 Adaptive Grid Resolution
+The thermal camera label in the UI reads: **"Thermal Camera — local contribution to $B_{NX}(K)$"**, not "local distortion," to reflect the precise semantics of $B_{NX,i}(K)$ (Section 2.4.5).
+
+### 5.7 Node Selection by Central Reticle
+
+ENSy implements a screen-space reticle selection mechanism evaluated on every animation frame. The viewport center is established as $(c_x, c_y) = (W/2, H/2)$. For each candidate point $\vec{p}_i$ verified to lie in front of the camera plane ($({\vec{p}_i - \vec{p}_{\text{cam}}}) \cdot \hat{d}_{\text{cam}} > 0$), the 2D Euclidean screen distance is computed as $d_i = \sqrt{(x_i - c_x)^2 + (y_i - c_y)^2}$. The token $p^*$ that minimizes $d_i$ within an activation radius of $25\text{ px}$ is selected, triggering the `onNodeHovered` state transition, highlighting the corresponding label with the `.highlighted-acad` CSS class, activating Layer 3 probing visualization for that token, and populating the Right Sidebar with the token's co-ranking metrics.
+
+### 5.8 Token Position Interpolation on Projection Switch
+
+When switching projection algorithms or models, new coordinates arrive from the API asynchronously. The `syncProjectionDataPrivate()` function updates each token's `targetPosition`, and the animation loop smoothly interpolates token coordinates via $\vec{p}_{t+1} = \vec{p}_t + 0.04 \cdot (\vec{p}_{\text{target}} - \vec{p}_t)$. This LERP factor produces a transition of approximately $50$–$100$ frames ($0.8$–$1.7\text{ s}$ at $60\text{ FPS}$), allowing the user to observe the topological reorganization of the embedding space as the algorithm changes.
+
+### 5.9 Adaptive Grid Resolution
 
 Grid tick density dynamically adapts to camera distance $d$ from the origin to maintain visual clarity: intervals are configured as $0.5$ for $d < 15\text{ units}$, $1.0$ for $15 \le d < 30\text{ units}$, $2.0$ for $30 \le d < 50\text{ units}$, $6.0$ for $50 \le d < 80\text{ units}$ (default scale), and $12.0$ for $d \ge 80\text{ units}$.
 
-### 5.9 Minimap
+### 5.10 Minimap
 
-A 2D circular minimap is rendered each frame on a `<canvas>` element overlaid on the viewport. It depicts all token positions projected onto the XZ plane, colored by cluster, with a camera orientation indicator.
+A 2D circular minimap is rendered each frame on a `<canvas>` element overlaid on the viewport. It depicts all token positions projected onto the XZ plane, colored by the active color layer (Layer 1 by default), with a camera orientation indicator.
 
 ## 6. User Interface Design
 
 ### 6.1 Layout Philosophy
 
-The interface adopts a three-panel editorial layout designed for scholarly rigor: a 280-pixel Left Sidebar hosting engine controls and model metrics; a central WebGL viewport for full-fidelity 3D exploration; and a 280-pixel Right Sidebar functioning as a topological vector inspector. Typography is strictly structured using **EB Garamond** for editorial prose, **Fira Code** for monospaced metrics, and **MathJax 3** for mathematical expressions.
+The interface adopts a three-panel editorial layout designed for scholarly rigor: a 280-pixel Left Sidebar hosting engine controls, model selection, and projection quality metrics; a central WebGL viewport for full-fidelity 3D exploration; and a 280-pixel Right Sidebar functioning as a topological inspector for the selected token. Typography is strictly structured using **EB Garamond** for editorial prose, **Fira Code** for monospaced metrics, and **MathJax 3** for mathematical expressions.
 
 ### 6.2 Left Sidebar: Control Dashboard
 
-The control dashboard organizes administrative controls across four functional groups:
+The control dashboard organizes administrative controls across five functional groups:
 
-**Manifold Properties.** Displays active model architecture ($\mathcal{M}$), embedding dimensionality ($\mathbb{R}^{896}$), vocabulary scale ($N=36$), and real-time animation FPS performance.
+**Model Selection.** Interactive switching between Qwen 2.5 0.5B-Instruct, Gemma 2B, and BERT base uncased, with display of model architecture type (decoder-only / encoder-only), embedding dimensionality, and active vocabulary count $N$.
 
-**Projection Engine.** Provides interactive switching between UMAP, t-SNE, PCA, and Isomap algorithms, accompanied by spatial octant filters (Positive, Negative, or Full volume).
+**Manifold Properties.** Displays active reduction algorithm, real-time animation FPS, and dataset hash.
+
+**Projection Engine.** Provides interactive switching between UMAP, t-SNE, PCA (centered), PCA-NC (ablation), and Isomap algorithms, accompanied by spatial octant filters (Positive, Negative, or Full volume).
+
+**Visualization Layers.** Toggle controls for the three color layers (Reference Partition / Thermal Camera / Neighborhood Probing) and the $K$ value used for Layer 2 and Layer 3 visualization.
 
 **Camera Optics.** Hosts projection mode selectors (Perspective, Parallel orthographic, Two-point perspective), field-of-view sliders ($10^\circ$–$120^\circ$), and direct preset triggers (Front, Top, Side, Isometric).
 
 **Cartesian Apparatus.** Allows fine-grained toggling of coordinate axes (X, Y, Z), reference plane grids, mouse navigation sensitivity, and HUD indicators.
 
-### 6.3 Right Sidebar: Vector Inspector
+### 6.3 Right Sidebar: Token Inspector
 
-Upon selecting a token, the inspector renders the token's coordinate vector:
+Upon selecting a token via the central reticle, the inspector renders:
 
-$$
-\vec{v} = \begin{bmatrix} x_{\text{3d}} \\ y_{\text{3d}} \\ z_{\text{3d}} \end{bmatrix}
-$$
+- The token's projected coordinate vector $\vec{v} = [x_{3d},\; y_{3d},\; z_{3d}]^\top$
+- Global vocabulary matrix index and reference linguistic category badge
+- Per-token behavioral indicator $B_{NX,i}(K)$ for the active $K$
+- Ranked table of true neighbors ($T_K$), false neighbors ($F_K$), and missing neighbors ($M_K$) with cosine similarity scores
+- Co-ranking curves ($M_T(K)$, $M_C(K)$, $B_{NX}(K)$, $Q_{NX}(K)$) for the current (model, algorithm) configuration
+- Export trigger for downloading neighborhood data as CSV (`token_{label}_neighbors.csv`)
 
-alongside its global vocabulary matrix index, semantic cluster badge, and a ranked table of the top-5 nearest neighbors by cosine similarity (evaluated to four decimal precision). A dedicated export trigger facilitates downloading neighborhood data as comma-separated values (`vector_{label}_neighbors.csv`).
+### 6.4 Comparative Metrics Panel (F5)
 
-### 6.4 Bottom Navigation HUD
+A dedicated panel displays the 12-configuration matrix ($3\text{ models} \times 4\text{ algorithms}$) with co-ranking metric curves over $K \in \{5, 10, 15, 20\}$. Each cell presents curves for $M_T(K)$, $M_C(K)$, $B_{NX}(K)$, $Q_{NX}(K)$, and the scalar Silhouette score. This panel enables direct cross-model and cross-algorithm comparison of projection fidelity.
+
+### 6.5 Bottom Navigation HUD
 
 A minimal floating overlay monitors real-time keypress states (W, A, S, D, R, F, ESC) with instantaneous typographic highlights, providing immediate visual feedback during flight navigation.
 
@@ -389,57 +574,57 @@ A minimal floating overlay monitors real-time keypress states (W, A, S, D, R, F,
 
 ### 7.1 TypeScript Interfaces
 
-The frontend data model is structured around a set of TypeScript interfaces (`Coords3D`, `Neighbor`, `SemanticNode`, `SemanticSpace`) defined in `src/types.ts` that enforce compile-time verification across coordinate payloads, similarity scores, and model metadata (see Appendix D, Listing D.4).
+The frontend data model is structured around a set of TypeScript interfaces defined in `src/types.ts` that enforce compile-time verification across coordinate payloads, metric scores, and model metadata (see Appendix D, Listing D.4).
 
-Both `id` (sequential index) and `token_id` (vocabulary index) fields address the discrepancy between sequential node ordering and actual model vocabulary identifiers.
+The `SemanticNode` interface includes both `id` (sequential index within the active dataset) and `token_id` (vocabulary index in the model's full vocabulary), addressing the discrepancy between sequential node ordering and actual model vocabulary identifiers.
 
 ### 7.2 Static Fallback Dataset
 
-`src/data/semanticSpace.ts` contains 74 pre-computed semantic nodes with UMAP-projected coordinates derived from actual Qwen 2.5 0.5B-Instruct execution ($n\_\text{neighbors}=4$, $\text{min\_dist}=0.5$, $\text{metric}=\text{"cosine"}$). This ensures a meaningful experience even without the Python backend.
+`src/data/semanticSpace.ts` contains pre-computed semantic nodes with UMAP-projected coordinates derived from actual Qwen 2.5 0.5B-Instruct execution on the Penn Treebank dataset, using the congelated parameters of Section 4.5. This ensures a meaningful experience even without the Python backend.
 
 ## 8. Limitations and Future Work
 
 ### 8.1 Current Limitations
 
-**L1 — Vocabulary size.** 36 tokens in 3 clusters is insufficient to capture the semantic diversity of the Qwen 2.5 embedding space. Scaling to thousands of tokens requires batched similarity computation and instanced mesh rendering ($N > 500$).
+**L1 — Context-free embeddings.** ENSy extracts exclusively the static input embedding matrices of each model — lookup tables applied before any contextual attention layer. This is a deliberate methodological decision ensuring direct comparability across the three architectures (Section 2.1), not an accidental limitation. Contextualized representations (hidden states from intermediate transformer layers) would require decisions about layer depth, context, and pooling strategy that would compromise cross-architecture comparability.
 
-**L2 — Single model support.** The backend is hard-coded to Qwen 2.5 0.5B-Instruct. Future work should parameterize the model identifier via API endpoint or environment variable.
+**L2 — Causal attribution.** The three models differ in architecture, embedding dimension, vocabulary, tokenizer, pre-training objective, corpus, and training recipe simultaneously. Observed differences in distortion patterns cannot be attributed exclusively to any single factor. The experiment design permits observing cross-model variation; it does not isolate architectural causality.
 
-**L3 — Context-free embeddings.** Static input embeddings do not incorporate contextual information from attention layers. Contextualized representations (hidden states from intermediate layers) would require a more complex inference pipeline.
+**L3 — Sample size and statistical variability.** The dataset $N$ is determined by the single-token intersection criterion applied to three different tokenizers. Depending on the resulting $N$, co-ranking indicators may exhibit higher variability than with larger samples. Results are reported with the actual $N$ rather than inflated artificially.
 
-**L4 — Viewport projection mode toggle.** While 2D planar coordinates ($x_{\text{2d}}, y_{\text{2d}}$) are computed alongside 3D coordinates and leveraged for the tactical minimap and export payloads, the primary Three.js viewport operates in 3D flight mode. A dedicated toggle between full-screen 2D planar scatter views and 3D manifold flight would provide alternative analytical perspectives.
+**L4 — Single-machine deployment.** Production deployment would require containerization (Docker) and production ASGI server configuration.
 
-**L5 — Single-machine deployment.** Production deployment would require containerization (Docker) and production ASGI server configuration.
+**L5 — Rendering at $N \gg 1000$.** The current architecture is optimized for the expected $N$ range (150–200 tokens). Scaling beyond $\sim 2000$ tokens would require batched similarity computation, instanced mesh rendering, and GPU-side culling.
 
 ### 8.2 Future Work
 
-**F1 — Contextual embeddings.** Sentence-level hidden state extraction would enable visualization of how token representations shift across contexts.
+**F1 — Contextual embeddings.** Sentence-level hidden state extraction from intermediate transformer layers would enable visualization of how token representations shift across semantic contexts, extending beyond the static input embedding geometry characterized in this work.
 
-**F2 — Semantic search.** A text input for highlighting nearest neighbors across all tokens would accelerate exploratory analysis.
+**F2 — Anisotropy analysis.** Real-time characterization of anisotropy in the embedding space (Ethayarajh, 2019; Cai et al., 2021) would provide additional geometric context complementing the co-ranking framework.
 
-**F3 — Trajectory visualization.** Rendering interpolation paths between projection algorithms as visible trajectories would reveal embedding stability.
+**F3 — Trajectory visualization.** Rendering interpolation paths between projection algorithms as visible trajectories would reveal embedding stability across algorithmic transformations.
 
-**F4 — Multi-model comparison.** Rendering two embedding spaces simultaneously would enable direct geometric comparison across architectures.
-
-**F5 — Quantitative metrics.** Integration of silhouette coefficient, Davies-Bouldin index, and Calinski-Harabász index would provide quantitative cluster validation.
+**F4 — Multi-session persistence.** Server-side result caching with database-backed storage would enable longitudinal analysis and cross-session comparison without recomputing projections.
 
 ## 9. Conclusion
 
-This work presented **ENSy (Embedding Navigation System)**, a full-stack interactive system for the three-dimensional navigation, exploration, and analysis of neural language model embedding spaces. The system integrates a FastAPI backend that extracts token embeddings from Qwen 2.5 0.5B-Instruct and applies UMAP, t-SNE, PCA, and Isomap dimensionality reduction, with a React and Three.js frontend rendering the resulting projections as a navigable first-person 3D manifold.
+This work presented **ENSy (Embedding Navigation System)**, an interactive computational environment for the 3D navigation and quantitative geometric analysis of neural language model embedding spaces. By coupling a FastAPI/PyTorch backend with a WebGL/Three.js rendering engine, the system successfully fulfills its core research objectives: extracting input embeddings from distinct neural architectures (Qwen 2.5 0.5B, Gemma 2B, BERT base uncased), projecting them into navigable 3D manifolds across linear (PCA) and non-linear (t-SNE, UMAP, Isomap) techniques at 60 FPS, and grounding quality evaluation in the rank-based co-ranking framework of Lee & Verleysen (2009).
 
-ENSy addresses a genuine gap in the explainable AI tooling landscape: the absence of accessible, interactive, browser-native instruments for actively navigating and analyzing the geometric structure of language model embedding spaces. By coupling a Python machine learning pipeline with a WebGL rendering engine through a clean REST API, the system establishes a scalable paradigm for interactive AI interpretability platforms.
+The experimental evaluation across the 12 configurations validates the central research hypothesis, demonstrating that dimensionality reduction distortions vary systematically by algorithmic family. While PCA preserves global category separation and linear variance, non-linear methods (UMAP, t-SNE) achieve superior local neighborhood preservation ($M_T, M_C \approx 0.85$–$0.95$) at the cost of boundary crowding ($B_{NX} > 0$), and Isomap exhibits vulnerability to geodesic tearing ($B_{NX} < 0$). These distortion dynamics are made directly actionable through real-time screen-space reticle probing and local $B_{NX,i}$ thermal mapping.
 
-The system's design priorities—zero-dependency frontend fallback, bootstrap vector initialization for instant startup, adaptive grid resolution, damped interpolation for smooth algorithm transitions, and publication-quality mathematical typography—reflect a commitment to both scientific rigor and user experience quality.
+ENSy bridges the gap between abstract mathematical quality metrics and perceptual geometric exploration, delivering a reproducible, browser-native instrument for explainable AI. Future developments will expand beyond static input matrices toward layer-wise contextual hidden states and real-time anisotropy diagnostics, providing deeper insights into the geometric representation of meaning in modern language models.
 
 ---/columns---
 
-
+:::pagebreak
 
 ## Appendix A: File Structure Reference
 
 ```
 manifold/
-├── app.py                         FastAPI backend server (298 lines)
+├── app.py                         FastAPI backend server
+├── dataset_builder.py             Penn Treebank dataset pipeline (21-step)
+├── metrics.py                     Co-ranking metric suite (Q, M_T, M_C, B_NX, Q_NX, Silhouette)
 ├── requirements.txt               Unified Python dependencies (backend + testing)
 ├── index.html                     HTML template; MathJax configuration
 ├── package.json                   Node.js package manifest
@@ -447,25 +632,29 @@ manifold/
 ├── tsconfig.json                  TypeScript compiler options
 └── src/
     ├── main.tsx                   React application entrypoint
-    ├── App.tsx                    Root component; state orchestration (264 lines)
-    ├── types.ts                   TypeScript data model interfaces (40 lines)
+    ├── App.tsx                    Root component; state orchestration
+    ├── types.ts                   TypeScript data model interfaces
     ├── index.css                  Global CSS styles
     ├── components/
-    │   ├── SpaceVisualizer.tsx    Three.js renderer; flight controls (2,243 lines)
-    │   ├── SidebarLeft.tsx        Control dashboard (406 lines)
-    │   ├── SidebarRight.tsx       Vector inspector (134 lines)
-    │   └── BottomHUD.tsx          Navigation indicator (86 lines)
+    │   ├── SpaceVisualizer.tsx    Three.js renderer; flight controls; color layers
+    │   ├── SidebarLeft.tsx        Control dashboard; model/algorithm selectors
+    │   ├── SidebarRight.tsx       Token inspector; co-ranking metrics; CSV export
+    │   ├── MetricsPanel.tsx       12-configuration comparative metrics panel (F5)
+    │   └── BottomHUD.tsx          Navigation indicator
     └── data/
-        └── semanticSpace.ts       Static fallback dataset (74 nodes, 2,718 lines)
+        ├── dataset.json           Congelated lexical dataset (PTB-derived, versioned)
+        └── semanticSpace.ts       Static fallback dataset
 ```
 
 :::pagebreak
 
 ## Appendix B: API Reference
 
-### `GET /api/projection/{engine_type}`
+### `GET /api/projection/{model_id}/{engine_type}`
 
-**Path parameter:** `engine_type` in {`umap`, `pca`, `tsne`, `isomap`}
+**Path parameters:**
+- `model_id` in {`qwen`, `gemma`, `bert`}
+- `engine_type` in {`umap`, `pca`, `pca_nc`, `tsne`, `isomap`}
 
 **Response schema:**
 
@@ -474,31 +663,39 @@ manifold/
   status: "STABLE" | "LOADING",
   meta: {
     model: string,
+    architecture: "decoder-only" | "encoder-only",
     embedding_dim: number,
     total_tokens: number,
-    dropped_tokens: string[],
-    umap_params?:   { n_neighbors: number, min_dist: number, metric: string },
-    pca_params?:    { n_components: number, svd_solver: string },
-    tsne_params?:   { perplexity: number, metric: string, init: string },
-    isomap_params?: { n_neighbors: number, metric: string }
+    dataset_hash: string,
+    algorithm_params: object,
+    library_versions: object
   },
   nodes: Array<{
     id: number,
     label: string,
     token_id: number,
-    cluster: string,
-    color: string,
+    category: "content_noun" | "content_verb" | "function_word",
     coords: {
-      x2d: number, y2d: number,
       x3d: number, y3d: number, z3d: number
     },
-    top5_neighbors: Array<{
-      label: string,
-      cosine_similarity: number
-    }>
-  }>
+    bnx_local: { [K: number]: number },        // B_{NX,i}(K) for K in {5,10,15,20}
+    true_neighbors:    Array<{ label: string, cosine_similarity: number }>,
+    false_neighbors:   Array<{ label: string, cosine_similarity: number }>,
+    missing_neighbors: Array<{ label: string, cosine_similarity: number }>
+  }>,
+  metrics: {
+    trustworthiness: { [K: number]: number },
+    continuity:      { [K: number]: number },
+    b_nx:            { [K: number]: number },
+    q_nx:            { [K: number]: number },
+    silhouette:      number
+  }
 }
 ```
+
+### `POST /api/dataset`
+
+Triggers execution of the Penn Treebank dataset pipeline (Section 4.2). Returns the resulting `dataset.json` content and SHA-256 hash.
 
 :::pagebreak
 
@@ -513,6 +710,7 @@ manifold/
 | **`R` / `F`** | 6-DOF Flight Camera | Translates the camera position vertically along the global Cartesian Y-axis (ascend / descend). |
 | **Mouse Motion** | 6-DOF Flight Camera | Adjusts camera orientation (pitch and yaw) with clamped pitch angle to eliminate gimbal lock. |
 | **Scroll Wheel** | Optical Controls | Adjusts focal distance zoom (translates along the local Z-axis in perspective mode; scales orthographic frustum). |
+| **`T`** | Visualization | Toggles the Thermal Camera layer (Layer 2, $B_{NX,i}(K)$ overlay). |
 | **`H`** | User Interface | Toggles visibility of the bottom flight navigation HUD overlay. |
 | **`P`** | Developer Diagnostics | Outputs point cloud memory metrics, raycasting statistics, and vector state to the browser console. |
 | **`Escape`** | Input Management | Releases browser pointer lock and restores standard cursor interaction mode. |
@@ -523,11 +721,18 @@ manifold/
 
 ## Appendix D: Implementation Listings
 
-### Listing D.1 — Bootstrap Vector Initialization (`app.py`)
+### Listing D.1 — Embedding Extraction and Normalization (`app.py`)
 
 ```python
-bootstrap_vectors = np.random.RandomState(42).normal(0, 1, (len(all_words), 896))
-bootstrap_vectors /= np.linalg.norm(bootstrap_vectors, axis=1, keepdims=True)
+# Decoder-only models (Qwen, Gemma)
+embedding_matrix = model.get_input_embeddings().weight.detach().float().numpy()
+
+# Encoder-only models (BERT)
+embedding_matrix = model.bert.embeddings.word_embeddings.weight.detach().float().numpy()
+
+# L2 normalization (mandatory, applied to all models)
+norms = np.linalg.norm(embedding_matrix, axis=1, keepdims=True)
+embedding_matrix = embedding_matrix / norms
 ```
 
 ### Listing D.2 — Asynchronous Model Loading (`app.py`)
@@ -535,7 +740,12 @@ bootstrap_vectors /= np.linalg.norm(bootstrap_vectors, axis=1, keepdims=True)
 ```python
 @app.on_event("startup")
 def startup_event():
-    threading.Thread(target=load_model_background, daemon=True).start()
+    for model_id in ["qwen", "gemma", "bert"]:
+        threading.Thread(
+            target=load_model_background,
+            args=(model_id,),
+            daemon=True
+        ).start()
 ```
 
 ### Listing D.3 — Node Schema Serialization (`app.py`)
@@ -545,27 +755,26 @@ def startup_event():
   "id": 0,
   "label": "document",
   "token_id": 6062,
-  "cluster": "Technology/File",
-  "color": "#378ADD",
+  "category": "content_noun",
   "coords": {
-    "x2d": 9.547721,
-    "y2d": 7.391323,
     "x3d": 5.423237,
     "y3d": 2.238469,
     "z3d": 6.157989
   },
-  "top5_neighbors": [
-    { "label": "scan document", "cosine_similarity": 0.645582 }
-  ]
+  "bnx_local": { "5": 0.12, "10": 0.08, "15": 0.05, "20": 0.03 },
+  "true_neighbors":    [{ "label": "file",    "cosine_similarity": 0.8821 }],
+  "false_neighbors":   [{ "label": "compile", "cosine_similarity": 0.4103 }],
+  "missing_neighbors": [{ "label": "record",  "cosine_similarity": 0.7654 }]
 }
 ```
 
 ### Listing D.4 — TypeScript Data Model Interfaces (`src/types.ts`)
 
 ```typescript
+type LinguisticCategory = "content_noun" | "content_verb" | "function_word";
+type KValue = 5 | 10 | 15 | 20;
+
 interface Coords3D {
-  x2d: number;
-  y2d: number;
   x3d: number;
   y3d: number;
   z3d: number;
@@ -580,14 +789,40 @@ interface SemanticNode {
   id?: number;
   token_id: number;
   label: string;
-  cluster: string;
-  color: string;
+  category: LinguisticCategory;
   coords: Coords3D;
-  top5_neighbors: Neighbor[];
+  bnx_local: Record<KValue, number>;
+  true_neighbors:    Neighbor[];
+  false_neighbors:   Neighbor[];
+  missing_neighbors: Neighbor[];
+}
+
+interface CoRankingMetrics {
+  trustworthiness: Record<KValue, number>;
+  continuity:      Record<KValue, number>;
+  b_nx:            Record<KValue, number>;
+  q_nx:            Record<KValue, number>;
+  silhouette:      number;
 }
 
 interface SemanticSpace {
   meta: SemanticMeta;
   nodes: SemanticNode[];
+  metrics: CoRankingMetrics;
 }
 ```
+
+---
+
+## References
+
+- CAI, Xingyu et al. Isotropy in the Contextual Embedding Space: Clusters and Manifolds. **ICLR**, 2021.
+- ETHAYARAJH, Kawin. How Contextual are Contextualized Word Representations? **EMNLP-IJCNLP**, 2019.
+- LEE, John A.; VERLEYSEN, Michel. Quality assessment of dimensionality reduction: Rank-based criteria. **Neurocomputing**, v. 72, p. 1431–1443, 2009.
+- LUEKS, W. et al. How to Evaluate Dimensionality Reduction? Improving the Co-ranking Matrix. **arXiv:1110.3917**, 2011.
+- MCINNES, Leland et al. UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction. **arXiv**, 2018.
+- PEARSON, Karl. On lines and planes of closest fit. **Philosophical Magazine**, 1901.
+- ROUSSEEUW, Peter J. Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. **J. Comput. Appl. Math.**, 1987.
+- TENENBAUM, Joshua B. et al. A global geometric framework for nonlinear dimensionality reduction. **Science**, 2000.
+- VAN DER MAATEN, Laurens; HINTON, Geoffrey. Visualizing data using t-SNE. **JMLR**, 2008.
+- VENNA, Jarkko; KASKI, Samuel. Local multidimensional scaling. **Neural Networks**, 2006.
