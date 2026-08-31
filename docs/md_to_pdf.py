@@ -20,12 +20,23 @@ import subprocess
 import sys
 
 def ensure_environment():
-    try:
-        import markdown
-        import playwright
+    required_packages = [
+        ("markdown", "markdown"),
+        ("pymdownx", "pymdown-extensions"),
+        ("playwright", "playwright"),
+        ("pypdf", "pypdf"),
+        ("matplotlib", "matplotlib"),
+        ("pyphen", "pyphen"),
+    ]
+    all_present = True
+    for mod_name, _ in required_packages:
+        try:
+            __import__(mod_name)
+        except ImportError:
+            all_present = False
+            break
+    if all_present:
         return
-    except ImportError:
-        pass
 
     # Check for existing virtualenvs in workspace root that have required dependencies
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,13 +52,6 @@ def ensure_environment():
             sys.exit(ret)
 
     # If no virtualenv is available, install missing dependencies in current python
-    required_packages = [
-        ("markdown", "markdown"),
-        ("pymdownx", "pymdown-extensions"),
-        ("playwright", "playwright"),
-        ("pypdf", "pypdf"),
-        ("matplotlib", "matplotlib"),
-    ]
     missing = []
     for mod_name, pkg_name in required_packages:
         try:
@@ -147,11 +151,10 @@ def preprocess_theorems(md_content: str) -> str:
         )
         anchor_attr = f' id="{anchor}"' if anchor else ""
 
-        # Convert body Markdown inline (bold, italic, math) — keep it simple
         return (
-            f'<div class="theorem-block theorem-{env}"{anchor_attr}>'
-            f'<div class="theorem-header">{label_html}{title_html}</div>'
-            f'<div class="theorem-body">{body}{qed}</div>'
+            f'<div class="theorem-block theorem-{env}"{anchor_attr} markdown="1">\n\n'
+            f'<div class="theorem-header">{label_html}{title_html}</div>\n\n'
+            f'<div class="theorem-body" markdown="1">\n\n{body}{qed}\n\n</div>\n\n'
             f'</div>'
         )
 
@@ -297,17 +300,18 @@ def preprocess_figures(md_content: str) -> str:
       ![Alt text](path)
       _Figure X: Caption text..._
     and transform them into structured IEEE/ACM <figure> elements.
+    Supports captions containing internal underscores or variable names.
     """
     pattern = re.compile(
-        r'!\[(?P<alt>[^\]]*)\]\((?P<src>[^)]+)\)\s*\n+_(?:Figure|Fig\.?)\s*(?P<num>\d+)\s*:\s*(?P<caption>[^\n_]+)_',
-        re.MULTILINE
+        r'!\[(?P<alt>[^\]]*)\]\((?P<src>[^)]+)\)\s*\n+_(?:Figure|Fig\.?)\s*(?P<num>\d+)\s*:\s*(?P<caption>.+?)_\s*(?=\n\n|\n[#!\-\*\d]|\Z)',
+        re.MULTILINE | re.DOTALL
     )
 
     def replace_fig(m: re.Match) -> str:
         alt = m.group("alt")
         src = m.group("src")
         num = m.group("num")
-        cap = m.group("caption").strip()
+        cap = m.group("caption").strip().replace('\n', ' ')
         return (
             f'<figure class="academic-figure">\n'
             f'  <img src="{src}" alt="{alt}" />\n'
@@ -347,14 +351,15 @@ def fix_em_dashes(html: str) -> str:
 def fix_inline_code_breaks(html: str) -> str:
     """
     Insert <wbr> break opportunities inside inline <code> tags (not in <pre>)
-    only for long identifiers (> 16 chars) like method chains or URLs,
+    only for long identifiers (> 14 chars) like method chains or URLs,
     so short terms like `min_dist` or `n_neighbors` never break mid-word.
+    Protects HTML entities (e.g. &amp;, &lt;, &#123;) from being broken by <wbr>.
     """
     def inject_wbr(m: re.Match) -> str:
         code_text = m.group(1)
         if len(code_text) > 14:
-            # Add <wbr> after symbols: / . _ - : { } ( ) , = ? &
-            code_text = re.sub(r'([/._\-:{}(),?=&])', r'\1<wbr>', code_text)
+            # Add <wbr> after symbols: / . _ - : { } ( ) , = ? (and & only when not part of an HTML entity)
+            code_text = re.sub(r'([/._\-:{}(),?=]|&(?!#?[a-zA-Z0-9]+;))', r'\1<wbr>', code_text)
             # Add <wbr> at camelCase transitions
             code_text = re.sub(r'([a-z0-9])([A-Z])', r'\1<wbr>\2', code_text)
         return f'<code>{code_text}</code>'
@@ -367,16 +372,16 @@ def fix_inline_code_breaks(html: str) -> str:
 
 def postprocess_heading_hyphens(html: str) -> str:
     """
-    Inside <h2>, <h3>, <h4> tags, replace hyphens specifically in digit-word
-    compounds (e.g. '6-DOF', '3-D') with the non-breaking hyphen (&#8209;)
-    so digits are never separated from their acronyms, while allowing standard
-    hyphenated words like 'Co-ranking' to flow and hyphenate naturally.
+    Editorial standard: headings (h1..h6) do NOT undergo hyphenation (syllable breaking).
+    Protects digit and prefix compounds (e.g. '6-DOF', '3-D', 't-SNE', 't-Distributed')
+    with non-breaking hyphens (&#8209;) so hyphenated prefixes are never orphaned.
     """
     def fix_hyphens_in_heading(m: re.Match) -> str:
-        tag     = m.group(1)   # h2 / h3 / h4
-        content = m.group(2)
+        tag     = m.group(1)   # h1..h6
+        attrs   = m.group(2)   # e.g. ' id="..."'
+        content = m.group(3)
         segments = re.split(
-            r'(<(?:code|span[^>]*)>.*?</(?:code|span)>|<mjx-container[^>]*>.*?</mjx-container>)',
+            r'(<(?:code|span[^>]*)>.*?</(?:code|span)>|<mjx-container[^>]*>.*?</mjx-container>|<[^>]+>)',
             content, flags=re.DOTALL
         )
         fixed = []
@@ -384,13 +389,15 @@ def postprocess_heading_hyphens(html: str) -> str:
             if j % 2 == 1:
                 fixed.append(seg)
             else:
-                # Protect digit-dash-letter (e.g. 6-DOF)
+                # Protect digit-dash-letter (e.g. 6-DOF, 3-D)
                 seg = re.sub(r'(\d)-([A-Za-z])', r'\1&#8209;\2', seg)
+                # Protect single-letter-dash (e.g. t-SNE, t-Distributed)
+                seg = re.sub(r'\b([A-Za-z])-([A-Za-z])', r'\1&#8209;\2', seg)
                 fixed.append(seg)
-        return f'<{tag}>{"" .join(fixed)}</{tag}>'
+        return f'<{tag}{attrs}>{"" .join(fixed)}</{tag}>'
 
     return re.sub(
-        r'<(h[234])>(.*?)</h[234]>',
+        r'<(h[1-6])([^>]*)>(.*?)</\1>',
         fix_hyphens_in_heading,
         html,
         flags=re.DOTALL,
@@ -599,8 +606,8 @@ h2 {{
   padding-bottom: 0;
   page-break-after: avoid;
   break-after: avoid;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
 }}
 h3 {{
   font-size: 11.5pt;
@@ -612,8 +619,8 @@ h3 {{
   margin-bottom: 5pt;
   page-break-after: avoid;
   break-after: avoid;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
 }}
 h4 {{
   font-size: 11pt;
@@ -625,8 +632,8 @@ h4 {{
   margin-bottom: 4pt;
   page-break-after: avoid;
   break-after: avoid;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
 }}
 
 /* ── Body text ──────────────────────────────────────────── */
@@ -948,6 +955,7 @@ mjx-container[jax="CHTML"][display="true"] {{
   font-size: 9pt;
   color: #901633;
   margin: 10pt 0;
+}}
 /* ── Multi-column layout ────────────────────────────────── */
 .columns-layout {{
   column-gap: 8mm;
@@ -1154,6 +1162,7 @@ mjx-container[jax="CHTML"][display="true"] {{
   padding: 0 !important;
   margin: 0 !important;
 }}
+.references-section p,
 .references-section li {{
   text-align: justify !important;
   text-justify: inter-word !important;
@@ -1162,11 +1171,12 @@ mjx-container[jax="CHTML"][display="true"] {{
   word-break: normal;
   overflow-wrap: break-word;
   text-wrap: pretty;
-  margin-bottom: 7pt;
+  margin-top: 0 !important;
+  margin-bottom: 7pt !important;
   padding-left: 0 !important;
   text-indent: 0 !important;
-  font-size: 9.5pt;
-  line-height: 1.45;
+  font-size: 9.5pt !important;
+  line-height: 1.45 !important;
   break-inside: avoid;
   page-break-inside: avoid;
 }}
@@ -1258,14 +1268,22 @@ def _build_header_font_style() -> str:
 # Playwright PDF renderer
 # ---------------------------------------------------------------------------
 
-# Build once at module load — download is cached after the first run
-_HEADER_FONT_STYLE: str = _build_header_font_style()
+_HEADER_FONT_STYLE_CACHE: str | None = None
+
+def get_header_font_style() -> str:
+    """Lazy evaluation and caching of EB Garamond header/footer font embedding."""
+    global _HEADER_FONT_STYLE_CACHE
+    if _HEADER_FONT_STYLE_CACHE is None:
+        _HEADER_FONT_STYLE_CACHE = _build_header_font_style()
+    return _HEADER_FONT_STYLE_CACHE
+
 
 def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
                    pdf_path: str = OUTPUT_PDF_PATH,
                    cleanup: bool = True) -> None:
 
     print("[*] Starting Playwright PDF generation...")
+    header_font_style = get_header_font_style()
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page(
@@ -1328,7 +1346,7 @@ def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
             },
             display_header_footer=True,
             header_template=f"""
-            {_HEADER_FONT_STYLE}
+            {header_font_style}
             <div style="width:100%; font-family:'EB Garamond',Georgia,serif;
                         font-size:8pt; color:#777; display:flex;
                         justify-content:space-between; padding:0 20mm; margin:0;
@@ -1337,7 +1355,7 @@ def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
               <span>Alexandre Santos &#8212; UFMA</span>
             </div>""",
             footer_template=f"""
-            {_HEADER_FONT_STYLE}
+            {header_font_style}
             <div style="width:100%; font-family:'EB Garamond',Georgia,serif;
                         font-size:9pt; color:#777; text-align:center; padding:0 20mm; margin:0;
                         box-sizing:border-box;">

@@ -1,6 +1,6 @@
 # ENSy: Design, Implementation, and Application of an Interactive Embedding Navigation System for Large Language Models
 
-**Author:** Alexandre da Silva Santos Santos  
+**Author:** Alexandre da Silva Santos  
 **Institution:** Federal University of Maranhão  
 **Program:** B.Sc. in Science and Technology – Computer Engineering  
 **Date:** August 2026    
@@ -289,17 +289,22 @@ The backend server (`app.py`) begins with a self-bootstrapping dependency manage
 
 ### 4.2 Lexical Dataset — Penn Treebank Pipeline
 
-ENSy's experimental vocabulary is a **lexical dataset derived from the Penn Treebank**, not a fixed hardcoded word list. The dataset is built by the following 10-step pipeline before any embedding extraction or metric computation:
+ENSy's experimental vocabulary is a **lexical dataset derived from the Penn Treebank**, not a fixed hardcoded word list. The dataset is built by a 10-step curation pipeline that produces a frozen, reproducible lexical input prior to any embedding extraction or metric computation:
 
-1. Extract all token surface forms from the Penn Treebank corpus and normalize (lowercasing, punctuation removal).
-2. Assign each candidate form a reference linguistic category: `content_noun`, `content_verb`, or `function_word`.
-3. Resolve homographs appearing under multiple categories using a fixed rule: the category of highest frequency of occurrence in the corpus is assigned. Forms whose category cannot be determined unambiguously by this rule are **excluded** from the dataset (not assigned an ad-hoc category).
-4. Apply the single-token criterion independently to each of the three tokenizers (Qwen, Gemma, BERT): a lexical form is retained only if it maps to **exactly one token ID** in every tokenizer and that ID corresponds to a valid row of each model's input embedding matrix.
-5. Deduplicate: each normalized form appears at most once.
-6. Balance the dataset across the three categories.
-7. Record the final set as `dataset.json` with its SHA-256 hash.
+1. **Corpus Extraction:** Extract token surface forms from the Penn Treebank corpus (PTB tokens $\to$ lexical types).
+2. **Text Normalization:** Apply case normalization (lowercasing) and punctuation/symbol stripping.
+3. **Linguistic Categorization:** Assign each candidate form a reference linguistic category: `content_noun`, `content_verb`, or `function_word`.
+4. **Homograph Disambiguation:** Resolve homographs appearing under multiple categories using a fixed corpus-frequency rule: the category of highest frequency in the corpus is assigned. Forms whose category cannot be determined unambiguously by this rule are **excluded** from the dataset.
+5. **Qwen Tokenization:** Perform independent tokenization using the Qwen 2.5 tokenizer.
+6. **Gemma Tokenization:** Perform independent tokenization using the Gemma 2B tokenizer.
+7. **BERT Tokenization:** Perform independent tokenization using the BERT base uncased tokenizer.
+8. **Single-Token Intersection Filtering:** Retain only candidate forms that map to **exactly one token ID** across all three tokenizers and correspond to valid rows of each model's input embedding matrix.
+9. **Strict Deduplication:** Ensure each normalized surface form appears at most once in the dataset.
+10. **Category Balancing and Hash Freezing:** Balance the representation across the three reference categories and record the resulting $N$ items as `dataset.json` accompanied by its SHA-256 integrity hash.
 
-The final token count $N$ is reported as the result of this pipeline — it is not forced to any predetermined target. The `dataset.json` file is versioned in the repository as a fixed experimental input.
+This 10-step curation constitutes Phase 1 of the system's **21-step operational sequence**: Steps 1–10 produce and freeze `dataset.json`; Steps 11–13 extract input embeddings across the three models, verify native dimensions ($d=896, 2048, 768$), and apply mandatory $L_2$ normalization; Steps 14–16 compute the cosine distance matrix $D_X$, construct the co-ranking matrix $Q$, and evaluate rank-based quality metrics; Steps 17–20 execute the four dimensionality reduction engines (PCA, t-SNE, UMAP, Isomap); and Step 21 executes and consolidates the 12 experimental configurations.
+
+The final token count $N$ is reported as the empirical output of this pipeline — it is not artificially inflated to any predetermined target. The `dataset.json` file and its SHA-256 hash are versioned in the repository as immutable experimental inputs.
 
 **Taxonomy note.** The partition `content_noun`/`content_verb`/`function_word` is designated the **reference linguistic partition** — not "grammatical classes" or "stopwords." The label assigned to each form in the dataset represents the chosen category in the curated set, not an inference from model representations.
 
@@ -608,11 +613,11 @@ The `SemanticNode` interface includes both `id` (sequential index within the act
 
 ## 9. Conclusion
 
-This work presented **ENSy (Embedding Navigation System)**, an interactive computational environment for the 3D navigation and quantitative geometric analysis of neural language model embedding spaces. By coupling a FastAPI/PyTorch backend with a WebGL/Three.js rendering engine, the system successfully fulfills its core research objectives: extracting input embeddings from distinct neural architectures (Qwen 2.5 0.5B, Gemma 2B, BERT base uncased), projecting them into navigable 3D manifolds across linear (PCA) and non-linear (t-SNE, UMAP, Isomap) techniques at 60 FPS, and grounding quality evaluation in the rank-based co-ranking framework of Lee & Verleysen (2009).
+This work presented **ENSy (Embedding Navigation System)**, an interactive computational environment for the 3D navigation and quantitative geometric analysis of neural language model embedding spaces. By coupling a FastAPI/PyTorch backend with a WebGL/Three.js rendering engine, the system fulfills its core design and architectural objectives: extracting architecture-agnostic input embeddings across distinct neural architectures (Qwen 2.5 0.5B, Gemma 2B, BERT base uncased), projecting them into navigable 3D Riemannian manifolds across linear (PCA) and non-linear (t-SNE, UMAP, Isomap) dimensionality reduction engines at 60 FPS, and grounding geometric quality assessment in the rank-based co-ranking framework of Lee & Verleysen (2009).
 
-The experimental evaluation across the 12 configurations validates the central research hypothesis, demonstrating that dimensionality reduction distortions vary systematically by algorithmic family. While PCA preserves global category separation and linear variance, non-linear methods (UMAP, t-SNE) achieve superior local neighborhood preservation ($M_T, M_C \approx 0.85$–$0.95$) at the cost of boundary crowding ($B_{NX} > 0$), and Isomap exhibits vulnerability to geodesic tearing ($B_{NX} < 0$). These distortion dynamics are made directly actionable through real-time screen-space reticle probing and local $B_{NX,i}$ thermal mapping.
+The methodological framework establishes a strictly reproducible experimental protocol across 12 configurations (3 model architectures $\times$ 4 projection algorithms), driven by a curated, SHA-256-versioned lexical dataset derived from the Penn Treebank and congelated hyperparameter tables. By formulating the per-token behavioral decomposition $B_{NX,i}(K)$ alongside global Trustworthiness, Continuity, and $Q_{NX}(K)$ metrics, the system equips researchers with complementary perceptual and quantitative instruments—namely, real-time screen-space reticle probing, a three-layer topological color hierarchy, and a local distortion thermal overlay.
 
-ENSy bridges the gap between abstract mathematical quality metrics and perceptual geometric exploration, delivering a reproducible, browser-native instrument for explainable AI. Future developments will expand beyond static input matrices toward layer-wise contextual hidden states and real-time anisotropy diagnostics, providing deeper insights into the geometric representation of meaning in modern language models.
+ENSy bridges the gap between abstract mathematical quality criteria and interactive spatial exploration, delivering a foundational, browser-native instrument for explainable artificial intelligence (XAI). Following the full empirical execution of the 12 experimental configurations, future research directions will expand beyond static input embedding matrices toward layer-wise contextual representations, cross-session comparative persistence, and automated anisotropy diagnostics in deep language models.
 
 ---/columns---
 
@@ -816,13 +821,23 @@ interface SemanticSpace {
 
 ## References
 
-- CAI, Xingyu et al. Isotropy in the Contextual Embedding Space: Clusters and Manifolds. **ICLR**, 2021.
-- ETHAYARAJH, Kawin. How Contextual are Contextualized Word Representations? **EMNLP-IJCNLP**, 2019.
-- LEE, John A.; VERLEYSEN, Michel. Quality assessment of dimensionality reduction: Rank-based criteria. **Neurocomputing**, v. 72, p. 1431–1443, 2009.
-- LUEKS, W. et al. How to Evaluate Dimensionality Reduction? Improving the Co-ranking Matrix. **arXiv:1110.3917**, 2011.
-- MCINNES, Leland et al. UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction. **arXiv**, 2018.
-- PEARSON, Karl. On lines and planes of closest fit. **Philosophical Magazine**, 1901.
-- ROUSSEEUW, Peter J. Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. **J. Comput. Appl. Math.**, 1987.
-- TENENBAUM, Joshua B. et al. A global geometric framework for nonlinear dimensionality reduction. **Science**, 2000.
-- VAN DER MAATEN, Laurens; HINTON, Geoffrey. Visualizing data using t-SNE. **JMLR**, 2008.
-- VENNA, Jarkko; KASKI, Samuel. Local multidimensional scaling. **Neural Networks**, 2006.
+CAI, Xingyu et al. Isotropy in the Contextual Embedding Space: Clusters and Manifolds. **ICLR**, 2021.
+
+ETHAYARAJH, Kawin. How Contextual are Contextualized Word Representations? **EMNLP-IJCNLP**, 2019.
+
+LEE, John A.; VERLEYSEN, Michel. Quality assessment of dimensionality reduction: Rank-based criteria. **Neurocomputing**, v. 72, p. 1431–1443, 2009.
+
+LUEKS, W. et al. How to Evaluate Dimensionality Reduction? Improving the Co-ranking Matrix. **arXiv:1110.3917**, 2011.
+
+MCINNES, Leland et al. UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction. **arXiv**, 2018.
+
+PEARSON, Karl. On lines and planes of closest fit. **Philosophical Magazine**, 1901.
+
+ROUSSEEUW, Peter J. Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. **J. Comput. Appl. Math.**, 1987.
+
+TENENBAUM, Joshua B. et al. A global geometric framework for nonlinear dimensionality reduction. **Science**, 2000.
+
+VAN DER MAATEN, Laurens; HINTON, Geoffrey. Visualizing data using t-SNE. **JMLR**, 2008.
+
+VENNA, Jarkko; KASKI, Samuel. Local multidimensional scaling. **Neural Networks**, 2006.
+
