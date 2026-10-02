@@ -33,7 +33,13 @@ The guiding question is: *how do PCA, t-SNE, UMAP and Isomap preserve or distort
 
 ### 2.1 Input embeddings and cosine geometry
 
-ENSy studies exclusively the static input-embedding matrix of each model: the lookup table applied before any contextual layer. This representation is directly comparable across decoder-only and encoder-only architectures, whereas contextual hidden states would require choices of layer, context and pooling that change what is being measured. All vectors are $L_2$-normalised, so that
+ENSy studies exclusively the static input-embedding matrix of each model: the lookup table applied before any contextual layer. This representation is directly comparable across decoder-only and encoder-only architectures, whereas contextual hidden states would require choices of layer, context and pooling that change what is being measured. Similarity between two embeddings $u, v \in \mathbb{R}^d$ is measured by the cosine of the angle $\theta$ between them,
+
+$$
+\cos\theta = \frac{u^\top v}{\|u\|\,\|v\|},
+$$
+
+and cosine distance is $1 - \cos\theta$. All vectors are $L_2$-normalised, $\hat u = u/\|u\|$, so that
 
 $$
 \|\hat u - \hat v\|^2 = 2\,(1 - \cos\theta),
@@ -50,6 +56,8 @@ that is, Euclidean distance on the unit sphere is a monotone function of cosine 
 **UMAP** builds a fuzzy neighbourhood graph and optimises a low-dimensional layout by cross-entropy [9]; its number of neighbours sets "the local scale at which to approximate the manifold".
 
 **Isomap** estimates geodesic distances as shortest paths in a $k$-nearest-neighbour graph and embeds them with classical MDS [10]. Points disconnected from the graph's giant component have no finite geodesic distance; the original authors note they "can be deleted from further analysis" [10, note 19].
+
+---/columns---
 
 ### 2.3 The co-ranking framework
 
@@ -88,7 +96,7 @@ U_P(K) = \frac{1}{KN}\sum_{D_K} q_{kl},\qquad Q_{NX}(K) = U_P + U_N + U_X,
 $$
 
 $$
-\boxed{B_{NX}(K) = U_X(K) - U_N(K)}.
+B_{NX}(K) = U_X(K) - U_N(K).
 $$
 
 $Q_{NX}(K)$ is the average fraction of shared $K$-neighbours and equals the local continuity meta-criterion of Chen and Buja [12] up to the baseline $K/(N-1)$. An earlier conference version of the framework [13] attaches the names $U_N$ and $U_X$ to the opposite triangles while yielding the same value of $B_{NX}$; the definitions above follow the journal version. $B_{NX}(K)$ is, in the authors' words, "positive for intrusive embeddings and negative for extrusive ones" [1, p. 1434]. The sign looks inverted only at first sight: a single hard intrusion pushes every subsequent genuine neighbour one rank down, producing $(K - r_{ij})$ mild extrusions, so the number of mild extrusions measures the severity of the intrusions [1, Fig. 2]. The same paper defines a second behaviour indicator, $B_{TC}(K) = M_C(K) - M_T(K)$ (Eq. 27), which weights hard events instead of counting mild ones; both are reported.
@@ -222,8 +230,6 @@ The viewer offers first-person 6-DOF flight (W/A/S/D, R/F, mouse look under poin
   <img src="screenshots/fig08_metrics_panel.png" alt="Figure 4" style="width:100%" />
   <figcaption><strong class="caption-label">Fig. 4.</strong> Co-ranking panel for GPT-2 with Isomap: $M_T$, $M_C$, $Q_{NX}$ and $B_{NX}$ over $K$, and the 3D and 2D Silhouette scores.</figcaption>
 </figure>
-
----/columns---
 
 ## 5. Results
 
@@ -378,8 +384,6 @@ Figures 7–11 show the five projection configurations of the same model, and Fi
 
 <!-- END:ablation -->
 
----columns{count=2}---
-
 ## 6. Discussion
 
 **The sign of t-SNE's behaviour follows the perplexity.** With the frozen perplexity of 5, t-SNE is mildly intrusive in three models and neutral in BERT; with perplexity 30 it is extrusive in all four, and the gap is many times larger than the spread across five seeds (Section 5.4). A statement such as "t-SNE tears the embedding space" is therefore a statement about a hyperparameter as much as about the algorithm. Both values lie in the range recommended by the method's authors, so neither can be dismissed; the defensible report is the pair. Low perplexity also showed a numerical artefact: with perplexity 5 a single word was occasionally ejected far from the cloud, a different one depending on the seed, although the word was not isolated in the original space.
@@ -404,8 +408,6 @@ Figures 7–11 show the five projection configurations of the same model, and Fi
 ## 7. Conclusion
 
 ENSy turns the projection of an embedding matrix from a picture into a measurement. Its co-ranking implementation is validated against an independent library, synthetic permutations and the primary source, and its results are regenerated from a frozen dataset by a pinned pipeline. Applied to four language models, it shows that the visual impressions most often drawn from such projections — whether a method crowds or tears the space, and whether linguistic categories form clusters — depend strongly on the projection and its hyperparameters. Projections of embedding spaces should therefore be reported with their neighbourhood-preservation metrics and their hyperparameters, never alone. Natural extensions are contextual representations, larger and multilingual samples, and inferential statistics over seeds and samples.
-
----/columns---
 
 :::pagebreak
 

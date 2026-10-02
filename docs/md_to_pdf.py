@@ -237,6 +237,38 @@ _COL_OPEN_TOKEN  = 'XXCOLUMNOPENXX'
 _COL_CLOSE_TOKEN = 'XXCOLUMNCLOSEXX'
 
 
+def link_citations(html: str) -> str:
+    """
+    Turn IEEE numbered citations into links to the reference list.
+
+    Reference entries are paragraphs after the "References" heading that start
+    with "[n]"; each gets id="ref-n". In-text citations "[n]" and "[n, p. 12]"
+    become <a href="#ref-n">; intervals such as "[0, 1]" are left alone, as are
+    code, math and the entries themselves.
+    """
+    m = re.search(r'<h2[^>]*>\s*References\s*</h2>', html)
+    if not m:
+        return html
+    body, refs = html[:m.start()], html[m.start():]
+    refs = re.sub(r'<p>\[(\d+)\]', r'<p class="reference" id="ref-\1">[\1]', refs)
+    known = set(re.findall(r'id="ref-(\d+)"', refs))
+    cite = re.compile(r'\[(\d+)((?:,\s*[^\]\d\s][^\]<]*)?)\]')
+
+    def link(mm: re.Match) -> str:
+        n = mm.group(1)
+        if n not in known:
+            return mm.group(0)
+        return f'<a class="cite" href="#ref-{n}">[{n}{mm.group(2)}]</a>'
+
+    protected = re.compile(
+        r'(<pre.*?</pre>|<code.*?</code>|<span class="arithmatex">.*?</span>'
+        r'|<div class="arithmatex">.*?</div>|<[^>]+>)', re.S)
+    parts = protected.split(body)
+    for i in range(0, len(parts), 2):
+        parts[i] = cite.sub(link, parts[i])
+    return "".join(parts) + refs
+
+
 def preprocess_columns(md_content: str) -> str:
     """
     Stage 1 (pre-Markdown): replace ---columns{...}--- / ---/columns--- with
@@ -454,6 +486,9 @@ def build_html(input_path: str = DOCS_MD_PATH,
 
     # Post-process: inject column divs now that Markdown is already HTML
     html_body = postprocess_columns(html_body)
+
+    # Post-process: clickable [n] citations
+    html_body = link_citations(html_body)
 
     # Post-process: give booktabs-wrapper tables the right CSS class
     html_body = re.sub(
@@ -955,6 +990,13 @@ mjx-container[jax="CHTML"][display="true"] {{
   font-size: 9pt;
   color: #901633;
   margin: 10pt 0;
+}}
+a.cite {{
+  color: inherit;
+  text-decoration: none;
+}}
+p.reference {{
+  scroll-margin-top: 10mm;
 }}
 /* ── Multi-column layout ────────────────────────────────── */
 .columns-layout {{
