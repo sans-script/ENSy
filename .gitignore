@@ -15,3 +15,6 @@ __pycache__/
 .env*
 !.env.example
 playwright-artifacts/
+
+# local clone created by running notebooks/ensy_colab.ipynb outside Colab
+notebooks/manifold/

@@ -36,11 +36,11 @@ MODELS: dict[str, ModelSpec] = {
         "qwen", "Qwen/Qwen2.5-0.5B-Instruct", "decoder", True,
         ("embed_tokens.weight",),
     ),
-    # Both Gemma 2B variants are run and compared (plan v2.1.3, open item):
-    # Gemma 1 (d = 2048) and Gemma 2 (d = 2304).
-    "gemma": ModelSpec(
-        "gemma", "google/gemma-2b", "decoder", True,
-        ("embed_tokens.weight",), gated=True,
+    # GPT-2 (OpenAI, 2019): an earlier generation with a different corpus
+    # (WebText) and training recipe; byte-level BPE like Qwen.
+    "gpt2": ModelSpec(
+        "gpt2", "openai-community/gpt2", "decoder", True,
+        ("wte.weight",),
     ),
     "gemma2": ModelSpec(
         "gemma2", "google/gemma-2-2b", "decoder", True,

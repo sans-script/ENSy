@@ -5,7 +5,7 @@ Source: the free PTB sample distributed with NLTK (WSJ section: 199 files,
 available, point ``ptb_tagged_words`` at it and rebuild -- everything else is
 unchanged and the dataset hash will reflect the new source.
 
-Run:  python -m ensy.dataset [--models qwen,gemma,bert] [--out data/dataset.json]
+Run:  python -m ensy.dataset [--models qwen,gemma2,gpt2,bert] [--out data/dataset.json]
 """
 from __future__ import annotations
 

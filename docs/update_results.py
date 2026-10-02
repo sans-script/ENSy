@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs" / "DOCS.md"
 
-MODELS = {"qwen": "Qwen 2.5 0.5B", "gemma": "Gemma 2B (v1)", "gemma2": "Gemma 2 2B", "bert": "BERT base"}
+MODELS = {"qwen": "Qwen 2.5 0.5B", "gemma2": "Gemma 2 2B", "gpt2": "GPT-2", "bert": "BERT base"}
 ALGOS = {"pca": "PCA", "tsne": "t-SNE ($p=5$)", "tsne_p30": "t-SNE ($p=30$)", "umap": "UMAP", "isomap": "Isomap"}
 ALGO_PLAIN = {"pca": "PCA", "tsne": "t-SNE p=5", "tsne_p30": "t-SNE p=30", "umap": "UMAP", "isomap": "Isomap"}
 K_MAIN = 10
@@ -83,7 +83,8 @@ def figure_curves(r: dict, metric: str, ylabel: str, name: str, caption: str, nu
                          "mathtext.fontset": "cm", "axes.spines.top": False, "axes.spines.right": False,
                          "axes.grid": True, "axes.grid.axis": "y", "grid.linestyle": "--", "grid.alpha": 0.45,
                          "font.size": 9})
-    fig, axes = plt.subplots(1, 4, figsize=(10.5, 2.6), sharey=True)
+    fig, axes = plt.subplots(2, 2, figsize=(10.0, 5.625), sharey=True, sharex=True)  # 16:9
+    axes = axes.ravel()
     for ax, (mk, mname) in zip(axes, MODELS.items()):
         for c in (c for c in r["configs"] if c["model"] == mk):
             ks = [p["K"] for p in c["curves"]]
@@ -91,16 +92,17 @@ def figure_curves(r: dict, metric: str, ylabel: str, name: str, caption: str, nu
                     color=COLORS[c["algorithm"]], label=ALGO_PLAIN[c["algorithm"]])
         ax.set_title(mname, fontsize=10, fontweight="bold")
         ax.set_xticks([5, 10, 15, 20])
-        ax.set_xlabel("$K$")
+        ax.set_xlabel("$K$") if ax in axes[2:] else None
         if metric == "B_NX":
             ax.axhline(0, color="#555555", linewidth=0.7)
     axes[0].set_ylabel(ylabel)
+    axes[2].set_ylabel(ylabel)
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=5, frameon=False, bbox_to_anchor=(0.5, -0.04))
-    fig.tight_layout(rect=(0, 0.08, 1, 1))
+    fig.legend(handles, labels, loc="lower center", ncol=5, frameon=False, bbox_to_anchor=(0.5, 0.0))
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
     out = ROOT / "docs" / "figures" / f"{name}.png"
     out.parent.mkdir(exist_ok=True)
-    fig.savefig(out, dpi=200, bbox_inches="tight")
+    fig.savefig(out, dpi=200)  # keep the exact 16:9 canvas
     plt.close(fig)
     return f"![{caption}](figures/{name}.png)\n\n_Figure {num}: {caption}_"
 

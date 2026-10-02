@@ -29,7 +29,7 @@ interface LabelEntry {
   axisId?: "x" | "y" | "z";
 }
 
-const MAX_TOKEN_LABELS = 120; // DOM label culling (plan 8.2): nearest labels only
+const MAX_TOKEN_LABELS = 450; // upper bound; in practice set by screen-space collisions (plan 8.2)
 
 // Layer 2 (plan 9.7): fixed global bipolar scale on [-1, 1]; neutral is light grey, never green.
 const HEAT_NEG = new THREE.Color("#0891b2"); // extrusive (tearing)
@@ -1874,9 +1874,11 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       ? gridGroupRef.current.children.filter((obj) => obj.name === "bgPlane")
       : [];
 
-    // Projected labels: first compute screen positions for all labels so we
-    // can detect collisions and spread overlapping labels to avoid the
-    // "pile-up" effect at the origin.
+    // Every label is first projected to the screen; token labels are then placed
+    // greedily, nearest first, wherever their box does not overlap an already
+    // placed label (the strategy of the TensorFlow Embedding Projector). Labels
+    // stay anchored to their points; a token whose label does not fit keeps its
+    // dot. Zooming in spreads the points, so more words fit.
     const projectedLabels: Array<{
       dom: HTMLDivElement;
       x: number;
@@ -1885,39 +1887,17 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       fade: number;
       scale: number;
       type: string;
-      axisId?: string;
+      id?: number;
+      world: THREE.Vector3;
       isOrigin?: boolean;
     }> = [];
 
-    // Label culling (plan 8.2): only the nearest visible tokens get a DOM label
-    // update and occlusion raycast this frame; the point cloud still shows all N.
-    const camPos = activeCamera.position;
-    const ranked: Array<{ id: number; d: number }> = [];
-    tokenPointsRef.current.forEach((h) => {
-      if (!h.visible) return;
-      const d = h.position.distanceToSquared(camPos);
-      ranked.push({ id: h.userData.id, d });
-    });
-    ranked.sort((a, b) => a.d - b.d);
-    const labelled = new Set(ranked.slice(0, MAX_TOKEN_LABELS).map((r) => r.id));
-    if (hoveredIdRef.current !== null) labelled.add(hoveredIdRef.current);
-    perfRef.current.visibleLabels = labelled.size;
-
     labelElementsRef.current.forEach(({ dom, position, type, axisId, userData }) => {
-      if (type === "token" && !labelled.has(userData?.id ?? -1)) {
-        if (dom.style.opacity !== "0") dom.style.opacity = "0";
-        return;
-      }
-      // Check axis visibility
-      if (axisId === "x" && !showXAxisRef.current) {
-        dom.style.opacity = "0";
-        return;
-      }
-      if (axisId === "y" && !showYAxisRef.current) {
-        dom.style.opacity = "0";
-        return;
-      }
-      if (axisId === "z" && !showZAxisRef.current) {
+      if (
+        (axisId === "x" && !showXAxisRef.current) ||
+        (axisId === "y" && !showYAxisRef.current) ||
+        (axisId === "z" && !showZAxisRef.current)
+      ) {
         dom.style.opacity = "0";
         return;
       }
@@ -1929,82 +1909,88 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         tempV.copy(position);
       }
       const toPos = tempV.clone().sub(activeCamera.position);
-
       if (toPos.dot(dir) < 0) {
-        dom.style.opacity = "0";
+        if (dom.style.opacity !== "0") dom.style.opacity = "0";
         return;
       }
-
       const dist = toPos.length();
-
-      // Check occlusion
-      let isOccluded = false;
-      if (bgPlanes.length > 0) {
-        raycaster.set(activeCamera.position, toPos.clone().normalize());
-        const intersects = raycaster.intersectObjects(bgPlanes, false);
-        if (intersects.length > 0 && intersects[0].distance < dist - 0.5) {
-          isOccluded = true;
-        }
-      }
+      const world = tempV.clone();
 
       tempV.project(activeCamera);
       const x = (tempV.x * 0.5 + 0.5) * width;
       const y = (tempV.y * -0.5 + 0.5) * height;
-
-      const fadeThreshold = type === "token" ? 35 : 55;
-      let fade = Math.max(0, Math.min(1, 1 - (dist - fadeThreshold) / 90));
-      let scale = Math.max(0.3, 1 - dist / 120);
-
-      if (type === "token" && (dom as HTMLElement).dataset.filterVisible === "0") {
-        fade = 0;
-      }
-      if (type === "token" && (dom as HTMLElement).dataset.dim === "1") {
-        fade *= 0.3; // tokens outside the probed neighbourhood recede
+      if (type === "token" && (x < -40 || x > width + 40 || y < -20 || y > height + 20)) {
+        if (dom.style.opacity !== "0") dom.style.opacity = "0";
+        return;
       }
 
       const isOrigin = dom.textContent === "O";
+      let fade: number;
+      let scale = Math.max(0.3, 1 - dist / 120);
+      if (type === "token") {
+        // distance still fades words, but a placed word never drops below legibility
+        fade = Math.max(0.45, Math.min(1, 1 - (dist - 35) / 90));
+        if ((dom as HTMLElement).dataset.filterVisible === "0") fade = 0;
+        if ((dom as HTMLElement).dataset.dim === "1") fade *= 0.3; // outside the probed neighbourhood
+      } else {
+        fade = Math.max(0, Math.min(1, 1 - (dist - 55) / 90));
+      }
       if (isOrigin) {
         // Origin label "O" scale grows with distance to remain a visible anchor, capped at 1.3
         scale = Math.min(1.3, 0.7 + dist * 0.012);
-        // Ensure "O" doesn't completely fade away easily, remaining a clean anchor
         fade = Math.max(0.6, 1 - dist / 180);
       }
 
-      if (isOccluded) {
-        fade *= 0.15; // significantly reduce opacity if behind a background plane
+      projectedLabels.push({ dom, x, y, dist, fade, scale, type, id: userData?.id, world, isOrigin });
+    });
+
+    // Greedy collision-free placement of token labels
+    const CELL = 6;
+    const occupied = new Set<number>();
+    const cols = Math.ceil(width / CELL) + 2;
+    const tokens = projectedLabels
+      .filter((p) => p.type === "token" && p.fade > 0)
+      .sort((a, b) =>
+        (a.id === hoveredIdRef.current ? -1 : 0) - (b.id === hoveredIdRef.current ? -1 : 0) || a.dist - b.dist);
+    const placed = new Set<HTMLDivElement>();
+    for (const p of tokens) {
+      if (placed.size >= MAX_TOKEN_LABELS) break;
+      let w = Number(p.dom.dataset.w);
+      if (!w) {
+        w = p.dom.offsetWidth || p.dom.textContent!.length * 7;
+        p.dom.dataset.w = String(w);
       }
+      const halfW = (w * p.scale) / 2 + 2;
+      const halfH = 8 * p.scale + 1;
+      const x0 = Math.floor((p.x - halfW) / CELL), x1 = Math.floor((p.x + halfW) / CELL);
+      const y0 = Math.floor((p.y - halfH) / CELL), y1 = Math.floor((p.y + halfH) / CELL);
+      let free = true;
+      for (let cy = y0; cy <= y1 && free; cy++)
+        for (let cx = x0; cx <= x1; cx++)
+          if (occupied.has(cy * cols + cx)) { free = false; break; }
+      if (!free && p.id !== hoveredIdRef.current) continue;
+      for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) occupied.add(cy * cols + cx);
+      placed.add(p.dom);
+    }
+    perfRef.current.visibleLabels = placed.size;
 
-      projectedLabels.push({ dom, x, y, dist, fade, scale, type, axisId, isOrigin });
-    });
+    // Occlusion by the semi-opaque plane backgrounds (raycast for placed labels only)
+    if (bgPlanes.length > 0) {
+      projectedLabels.forEach((p) => {
+        if (p.type === "token" && !placed.has(p.dom)) return;
+        const toPos = p.world.clone().sub(activeCamera.position);
+        raycaster.set(activeCamera.position, toPos.clone().normalize());
+        const hits = raycaster.intersectObjects(bgPlanes, false);
+        if (hits.length > 0 && hits[0].distance < toPos.length() - 0.5) p.fade *= 0.15;
+      });
+    }
 
-    // Detect collisions by binning screen coords and spread overlapping labels
-    const BIN_PX = 8; // grouping bucket size in pixels
-    const bins = new Map<string, typeof projectedLabels>();
+    // Apply computed styles
     projectedLabels.forEach((p) => {
-      if (p.isOrigin) return; // keep origin anchored
-      if (p.fade <= 0) return; // exclude hidden labels from collision detection
-      const bx = Math.round(p.x / BIN_PX);
-      const by = Math.round(p.y / BIN_PX);
-      const key = `${bx}:${by}`;
-      if (!bins.has(key)) bins.set(key, [] as any);
-      bins.get(key)!.push(p);
-    });
-
-    // spread colliding groups
-    bins.forEach((group) => {
-      if (group.length <= 1) return;
-      const count = group.length;
-      const baseRadius = 6; // px
-      for (let i = 0; i < group.length; i++) {
-        const angle = (i / count) * Math.PI * 2;
-        const radius = baseRadius + Math.floor(i / 8) * 6; // increase radius for large groups
-        group[i].x += Math.cos(angle) * radius;
-        group[i].y += Math.sin(angle) * radius;
+      if (p.type === "token" && !placed.has(p.dom)) {
+        if (p.dom.style.opacity !== "0") p.dom.style.opacity = "0";
+        return;
       }
-    });
-
-    // Apply computed styles for projected labels
-    projectedLabels.forEach((p) => {
       p.dom.style.left = `${p.x}px`;
       p.dom.style.top = `${p.y}px`;
       p.dom.style.transform = `translate(-50%, -50%) scale(${p.scale})`;
@@ -2012,11 +1998,10 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       p.dom.style.zIndex = Math.max(1, Math.floor(1000 - p.dist)).toString();
     });
 
-    // Tokens whose word is clearly legible need no dot (faint labels keep it);
-    // refresh dot alphas when that set changes
+    // A placed word is the marker; only tokens without a label keep their dot
     const shown = new Set<number>();
     tokenLabelByIdRef.current.forEach((label, id) => {
-      if (parseFloat(label.dom.style.opacity || "0") >= 0.75) shown.add(id);
+      if (placed.has(label.dom) && parseFloat(label.dom.style.opacity || "0") > 0.3) shown.add(id);
     });
     const prevShown = shownLabelIdsRef.current;
     if (shown.size !== prevShown.size || [...shown].some((id) => !prevShown.has(id))) {

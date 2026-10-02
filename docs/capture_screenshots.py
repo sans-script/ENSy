@@ -21,17 +21,21 @@ from pathlib import Path
 from PIL import Image
 from playwright.sync_api import Page, sync_playwright
 
-VIEWPORT = {"width": 1600, "height": 950}
-VIEWPORT_CLIP = {"x": 320, "y": 0, "width": 940, "height": 950}  # between the 320 px and 340 px sidebars
+# Every figure is 16:9. 3D views: the window is sized so the area between the
+# 320 px and 340 px sidebars is exactly 1600 x 900. Whole-window figures use a
+# 1600 x 900 window. Narrow interface panels are centred on a 16:9 canvas.
+VIEWPORT = {"width": 320 + 1600 + 340, "height": 900}
+WINDOW_16_9 = {"width": 1600, "height": 900}
+VIEWPORT_CLIP = {"x": 320, "y": 0, "width": 1600, "height": 900}
 APPROACH_MS = 1000  # forward flight after the isometric preset (14 units/s along the aim)
 DEVICE_SCALE = 2  # screenshots at 2x pixel density
 BASE_SETTINGS = {
     "projectionType": "umap", "modelKey": "qwen", "colorLayer": "category",
-    "probeEnabled": True, "currentFilter": "all", "metricK": 10,
+    "probeEnabled": False, "currentFilter": "all", "metricK": 10,
     "showBottomHud": True, "cameraMode": "perspective", "fov": 30,
 }
-MODEL_NAMES = {"qwen": "Qwen 2.5 0.5B-Instruct", "gemma": "Gemma 2B (v1)",
-               "gemma2": "Gemma 2 2B", "bert": "BERT base uncased"}
+MODEL_NAMES = {"qwen": "Qwen 2.5 0.5B-Instruct", "gemma2": "Gemma 2 2B",
+               "gpt2": "GPT-2", "bert": "BERT base uncased"}
 ALGO_NAMES = {"pca": "PCA (centered)", "tsne": "t-SNE (perplexity 5)",
               "tsne_p30": "t-SNE (perplexity 30)", "umap": "UMAP", "isomap": "Isomap"}
 
@@ -75,8 +79,13 @@ class Tour:
         self.page.evaluate(f"window.__selectToken({json.dumps(word)})")
         self.page.wait_for_timeout(800)
 
+    def centre(self) -> tuple[int, int]:
+        """Centre of the 3D area for the current window size."""
+        vp = self.page.viewport_size
+        return 320 + (vp["width"] - 660) // 2, vp["height"] // 2
+
     def engage_flight(self):
-        self.page.mouse.click(VIEWPORT["width"] // 2, VIEWPORT["height"] // 2)
+        self.page.mouse.click(*self.centre())
         self.page.wait_for_timeout(300)
 
     def fly(self, key: str, ms: int):
@@ -86,7 +95,7 @@ class Tour:
         self.page.wait_for_timeout(200)
 
     def look(self, dx: int, dy: int, steps: int = 12):
-        x, y = VIEWPORT["width"] // 2, VIEWPORT["height"] // 2
+        x, y = self.centre()
         self.page.mouse.move(x, y)
         self.page.mouse.move(x + dx, y + dy, steps=steps)
         self.page.wait_for_timeout(300)
@@ -110,6 +119,21 @@ class Tour:
         path = self.out / f"{name}.png"
         self.page.screenshot(path=str(path), clip=VIEWPORT_CLIP)
         print("  ", path.name)
+        return path
+
+    def window(self, size: dict):
+        self.page.set_viewport_size(size)
+        self.page.wait_for_timeout(600)
+
+    def panel(self, name: str, element: str, max_height: int | None = None) -> Path:
+        """An interface panel centred on a white 16:9 canvas."""
+        path = self.shot(name, element, max_height)
+        img = Image.open(path).convert("RGB")
+        h = max(img.height, int(img.width * 9 / 16)) + 40 * DEVICE_SCALE
+        w = int(round(h * 16 / 9))
+        canvas = Image.new("RGB", (w, h), "white")
+        canvas.paste(img, ((w - img.width) // 2, (h - img.height) // 2))
+        canvas.save(path)
         return path
 
     def shot(self, name: str, element: str | None = None, max_height: int | None = None) -> Path:
@@ -140,10 +164,12 @@ def main():
         t = Tour(page, args.base_url, args.out)
 
         print("[1] full workspace")
-        t.open(modelKey="qwen", projectionType="umap")
+        t.window(WINDOW_16_9)
+        t.open(modelKey="qwen", projectionType="umap", probeEnabled=True)
         t.preset("Isometric")
         t.pin("market")
         t.shot("fig01_workspace")
+        t.window(VIEWPORT)
 
         # Figure views: viewport only (sidebars cropped), grid planes and their
         # backgrounds off, HUD hidden, and a closer camera than the preset.
@@ -183,21 +209,26 @@ def main():
         t.approach(APPROACH_MS)
         t.pin("wanted")  # a verb in the visible cluster; the pin holds while the reticle is empty
         t.view("fig06_probing")
-        t.shot("fig07_inspector", "aside >> nth=1", max_height=600)
+        t.panel("fig07_inspector", "aside >> nth=1", max_height=600)
 
         print("[6] interface details")
-        t.open(modelKey="gemma", projectionType="isomap")
+        t.open(modelKey="gpt2", projectionType="isomap")
         t.preset("Isometric")
-        t.shot("fig08_metrics_panel", "div.absolute.bottom-\\[16px\\].right-\\[16px\\]")
-        t.shot("fig09_controls", "aside >> nth=0", max_height=700)
+        t.panel("fig08_metrics_panel", "div.absolute.bottom-\\[16px\\].right-\\[16px\\]")
+        t.panel("fig09_controls", "aside >> nth=0", max_height=700)
         t.page.click("button[aria-label='Projection']")
         t.page.wait_for_timeout(400)
         t.page.screenshot(path=str(args.out / "fig10_dropdown.png"),
                           clip={"x": 0, "y": 440, "width": 320, "height": 260})
         print("   fig10_dropdown.png")
+        img = Image.open(args.out / "fig10_dropdown.png").convert("RGB")
+        h = img.height + 80; w = int(round(h * 16 / 9))
+        canvas = Image.new("RGB", (w, h), "white"); canvas.paste(img, ((w - img.width) // 2, 40))
+        canvas.save(args.out / "fig10_dropdown.png")
         t.page.keyboard.press("Escape")
 
         print("[7] camera modes")
+        t.window(WINDOW_16_9)
         t.open(modelKey="qwen", projectionType="pca")
         for btn, name in [("Front (XY)", "fig11_front"), ("Top (XZ)", "fig12_top")]:
             t.preset(btn)

@@ -1,6 +1,6 @@
 """Experiment runner: 3 models x 4 algorithms (plan Section 10).
 
-Run:  python -m ensy.experiment [--dataset data/dataset.json] [--models qwen,gemma,bert]
+Run:  python -m ensy.experiment [--dataset data/dataset.json] [--models qwen,gemma2,gpt2,bert]
                                 [--ablation] [--out results/]
 
 Main results and ablations (PCA-NC) are written to separate files and never mixed.

@@ -15,7 +15,7 @@ export default function App() {
   const [modelKey, setModelKey] = useState<ModelKey>('qwen');
   const [colorLayer, setColorLayer] = useState<ColorLayer>('category');
   const [metricK, setMetricK] = useState(10);
-  const [probeEnabled, setProbeEnabled] = useState(true);
+  const [probeEnabled, setProbeEnabled] = useState(false);
   const [perf, setPerf] = useState<PerfSample | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentFilter, setCurrentFilter] = useState<'all' | 'positive' | 'negative'>('all');
