@@ -505,14 +505,18 @@ cache_key = (model_id, dataset_hash, extraction_config, preprocessing_config)
 10. ~~Validar empiricamente $B_{NX}(K)$ e $B_{NX,i}(K)$~~ → 28 testes em `tests/test_coranking.py`: casos A/B/C corrigidos, consistência $\text{mean}_i B_{NX,i} = B_{NX}$ (erro $<10^{-12}$), âncora de sinal contra $B_{TC}$, e $M_T/M_C$ idênticos ao `sklearn.manifold.trustworthiness` (implementação independente). F2 desbloqueada.
 11. ~~Pipeline do dataset~~ → implementado (`python -m ensy.dataset`); execução provisória com Qwen + BERT: $N=438$.
 
+12. ~~Acesso ao Gemma e dataset congelado~~ → licenças aceitas; `data/dataset.json` congelado com quatro tokenizers ($N=438$, hash `40863cdefcb4`, revisões fixadas).
+13. ~~Variante do Gemma~~ → as duas (`google/gemma-2b` e `google/gemma-2-2b`) executadas com protocolo idêntico e reportadas lado a lado (revisão, Seção 4).
+14. ~~Política do Isomap~~ → filtrar a componente gigante do grafo $k$-NN (TENENBAUM et al., 2000, nota 19), registrando as palavras removidas; nenhuma foi removida no dataset congelado.
+15. ~~Download de checkpoints inteiros~~ → extração por HTTP Range (só as linhas necessárias), bit a bit idêntica ao download completo; GitHub Actions como execução canônica (`.github/workflows/experiment.yml`).
+
 ### Ainda em aberto (ordem de prioridade)
 
-1. **Acesso ao Gemma 2B** (gated): aceitar a licença no Hugging Face e definir `HF_TOKEN`. Depois, rodar `python -m ensy.dataset` com os três modelos para congelar `data/dataset.json` (o arquivo atual é `dataset.provisional.json`, marcado `frozen: false`; o runner de experimentos se recusa a usá-lo sem `--allow-provisional`).
-2. Fixar a identidade do Gemma (`gemma-2b` × `gemma-2-2b`) e reescrever a justificativa da perplexidade do t-SNE para o $N$ real (Seção 7).
-3. Decidir a política do Isomap para grafo desconexo (ligar componentes × filtrar) e alinhar o Silhouette (2D × 3D) com o documento de escopo.
-4. Confirmar por profiling (Seção 8.4, painel na barra lateral) se o overlay de DOM ainda é gargalo após a correção do laço $O(N^2)$; só então decidir sobre sprites de canvas.
+1. **Perplexidade do t-SNE:** a análise de sensibilidade mostra que o sinal de $B_{NX}$ do t-SNE se inverte entre perplexidade 5 (levemente intrusivo) e 30 (extrusivo) nos quatro modelos. Decidir como reportar (recomendação: as duas perplexidades, com discussão).
+2. Alinhar o Silhouette (2D × 3D) com o documento de escopo.
+3. Confirmar por profiling (Seção 8.4, painel na barra lateral) se o overlay de DOM ainda é gargalo após a correção do laço $O(N^2)$; só então decidir sobre sprites de canvas.
 
-Depois desses quatro pontos — e, especialmente, depois de rodar a construção real do dataset e validar $B_{NX,i}(K)$ em código — o protocolo experimental pode ser considerado congelado. O próximo passo não é mais revisão textual: é executar a sequência do dataset e a suíte de testes sintéticos de co-ranking.
+Depois desses pontos — e, especialmente, depois de rodar a construção real do dataset e validar $B_{NX,i}(K)$ em código — o protocolo experimental pode ser considerado congelado. O próximo passo não é mais revisão textual: é executar a sequência do dataset e a suíte de testes sintéticos de co-ranking.
 
 ---
 

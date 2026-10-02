@@ -95,42 +95,65 @@ Além das $N$ chamadas de desenho, o laço de animação fazia `labelElementsRef
 | Suíte | Resultado |
 |---|---|
 | `tests/test_coranking.py` (offline) | 28/28 |
-| `tests/test_dataset.py`, `tests/test_models.py` (offline) | 8/8 |
-| idem, com rede/cache HF (`-m network`): tokenizers, safetensors = `get_input_embeddings()` bit a bit (Qwen, BERT) | 5/5 |
+| `tests/test_dataset.py`, `tests/test_models.py` (offline; inclui decodificação BF16 exata e a política do Isomap) | 10/10 |
+| idem, com rede/cache HF (`-m network`): tokenizers; safetensors = `get_input_embeddings()` bit a bit; extração por HTTP Range = download completo bit a bit (Qwen, BERT) | 7/7 |
 | `tests/test_api.py` (servidor real) | 46/46 |
 
 ---
 
-## 4. Resultado provisório — **não é resultado do TCC**
+## 4. Resultados reais (dataset congelado)
 
-Dataset provisório (Qwen + BERT; **sem Gemma**), $N=438$ (146 por categoria), seed 42, hash `a4eed31405ab`. Arquivo: `results/main_provisional_a4eed31405ab.json`.
+Dataset congelado com os quatro tokenizers (Qwen 2.5 0.5B-Instruct, Gemma 2B v1, Gemma 2 2B, BERT base uncased): $N=438$ (146 por categoria), hash `40863cdefcb4`, revisões fixadas no JSON. Extração por HTTP Range (só as 438 linhas de cada matriz). Seed 42. Arquivos: `results/main_40863cdefcb4.json`, `results/ablation_40863cdefcb4.json`, `results/sensitivity_40863cdefcb4.json`.
 
-| Modelo | Alg. | $M_T(10)$ | $M_C(10)$ | $Q_{NX}(10)$ | $B_{NX}(10)$ | $B_{TC}(10)$ | Silhouette proj. |
-|---|---|---|---|---|---|---|---|
-| Qwen | PCA | 0,830 | 0,828 | 0,205 | −0,007 | −0,001 | 0,161 |
-| Qwen | t-SNE | 0,878 | 0,896 | 0,483 | +0,017 | +0,018 | 0,257 |
-| Qwen | UMAP | 0,906 | 0,922 | 0,491 | +0,019 | +0,016 | 0,362 |
-| Qwen | Isomap | 0,792 | 0,910 | 0,248 | +0,028 | +0,117 | 0,281 |
-| BERT | PCA | 0,819 | 0,810 | 0,182 | −0,005 | −0,008 | 0,159 |
-| BERT | t-SNE | 0,877 | 0,856 | 0,427 | −0,002 | −0,022 | 0,199 |
-| BERT | UMAP | 0,895 | 0,904 | 0,427 | +0,011 | +0,009 | 0,256 |
-| BERT | Isomap | 0,794 | 0,860 | 0,201 | +0,012 | +0,066 | 0,166 |
+**Proveniência:** estes arquivos foram gerados localmente com a árvore de trabalho modificada (`working_tree_dirty: true`), com o mesmo código do commit `43f478a`. Os números canônicos do TCC são os da execução no GitHub Actions (árvore limpa); o passo de comparação do workflow mede a diferença em relação a estes.
 
-Observações a confirmar com o dataset congelado:
+### 4.1 Matriz principal, $K=10$
 
-- **Separação das classes inflada pela projeção.** O Silhouette no espaço original (cosseno) é de apenas 0,031 (Qwen) e 0,025 (BERT); todas as projeções o elevam para 0,16–0,36. Isso é evidência direta da limitação já anotada no escopo (o Silhouette projetado não distingue agrupamentos genuínos de agrupamentos produzidos pela projeção).
-- **$B_{NX}$ e $B_{TC}$ podem divergir em sinal** quando ambos são pequenos (em $K=5$: Qwen/PCA −0,003 × +0,007; BERT/t-SNE +0,002 × −0,032). Eles medem coisas diferentes: $B_{NX}$ só conta eventos leves, sem peso; $B_{TC}$ conta eventos severos, ponderados pelo posto. Reportar ambos.
-- Isomap: maior assimetria $M_C \gg M_T$ (comportamento intrusivo forte segundo $B_{TC}$); grafo $k$-NN conexo nos dois modelos.
-- PCA: 3 componentes explicam só 7,8% (Qwen) e 11,0% (BERT) da variância.
-- **t-SNE com perplexidade 5 ejeta pontos.** Exemplo: BERT, `disclosed` em raio 266 contra p99 = 38. O ponto **não** é isolado em $\mathbb{R}^n$ (cosseno máximo 0,614 > mediana 0,579); o ponto ejetado muda com o seed e ocorre também com `method="exact"`. É um artefato de otimização — mais um motivo para rever a perplexidade antes da coleta.
-- $B_{NX,i}(10)$ local: p5–p95 ≈ ±0,2, extremos até ±0,7, em passos de $1/K$. A escala fixa $[-1,1]$ é legível.
+| Modelo | $d$ | Alg. | $M_T$ | $M_C$ | $Q_{NX}$ | $B_{NX}$ | $B_{TC}$ | Silhouette proj. |
+|---|---|---|---|---|---|---|---|---|
+| Qwen | 896 | PCA | 0,830 | 0,828 | 0,205 | −0,007 | −0,001 | 0,161 |
+| Qwen | | t-SNE | 0,878 | 0,896 | 0,483 | +0,017 | +0,018 | 0,257 |
+| Qwen | | UMAP | 0,906 | 0,922 | 0,491 | +0,019 | +0,016 | 0,362 |
+| Qwen | | Isomap | 0,792 | 0,910 | 0,248 | +0,028 | +0,117 | 0,281 |
+| Gemma 1 | 2048 | PCA | 0,847 | 0,875 | 0,222 | +0,002 | +0,028 | 0,307 |
+| Gemma 1 | | t-SNE | 0,840 | 0,821 | 0,376 | +0,006 | −0,019 | 0,246 |
+| Gemma 1 | | UMAP | 0,875 | 0,921 | 0,397 | +0,017 | +0,046 | 0,399 |
+| Gemma 1 | | Isomap | 0,816 | 0,885 | 0,207 | −0,001 | +0,069 | 0,279 |
+| Gemma 2 | 2304 | PCA | 0,867 | 0,802 | 0,189 | −0,010 | −0,065 | 0,240 |
+| Gemma 2 | | t-SNE | 0,880 | 0,906 | 0,434 | +0,022 | +0,026 | 0,247 |
+| Gemma 2 | | UMAP | 0,911 | 0,934 | 0,431 | +0,009 | +0,023 | 0,353 |
+| Gemma 2 | | Isomap | 0,864 | 0,920 | 0,238 | +0,012 | +0,057 | 0,298 |
+| BERT | 768 | PCA | 0,819 | 0,810 | 0,182 | −0,005 | −0,008 | 0,159 |
+| BERT | | t-SNE | 0,877 | 0,856 | 0,427 | −0,002 | −0,022 | 0,199 |
+| BERT | | UMAP | 0,895 | 0,904 | 0,427 | +0,011 | +0,009 | 0,256 |
+| BERT | | Isomap | 0,794 | 0,860 | 0,201 | +0,012 | +0,066 | 0,166 |
+
+Silhouette no espaço original (cosseno): Qwen 0,031; Gemma 1 0,055; Gemma 2 0,044; BERT 0,025. Variância explicada pelas 3 componentes do PCA: 7,8% (Qwen), 12,6% (Gemma 1), 10,9% (Gemma 2), 11,0% (BERT). O grafo $k$-NN do Isomap foi conexo nos quatro modelos: a política de filtragem não removeu nenhum ponto.
+
+### 4.2 Sensibilidade (5 seeds: 0, 1, 2, 3, 42), $K=10$, média ± DP
+
+| Modelo | t-SNE, perpl. 5: $M_T$ / $B_{NX}$ | t-SNE, perpl. 30: $M_T$ / $B_{NX}$ | UMAP: $M_T$ / $B_{NX}$ |
+|---|---|---|---|
+| Qwen | 0,880 ± 0,003 / +0,014 ± 0,002 | 0,892 ± 0,006 / **−0,036 ± 0,005** | 0,903 ± 0,003 / +0,019 ± 0,006 |
+| Gemma 1 | 0,845 ± 0,004 / +0,012 ± 0,005 | 0,849 ± 0,007 / **−0,036 ± 0,005** | 0,874 ± 0,002 / +0,014 ± 0,003 |
+| Gemma 2 | 0,882 ± 0,002 / +0,020 ± 0,006 | 0,893 ± 0,002 / **−0,047 ± 0,007** | 0,914 ± 0,002 / +0,009 ± 0,009 |
+| BERT | 0,877 ± 0,002 / −0,001 ± 0,002 | 0,872 ± 0,002 / **−0,039 ± 0,004** | 0,892 ± 0,003 / +0,018 ± 0,007 |
+
+### 4.3 Leituras (descritivas; sem teste de hipótese)
+
+- **O sinal de $B_{NX}$ do t-SNE é determinado pela perplexidade, não pelo modelo.** Com perplexidade 5 o t-SNE é levemente intrusivo (ou neutro, no BERT); com 30 é extrusivo nos quatro modelos, com diferença muito maior que a variação entre seeds. Qualquer afirmação do tipo "o t-SNE é intrusivo/extrusivo" precisa vir acompanhada da perplexidade — e o valor congelado (5) passa a ser uma escolha que decide o resultado, não um detalhe.
+- **$M_T$ é robusto ao seed** (DP ≤ 0,007 em todas as configurações); o sinal de $B_{NX}$ do UMAP no Gemma 2 não é (+0,009 ± 0,009).
+- **Separação das classes inflada pela projeção:** o Silhouette no espaço original fica entre 0,025 e 0,055; todas as projeções o elevam para 0,16–0,40.
+- **Gemma 1 × Gemma 2:** com o mesmo vocabulário (mesmos ids para as 438 palavras), as projeções do Gemma 2 preservam melhor as vizinhanças ($M_T$ maior nos quatro algoritmos); o Gemma 1 tem maior $M_C$ no PCA (0,875 × 0,802).
+- **$B_{NX}$ e $B_{TC}$ podem divergir em sinal** quando pequenos (ex.: Gemma 1/t-SNE +0,006 × −0,019): $B_{NX}$ conta só eventos leves, sem peso; $B_{TC}$ conta eventos severos, ponderados pelo posto. Reportar ambos.
+- **t-SNE com perplexidade 5 ejeta pontos** de forma dependente do seed (ex.: BERT, `disclosed`, raio 266 × p99 38; o ponto não é isolado em $\mathbb{R}^n$). Artefato de otimização.
+- $B_{NX,i}(10)$ local: p5–p95 ≈ ±0,2, extremos até ±0,7, em passos de $1/K$; a escala fixa $[-1,1]$ é legível.
 
 ---
 
-## 5. Decisões que dependem do autor (não tomadas por esta revisão)
+## 5. Decisões que dependem do autor
 
-1. Habilitar o Gemma (licença HF + `HF_TOKEN`) e congelar `data/dataset.json` com os três tokenizers.
-2. `google/gemma-2b` ou `google/gemma-2-2b`.
-3. Perplexidade do t-SNE para $N\approx440$ (manter 5 citando a faixa 5–50 de van der Maaten & Hinton, ou rever) — antes da coleta.
-4. Política do Isomap para grafo desconexo (ligar × filtrar; a fonte primária apoia filtrar) e Silhouette em 2D × 3D, alinhando plano e escopo.
-5. Política de balanceamento: as mais frequentes (adotada; embeddings melhor treinados) ou amostragem aleatória com seed.
+1. **Variante do Gemma:** ambas foram executadas com o protocolo idêntico. Recomendação: reportar as duas (a comparação entre gerações do mesmo modelo é, em si, informativa) e **não** escolher uma a posteriori pelo desempenho — isso seria ajustar o desenho ao resultado.
+2. **Perplexidade do t-SNE:** dado o resultado 4.2, recomenda-se reportar o t-SNE nas duas perplexidades (5, congelada, e 30, default da biblioteca) e discutir o efeito, em vez de defender um valor único.
+3. Silhouette em 2D × 3D: alinhar plano (3D) e escopo (2D).
+4. Política de balanceamento: as mais frequentes (adotada) ou amostragem aleatória com seed.

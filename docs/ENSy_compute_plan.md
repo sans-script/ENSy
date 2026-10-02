@@ -16,6 +16,18 @@ The bottleneck is **downloading and holding whole checkpoints**, not computation
 
 Safetensors files start with a byte-offset header, so HTTP `Range` requests can fetch only the rows we need. Probed on `Qwen/Qwen2.5-0.5B-Instruct`: header + 4 embedding rows = **39 KiB transferred** (vs. 988 MB), and the rows are **bit-identical** to the full download. For Gemma 2B, ~440 rows × 2048 × 2 bytes ≈ **1.8 MB**. That alone makes the pipeline feasible on almost any machine — remote compute then becomes a question of reproducibility, not of capacity.
 
+## Status (2026-10-02)
+
+| Task | Status |
+|---|---|
+| T1 ranged extraction | **Done** — `ensy.models.embedding_rows`, bit-identical to the full download (tests) |
+| T2 Gemma access | **Done** — licences accepted; both variants run (`gemma`, `gemma2`) |
+| T3 GitHub Actions | **Written** (`.github/workflows/experiment.yml`), `HF_TOKEN` secret set; first run pending the push (the `gh` token needs the `workflow` scope) |
+| T4 determinism check | **Built into the workflow** (`python -m ensy.compare`, summary in the run page); pending first run |
+| T5 Colab notebook | **Done** — `notebooks/ensy_colab.ipynb` |
+
+Real results were produced on the limited local machine: the main matrix (16 configurations) took 3 min 17 s, including the ranged downloads; the ablation and sensitivity runs also completed locally.
+
 ## 2. Options
 
 | | A. Ranged extraction, run anywhere | B. GitHub Actions (canonical run) | C. Google Colab |
