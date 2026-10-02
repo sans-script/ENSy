@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MODELS = ("qwen", "gemma", "gemma2", "bert")
+MODELS = ("qwen", "gemma2", "gpt2", "bert")
 NONLINEAR = ("tsne", "tsne_p30", "umap", "isomap")
 failures = 0
 
@@ -39,7 +39,7 @@ def main():
            for c in sens["configs"]}
 
     # Sensitivity: the perplexity decides the sign
-    for m in ("qwen", "gemma", "gemma2"):
+    for m in ("qwen", "gemma2", "gpt2"):
         b = s10[(m, "tsne", 5.0)]["B_NX"]
         check(f"p=5 mildly intrusive: {m}", b["mean"] > 0, f"{b['mean']:+.4f} ± {b['sd']:.4f}")
     b = s10[("bert", "tsne", 5.0)]["B_NX"]
@@ -54,8 +54,8 @@ def main():
 
     # Silhouette
     sil_hi = [cfg[(m, "pca")]["silhouette_high_dim_cosine"] for m in MODELS]
-    print(f"       original-space Silhouette range: {min(sil_hi):.3f}–{max(sil_hi):.3f}  (text: 0.025–0.055)")
-    check("original-space range matches text", f"{min(sil_hi):.3f}" == "0.025" and f"{max(sil_hi):.3f}" == "0.055")
+    print(f"       original-space Silhouette range: {min(sil_hi):.3f}–{max(sil_hi):.3f}  (text: 0.025–0.048)")
+    check("original-space range matches text", f"{min(sil_hi):.3f}" == "0.025" and f"{max(sil_hi):.3f}" == "0.048")
     raised = all(c[f"silhouette_projected{s}"] > c["silhouette_high_dim_cosine"]
                  for c in main_r["configs"] for s in ("", "_2d"))
     check("every projection raises the Silhouette (3D and 2D)", raised)
@@ -73,13 +73,15 @@ def main():
         algos = ("pca", *NONLINEAR)
         mt = {a: k10(m, a, "trustworthiness") for a in algos}
         check(f"UMAP highest M_T(10): {m}", max(mt, key=mt.get) == "umap", str({a: round(v, 3) for a, v in mt.items()}))
-        check(f"Isomap lowest M_T(10), below PCA: {m}", min(mt, key=mt.get) == "isomap")
+        check(f"Isomap at most 0.005 above the lowest M_T(10): {m}", mt["isomap"] - min(mt.values()) <= 0.005)
         check(f"Isomap M_C > M_T: {m}", k10(m, "isomap", "continuity") > k10(m, "isomap", "trustworthiness"))
     btc = [k10(m, "isomap", "B_TC") for m in MODELS]
     print(f"       Isomap B_TC range: {min(btc):+.3f} to {max(btc):+.3f}  (text: +0.057 to +0.117)")
     check("Isomap B_TC range matches text", f"{min(btc):.3f}" == "0.057" and f"{max(btc):.3f}" == "0.117")
     evr = [100 * sum(cfg[(m, "pca")]["diagnostics"]["explained_variance_ratio"]) for m in MODELS]
-    check("PCA variance 8–13% (rounded)", 7.5 <= min(evr) and max(evr) < 13.5, f"{[round(v, 1) for v in evr]}")
+    check("PCA variance 8–11% (rounded)", 7.5 <= min(evr) and max(evr) < 11.5, f"{[round(v, 1) for v in evr]}")
+    below = sum(k10(m, "isomap", "trustworthiness") < k10(m, "pca", "trustworthiness") for m in MODELS)
+    check("Isomap M_T below PCA in three of the four models", below == 3, f"{below}/4")
 
     # Perplexity 30: B_NX vs B_TC
     for m in MODELS:
@@ -88,15 +90,21 @@ def main():
     check("p=30 B_TC sign differs between models", len(signs) == 2,
           str({m: round(k10(m, "tsne_p30", "B_TC"), 4) for m in MODELS}))
 
-    # Gemma generations
-    for a in ("pca", *NONLINEAR):
-        check(f"Gemma 2 M_T > Gemma 1: {a}", k10("gemma2", a, "trustworthiness") > k10("gemma", a, "trustworthiness"))
-    check("Gemma 1 PCA continuity > Gemma 2", k10("gemma", "pca", "continuity") > k10("gemma2", "pca", "continuity"))
+    # GPT-2: highest M_T under the neighbour-based methods; BERT (same d = 768) lowest there
+    for a in ("tsne", "tsne_p30", "umap"):
+        mt = {m: k10(m, a, "trustworthiness") for m in MODELS}
+        check(f"GPT-2 highest M_T(10) under {a}", max(mt, key=mt.get) == "gpt2", str({m: round(v, 3) for m, v in mt.items()}))
+    mt_pca = {m: k10(m, "pca", "trustworthiness") for m in MODELS}
+    check("but not under PCA (Gemma 2 highest)", max(mt_pca, key=mt_pca.get) == "gemma2", str({m: round(v, 3) for m, v in mt_pca.items()}))
+    s_gpt2 = s10[("gpt2", "tsne", 5.0)]["trustworthiness"]
+    others = max(s10[(m, "tsne", 5.0)]["trustworthiness"]["mean"] for m in MODELS if m != "gpt2")
+    check("GPT-2 t-SNE p=5 lead exceeds 2 seed SDs", s_gpt2["mean"] - others > 2 * s_gpt2["sd"],
+          f"{s_gpt2['mean']:.3f} ± {s_gpt2['sd']:.3f} vs next {others:.3f}")
 
     # Figure 7 caption (all K)
     curve = lambda m, a: [p["B_NX"] for p in cfg[(m, a)]["curves"]]
     check("Fig. 7: p=30 below zero at every K in all models", all(v < 0 for m in MODELS for v in curve(m, "tsne_p30")))
-    for m in ("qwen", "gemma", "gemma2"):
+    for m in ("qwen", "gemma2", "gpt2"):
         c = curve(m, "tsne")
         check(f"Fig. 7: p=5 above zero on average for {m}", sum(c) / len(c) > 0, str([round(v, 4) for v in c]))
     c = curve("bert", "tsne")

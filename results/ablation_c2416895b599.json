@@ -1,0 +1,397 @@
+{
+ "kind": "ablation",
+ "provisional": false,
+ "created_utc": "2026-10-02T19:24:10+00:00",
+ "dataset_hash": "c2416895b5992cd74787e1c643bf48f83fe76e8d3536b2054d4b0e85ecaed596",
+ "N": 438,
+ "K_main": 10,
+ "K_curve": [
+  5,
+  10,
+  15,
+  20
+ ],
+ "preprocessing": "static input embedding, float32, L2-normalised",
+ "extraction": "HTTP Range rows",
+ "high_dim_metric": "cosine (rank-equivalent to euclidean after L2)",
+ "low_dim_metric": "euclidean",
+ "seed": 42,
+ "isomap_policy": "giant component of the k-NN graph only (Tenenbaum et al., 2000, note 19)",
+ "model_revisions": {
+  "qwen": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "gpt2": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+  "gemma2": "c5ebcd40d208330abc697524c919956e692655cf",
+  "bert": "86b5e0934494bd15c9632b12f734a8a67f723594"
+ },
+ "environment": {
+  "commit_sha": "e7f5a91f9f8fb1d9aca573deed8651e2e7d33366",
+  "working_tree_dirty": false,
+  "python": "3.12.14",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "numpy": "2.1.3",
+  "scipy": "1.15.2",
+  "scikit_learn": "1.6.1",
+  "umap_learn": "0.5.7",
+  "torch": "2.6.0+cpu",
+  "transformers": "4.49.0"
+ },
+ "configs": [
+  {
+   "model": "qwen",
+   "hf_id": "Qwen/Qwen2.5-0.5B-Instruct",
+   "embedding_dim": 896,
+   "silhouette_high_dim_cosine": 0.030646929517388344,
+   "algorithm": "pca_nc",
+   "params": {
+    "n_components": 3,
+    "centering": false,
+    "solver": "full SVD of X",
+    "role": "ablation"
+   },
+   "diagnostics": {
+    "explained_variance_ratio": [
+     0.05076278857487686,
+     0.04113652351785272,
+     0.016698319443454575
+    ]
+   },
+   "N_evaluated": 438,
+   "curves": [
+    {
+     "K": 5,
+     "N": 438,
+     "trustworthiness": 0.8000722098332802,
+     "continuity": 0.8009355421047043,
+     "U_P": 0.023744292237442923,
+     "U_N": 0.03881278538812785,
+     "U_X": 0.0365296803652968,
+     "Q_NX": 0.09908675799086758,
+     "B_NX": -0.00228310502283105,
+     "LCMC": 0.08764511039361357,
+     "R_NX": 0.08865952139353965,
+     "B_TC": 0.0008633322714240999,
+     "hard_intrusions": 1973,
+     "hard_extrusions": 1973
+    },
+    {
+     "K": 10,
+     "N": 438,
+     "trustworthiness": 0.7925730188322391,
+     "continuity": 0.7938461538461539,
+     "U_P": 0.019634703196347032,
+     "U_N": 0.07077625570776255,
+     "U_X": 0.07077625570776255,
+     "Q_NX": 0.16118721461187213,
+     "B_NX": 0.0,
+     "LCMC": 0.1383039194173641,
+     "R_NX": 0.1415428870852181,
+     "B_TC": 0.0012731350139147946,
+     "hard_intrusions": 3674,
+     "hard_extrusions": 3674
+    },
+    {
+     "K": 15,
+     "N": 438,
+     "trustworthiness": 0.7926111752947864,
+     "continuity": 0.7852175826594048,
+     "U_P": 0.016590563165905632,
+     "U_N": 0.09619482496194826,
+     "U_X": 0.09406392694063927,
+     "Q_NX": 0.20684931506849313,
+     "B_NX": -0.0021308980213089884,
+     "LCMC": 0.17252437227673112,
+     "R_NX": 0.1786567551775628,
+     "B_TC": -0.007393592635381641,
+     "hard_intrusions": 5211,
+     "hard_extrusions": 5211
+    },
+    {
+     "K": 20,
+     "N": 438,
+     "trustworthiness": 0.7920225789282013,
+     "continuity": 0.7820993360786621,
+     "U_P": 0.01449771689497717,
+     "U_N": 0.1139269406392694,
+     "U_X": 0.10901826484018265,
+     "Q_NX": 0.23744292237442924,
+     "B_NX": -0.004908675799086756,
+     "LCMC": 0.19167633198541323,
+     "R_NX": 0.20086944143315486,
+     "B_TC": -0.00992324284953916,
+     "hard_intrusions": 6680,
+     "hard_extrusions": 6680
+    }
+   ],
+   "silhouette_projected": 0.10467576586477205,
+   "silhouette_projected_2d": 0.05913890086048808
+  },
+  {
+   "model": "gpt2",
+   "hf_id": "openai-community/gpt2",
+   "embedding_dim": 768,
+   "silhouette_high_dim_cosine": 0.048318326473236084,
+   "algorithm": "pca_nc",
+   "params": {
+    "n_components": 3,
+    "centering": false,
+    "solver": "full SVD of X",
+    "role": "ablation"
+   },
+   "diagnostics": {
+    "explained_variance_ratio": [
+     0.2671813857929162,
+     0.03641173676023947,
+     0.021883673151129827
+    ]
+   },
+   "N_evaluated": 438,
+   "curves": [
+    {
+     "K": 5,
+     "N": 438,
+     "trustworthiness": 0.7614272061165976,
+     "continuity": 0.8118763937559732,
+     "U_P": 0.0228310502283105,
+     "U_N": 0.048401826484018265,
+     "U_X": 0.041552511415525115,
+     "Q_NX": 0.11278538812785388,
+     "B_NX": -0.00684931506849315,
+     "LCMC": 0.10134374053059987,
+     "R_NX": 0.10251670049044478,
+     "B_TC": 0.05044918763937556,
+     "hard_intrusions": 1943,
+     "hard_extrusions": 1943
+    },
+    {
+     "K": 10,
+     "N": 438,
+     "trustworthiness": 0.7614682121531436,
+     "continuity": 0.7990294777228392,
+     "U_P": 0.020319634703196348,
+     "U_N": 0.07876712328767123,
+     "U_X": 0.07557077625570777,
+     "Q_NX": 0.17465753424657535,
+     "B_NX": -0.003196347031963462,
+     "LCMC": 0.15177423905206733,
+     "R_NX": 0.1553286708799846,
+     "B_TC": 0.03756126556969552,
+     "hard_intrusions": 3615,
+     "hard_extrusions": 3615
+    },
+    {
+     "K": 15,
+     "N": 438,
+     "trustworthiness": 0.757018943353322,
+     "continuity": 0.7893799856962095,
+     "U_P": 0.01704718417047184,
+     "U_N": 0.09802130898021309,
+     "U_X": 0.0958904109589041,
+     "Q_NX": 0.21095890410958903,
+     "B_NX": -0.0021308980213089884,
+     "LCMC": 0.17663396131782702,
+     "R_NX": 0.18291241965850807,
+     "B_TC": 0.0323610423428875,
+     "hard_intrusions": 5184,
+     "hard_extrusions": 5184
+    },
+    {
+     "K": 20,
+     "N": 438,
+     "trustworthiness": 0.7554713281228114,
+     "continuity": 0.7835260666162422,
+     "U_P": 0.015753424657534248,
+     "U_N": 0.1132420091324201,
+     "U_X": 0.11198630136986301,
+     "Q_NX": 0.24098173515981736,
+     "B_NX": -0.0012557077625570817,
+     "LCMC": 0.19521514477080135,
+     "R_NX": 0.20457798145045608,
+     "B_TC": 0.028054738493430875,
+     "hard_intrusions": 6649,
+     "hard_extrusions": 6649
+    }
+   ],
+   "silhouette_projected": 0.2327513482483308,
+   "silhouette_projected_2d": 0.09322869961231947
+  },
+  {
+   "model": "gemma2",
+   "hf_id": "google/gemma-2-2b",
+   "embedding_dim": 2304,
+   "silhouette_high_dim_cosine": 0.043648283928632736,
+   "algorithm": "pca_nc",
+   "params": {
+    "n_components": 3,
+    "centering": false,
+    "solver": "full SVD of X",
+    "role": "ablation"
+   },
+   "diagnostics": {
+    "explained_variance_ratio": [
+     0.10347782123364335,
+     0.03521115194284551,
+     0.01855574312632465
+    ]
+   },
+   "N_evaluated": 438,
+   "curves": [
+    {
+     "K": 5,
+     "N": 438,
+     "trustworthiness": 0.8449569926728258,
+     "continuity": 0.7840044600191144,
+     "U_P": 0.0228310502283105,
+     "U_N": 0.04794520547945205,
+     "U_X": 0.032420091324200914,
+     "Q_NX": 0.10319634703196347,
+     "B_NX": -0.015525114155251138,
+     "LCMC": 0.09175469943470946,
+     "R_NX": 0.09281667512261119,
+     "B_TC": -0.060952532653711367,
+     "hard_intrusions": 1964,
+     "hard_extrusions": 1964
+    },
+    {
+     "K": 10,
+     "N": 438,
+     "trustworthiness": 0.8426581286644511,
+     "continuity": 0.7621604387884683,
+     "U_P": 0.017351598173515982,
+     "U_N": 0.07420091324200913,
+     "U_X": 0.06575342465753424,
+     "Q_NX": 0.15730593607305937,
+     "B_NX": -0.008447488584474888,
+     "LCMC": 0.13442264087855135,
+     "R_NX": 0.13757071209350574,
+     "B_TC": -0.08049768987598283,
+     "hard_intrusions": 3691,
+     "hard_extrusions": 3691
+    },
+    {
+     "K": 15,
+     "N": 438,
+     "trustworthiness": 0.8379387871119179,
+     "continuity": 0.7502492160422511,
+     "U_P": 0.015829528158295282,
+     "U_N": 0.09786910197869102,
+     "U_X": 0.08447488584474885,
+     "Q_NX": 0.19817351598173516,
+     "B_NX": -0.013394216133942163,
+     "LCMC": 0.16384857318997315,
+     "R_NX": 0.16967257460667834,
+     "B_TC": -0.0876895710696668,
+     "hard_intrusions": 5268,
+     "hard_extrusions": 5268
+    },
+    {
+     "K": 20,
+     "N": 438,
+     "trustworthiness": 0.8369770568955375,
+     "continuity": 0.7447914390565034,
+     "U_P": 0.014269406392694063,
+     "U_N": 0.11255707762557078,
+     "U_X": 0.1002283105022831,
+     "Q_NX": 0.22705479452054794,
+     "B_NX": -0.012328767123287676,
+     "LCMC": 0.18128820413153193,
+     "R_NX": 0.18998308202752864,
+     "B_TC": -0.09218561783903412,
+     "hard_intrusions": 6771,
+     "hard_extrusions": 6771
+    }
+   ],
+   "silhouette_projected": 0.18921491336094473,
+   "silhouette_projected_2d": 0.10076839091101694
+  },
+  {
+   "model": "bert",
+   "hf_id": "bert-base-uncased",
+   "embedding_dim": 768,
+   "silhouette_high_dim_cosine": 0.02522098273038864,
+   "algorithm": "pca_nc",
+   "params": {
+    "n_components": 3,
+    "centering": false,
+    "solver": "full SVD of X",
+    "role": "ablation"
+   },
+   "diagnostics": {
+    "explained_variance_ratio": [
+     0.23794266636925923,
+     0.04644119547866298,
+     0.01907909944730448
+    ]
+   },
+   "N_evaluated": 438,
+   "curves": [
+    {
+     "K": 5,
+     "N": 438,
+     "trustworthiness": 0.7796771795688648,
+     "continuity": 0.7659732398853139,
+     "U_P": 0.02009132420091324,
+     "U_N": 0.043835616438356165,
+     "U_X": 0.039269406392694065,
+     "Q_NX": 0.10319634703196347,
+     "B_NX": -0.0045662100456621,
+     "LCMC": 0.09175469943470946,
+     "R_NX": 0.09281667512261119,
+     "B_TC": -0.013703939683550992,
+     "hard_intrusions": 1964,
+     "hard_extrusions": 1964
+    },
+    {
+     "K": 10,
+     "N": 438,
+     "trustworthiness": 0.7778881954013672,
+     "continuity": 0.7460257761206128,
+     "U_P": 0.014611872146118721,
+     "U_N": 0.06415525114155252,
+     "U_X": 0.0547945205479452,
+     "Q_NX": 0.13356164383561644,
+     "B_NX": -0.009360730593607314,
+     "LCMC": 0.11067834864110844,
+     "R_NX": 0.11327034743832409,
+     "B_TC": -0.031862419280754395,
+     "hard_intrusions": 3795,
+     "hard_extrusions": 3795
+    },
+    {
+     "K": 15,
+     "N": 438,
+     "trustworthiness": 0.7785417468962609,
+     "continuity": 0.7373303258696888,
+     "U_P": 0.01156773211567732,
+     "U_N": 0.08006088280060883,
+     "U_X": 0.07625570776255708,
+     "Q_NX": 0.16788432267884323,
+     "B_NX": -0.00380517503805175,
+     "LCMC": 0.13355937988708122,
+     "R_NX": 0.13830675121008174,
+     "B_TC": -0.04121142102657205,
+     "hard_intrusions": 5467,
+     "hard_extrusions": 5467
+    },
+    {
+     "K": 20,
+     "N": 438,
+     "trustworthiness": 0.7809754321091408,
+     "continuity": 0.7362204106787685,
+     "U_P": 0.010844748858447488,
+     "U_N": 0.09349315068493151,
+     "U_X": 0.08972602739726028,
+     "Q_NX": 0.1940639269406393,
+     "B_NX": -0.0037671232876712313,
+     "LCMC": 0.14829733655162328,
+     "R_NX": 0.15540991864043013,
+     "B_TC": -0.044755021430372244,
+     "hard_intrusions": 7060,
+     "hard_extrusions": 7060
+    }
+   ],
+   "silhouette_projected": 0.09605996640194343,
+   "silhouette_projected_2d": 0.0008090718811167604
+  }
+ ]
+}

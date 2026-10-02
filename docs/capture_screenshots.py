@@ -209,23 +209,11 @@ def main():
         t.approach(APPROACH_MS)
         t.pin("wanted")  # a verb in the visible cluster; the pin holds while the reticle is empty
         t.view("fig06_probing")
-        t.panel("fig07_inspector", "aside >> nth=1", max_height=600)
 
-        print("[6] interface details")
+        print("[6] metrics panel")
         t.open(modelKey="gpt2", projectionType="isomap")
         t.preset("Isometric")
         t.panel("fig08_metrics_panel", "div.absolute.bottom-\\[16px\\].right-\\[16px\\]")
-        t.panel("fig09_controls", "aside >> nth=0", max_height=700)
-        t.page.click("button[aria-label='Projection']")
-        t.page.wait_for_timeout(400)
-        t.page.screenshot(path=str(args.out / "fig10_dropdown.png"),
-                          clip={"x": 0, "y": 440, "width": 320, "height": 260})
-        print("   fig10_dropdown.png")
-        img = Image.open(args.out / "fig10_dropdown.png").convert("RGB")
-        h = img.height + 80; w = int(round(h * 16 / 9))
-        canvas = Image.new("RGB", (w, h), "white"); canvas.paste(img, ((w - img.width) // 2, 40))
-        canvas.save(args.out / "fig10_dropdown.png")
-        t.page.keyboard.press("Escape")
 
         print("[7] camera modes")
         t.window(WINDOW_16_9)

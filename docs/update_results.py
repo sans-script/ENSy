@@ -172,11 +172,11 @@ def main():
         "main": table_main(main_r),
         "highdim": table_highdim(main_r),
         "curves_mt": figure_curves(main_r, "trustworthiness", "$M_T(K)$", "curves_trustworthiness",
-                                   "Trustworthiness $M_T(K)$ over $K$ for every model and projection configuration.", 6),
+                                   "Trustworthiness $M_T(K)$ over $K$ for every model and projection configuration.", 5),
         "curves_bnx": figure_curves(main_r, "B_NX", "$B_{NX}(K)$", "curves_bnx",
                                     "Behaviour indicator $B_{NX}(K)$ over $K$ (positive: intrusive; negative: extrusive). "
                                     "With perplexity 30, t-SNE is below zero at every $K$ in all four models; with perplexity 5 it is "
-                                    "above zero for Qwen and the two Gemma models and close to zero for BERT.", 7),
+                                    "above zero for Qwen, Gemma 2 and GPT-2 and close to zero for BERT.", 6),
         "sensitivity": table_sensitivity(sens),
         "ablation": table_ablation(main_r, abl),
     }.items():

@@ -114,7 +114,7 @@ Precedence: **Probing (3) > Thermal Camera (2) > Reference Partition (1)**.
 - **Perspective, orthographic and two-point perspective** camera modes; adaptive grid and minimap
 - **Central reticle selection**: the token nearest the screen center (25 px radius) is selected and inspected in the right sidebar — coordinates, category, $B_{NX,i}(K)$, true/false/missing neighbors with cosine similarity, CSV export
 - **Comparative metrics panel**: the 4 models × 5 projection configurations with co-ranking curves
-- Rendering uses a single `BufferGeometry` (one draw call) and culled DOM labels (the 120 nearest); settings persist to `localStorage`
+- Rendering uses a single `BufferGeometry` (one draw call) and Projector-style labels (every token is a dot; words are placed beside their dots wherever they do not overlap); settings persist to `localStorage`
 
 | **Front (XY)** | **Top (XZ)** |
 |:---:|:---:|

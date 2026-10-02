@@ -29,6 +29,7 @@ interface LabelEntry {
   axisId?: "x" | "y" | "z";
 }
 
+const LABEL_GAP = 5; // px between a token's dot and its word
 const MAX_TOKEN_LABELS = 450; // upper bound; in practice set by screen-space collisions (plan 8.2)
 
 // Layer 2 (plan 9.7): fixed global bipolar scale on [-1, 1]; neutral is light grey, never green.
@@ -135,7 +136,6 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   const probeKRef = useRef(probeK);
   const hoveredIdRef = useRef<number | null>(null);
   const pinnedIdRef = useRef<number | null>(null);
-  const shownLabelIdsRef = useRef<Set<number>>(new Set());
   const colorsDirtyRef = useRef(true);
   const perfRef = useRef({ frames: 0, frameTime: 0, selection: 0, visibleLabels: 0 });
   const onPerfUpdateRef = useRef(onPerfUpdate);
@@ -945,9 +945,8 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       "color",
       new THREE.BufferAttribute(new Float32Array(nodes.length * 4).fill(1), 4),
     );
-    // Round sprite (PointsMaterial draws squares by default). The word label is the
-    // marker, as in the original design; a dot is drawn only for tokens whose label
-    // is culled (see applyColorLayersPrivate), so every one of the N points stays visible.
+    // Round sprite (PointsMaterial draws squares by default). Every token is drawn as
+    // a dot; its word is shown beside the dot when there is room (updateOverlayLabels).
     const disc = document.createElement("canvas");
     disc.width = disc.height = 64;
     const dctx = disc.getContext("2d")!;
@@ -1039,13 +1038,18 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     tokenPointsRef.current.forEach((h, idx) => {
       const node = h.userData as SemanticNode;
       let alpha = h.visible ? 1 : 0;
+      // On the thermal scale most values are near 0 (pale), so there the dot carries
+      // the colour and the word stays dark for legibility, as in the TF Projector.
+      let labelColor: string | null = null;
       if (layer === "heat" && node.b_nx_local && kKey in node.b_nx_local) {
         tmp.copy(heatColor(node.b_nx_local[kKey]));
+        labelColor = "#3f3f46";
       } else {
         tmp.set(getNodeDisplayColor(node.color));
       }
       if (probe) {
         const id = node.id!;
+        const probed = id === probe.selected || probe.true.has(id) || probe.false.has(id) || probe.missing.has(id);
         if (id === probe.selected) tmp.copy(PROBE_SELECTED);
         else if (probe.true.has(id)) tmp.copy(PROBE_TRUE);
         else if (probe.false.has(id)) tmp.copy(PROBE_FALSE);
@@ -1053,12 +1057,12 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
           tmp.copy(PROBE_MISSING);
           alpha *= 0.45;
         } else alpha *= 0.25;
+        if (probed) labelColor = null; // probing colours apply to the word too
       }
-      const dotAlpha = shownLabelIdsRef.current.has(node.id!) ? 0 : alpha;
-      colorAttr.setXYZW(idx, tmp.r, tmp.g, tmp.b, dotAlpha);
+      colorAttr.setXYZW(idx, tmp.r, tmp.g, tmp.b, alpha);
       const label = tokenLabelByIdRef.current.get(node.id!);
       if (label) {
-        label.dom.style.color = `#${tmp.getHexString()}`;
+        label.dom.style.color = labelColor ?? `#${tmp.getHexString()}`;
         label.dom.dataset.dim = alpha < 0.5 && h.visible ? "1" : "0";
       }
     });
@@ -1960,9 +1964,10 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         w = p.dom.offsetWidth || p.dom.textContent!.length * 7;
         p.dom.dataset.w = String(w);
       }
-      const halfW = (w * p.scale) / 2 + 2;
       const halfH = 8 * p.scale + 1;
-      const x0 = Math.floor((p.x - halfW) / CELL), x1 = Math.floor((p.x + halfW) / CELL);
+      // box of a label written to the right of its dot (LABEL_GAP px away)
+      const x0 = Math.floor((p.x + LABEL_GAP - 1) / CELL);
+      const x1 = Math.floor((p.x + LABEL_GAP + w * p.scale + 2) / CELL);
       const y0 = Math.floor((p.y - halfH) / CELL), y1 = Math.floor((p.y + halfH) / CELL);
       let free = true;
       for (let cy = y0; cy <= y1 && free; cy++)
@@ -1993,21 +1998,15 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       }
       p.dom.style.left = `${p.x}px`;
       p.dom.style.top = `${p.y}px`;
-      p.dom.style.transform = `translate(-50%, -50%) scale(${p.scale})`;
+      if (p.type === "token") {
+        p.dom.style.transformOrigin = "0 50%";
+        p.dom.style.transform = `translate(${LABEL_GAP}px, -50%) scale(${p.scale})`;
+      } else {
+        p.dom.style.transform = `translate(-50%, -50%) scale(${p.scale})`;
+      }
       p.dom.style.opacity = p.fade.toFixed(2);
       p.dom.style.zIndex = Math.max(1, Math.floor(1000 - p.dist)).toString();
     });
-
-    // A placed word is the marker; only tokens without a label keep their dot
-    const shown = new Set<number>();
-    tokenLabelByIdRef.current.forEach((label, id) => {
-      if (placed.has(label.dom) && parseFloat(label.dom.style.opacity || "0") > 0.3) shown.add(id);
-    });
-    const prevShown = shownLabelIdsRef.current;
-    if (shown.size !== prevShown.size || [...shown].some((id) => !prevShown.has(id))) {
-      shownLabelIdsRef.current = shown;
-      colorsDirtyRef.current = true;
-    }
 
     // Dynamic grid numbers
     gridNumberElementsRef.current.forEach(({ dom, position }) => {
@@ -2269,14 +2268,23 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       }
     });
 
+    // Same colour as the dots of the active layer (category / thermal / probe)
+    const colorAttr = cloudRef.current?.geometry.getAttribute("color") as THREE.BufferAttribute | undefined;
+    const indexById = new Map<number, number>();
+    tokenPointsRef.current.forEach((h, i) => indexById.set(h.userData.id, i));
+    const dotColor = new THREE.Color();
+
     pointsOnMap.forEach((point, index) => {
       if (!point.visible) return;
 
       ctx.beginPath();
-      // Same colour as the active layer (category / thermal / probe) in the 3D view
-      ctx.fillStyle =
-        tokenLabelByIdRef.current.get(point.node.id!)?.dom.style.color ||
-        getNodeDisplayColor(point.node.color);
+      const i = indexById.get(point.node.id!);
+      if (colorAttr && i !== undefined) {
+        dotColor.setRGB(colorAttr.getX(i), colorAttr.getY(i), colorAttr.getZ(i));
+        ctx.fillStyle = `#${dotColor.getHexString()}`;
+      } else {
+        ctx.fillStyle = getNodeDisplayColor(point.node.color);
+      }
       ctx.arc(point.x, point.y, pointRadiusPx, 0, Math.PI * 2);
       ctx.fill();
 
