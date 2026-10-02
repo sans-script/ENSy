@@ -39,7 +39,10 @@ def environment() -> dict:
 
     try:
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
+        # tracked changes outside the result folders (the run's own outputs do not count)
+        dirty = bool(subprocess.check_output(
+            ["git", "status", "--porcelain", "--untracked-files=no", "--", ".",
+             ":(exclude)results", ":(exclude)ci-results", ":(exclude)colab-results"], text=True).strip())
     except Exception:
         sha, dirty = None, None
     return {

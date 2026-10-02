@@ -174,7 +174,7 @@ def main():
         "curves_bnx": figure_curves(main_r, "B_NX", "$B_{NX}(K)$", "curves_bnx",
                                     "Behaviour indicator $B_{NX}(K)$ over $K$ (positive: intrusive; negative: extrusive). "
                                     "With perplexity 30, t-SNE is below zero at every $K$ in all four models; with perplexity 5 it is "
-                                    "positive for Qwen and Gemma 2, positive for Gemma 1 except at $K=5$, and close to zero for BERT.", 7),
+                                    "above zero for Qwen and the two Gemma models and close to zero for BERT.", 7),
         "sensitivity": table_sensitivity(sens),
         "ablation": table_ablation(main_r, abl),
     }.items():

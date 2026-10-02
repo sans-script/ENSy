@@ -22,8 +22,8 @@ Safetensors files start with a byte-offset header, so HTTP `Range` requests can 
 |---|---|
 | T1 ranged extraction | **Done** — `ensy.models.embedding_rows`, bit-identical to the full download (tests) |
 | T2 Gemma access | **Done** — licences accepted; both variants run (`gemma`, `gemma2`) |
-| T3 GitHub Actions | **Written** (`.github/workflows/experiment.yml`), `HF_TOKEN` secret set; first run pending the push (the `gh` token needs the `workflow` scope) |
-| T4 determinism check | **Built into the workflow** (`python -m ensy.compare`, summary in the run page); pending first run |
+| T3 GitHub Actions | **Running** — first run (commit `009c1ac`) succeeded in 11 min 13 s: gated models accessible, 45/45 validation tests, full pipeline |
+| T4 determinism check | **Done** — the CI rebuild reproduces the dataset hash exactly; PCA, PCA-NC and Isomap match the local results exactly; t-SNE and UMAP do **not** match across platforms (Windows local vs Linux CI) despite fixed seeds, with differences of the order of the seed-to-seed spread (e.g. Qwen UMAP $B_{NX}(10)$ +0.019 vs +0.009). Consequence: the CI results are the canonical numbers, and stochastic methods are reported over seeds |
 | T5 Colab notebook | **Done** — `notebooks/ensy_colab.ipynb` |
 
 Real results were produced on the limited local machine: the main matrix (16 configurations) took 3 min 17 s, including the ranged downloads; the ablation and sensitivity runs also completed locally.
