@@ -18,3 +18,6 @@ playwright-artifacts/
 
 # local clone created by running notebooks/ensy_colab.ipynb outside Colab
 notebooks/manifold/
+
+# embedding rows cached by the server (app.py)
+.cache/

@@ -39,7 +39,8 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
                    allow_methods=["*"], allow_headers=["*"])
 
 _lock = threading.Lock()
-_cache = M.EmbeddingCache()
+# extracted rows are kept on disk: a model is fetched from the Hub once, not on every start
+_cache = M.EmbeddingCache(disk_dir=ROOT / ".cache" / "embeddings")
 _projections: dict[tuple, dict] = {}
 _state: dict = {"dataset": None, "dataset_path": None, "error": None}
 
@@ -84,6 +85,19 @@ def _silhouette_2d(X: np.ndarray, algorithm: str, labels: np.ndarray) -> float:
     return silhouette(Y2, labels[kept2])
 
 
+def _labels(ds: dict) -> np.ndarray:
+    return np.array([CATEGORY_INDEX[it["category"]] for it in ds["items"]])
+
+
+def _with_silhouette_2d(res: dict, algorithm: str, ds: dict) -> float:
+    """The 2D Silhouette needs a second projection, so it is computed (and cached)
+    only when a request asks for it."""
+    with _lock:
+        if "silhouette_2d" not in res:
+            res["silhouette_2d"] = _silhouette_2d(res["X"], algorithm, _labels(ds))
+        return res["silhouette_2d"]
+
+
 def _compute(model: str, algorithm: str, ds: dict) -> dict:
     key = (model, ds["dataset_hash"], algorithm)
     with _lock:
@@ -93,7 +107,7 @@ def _compute(model: str, algorithm: str, ds: dict) -> dict:
             X = _cache.get(model, ds)
         except Exception as exc:
             raise HTTPException(503, detail=f"cannot load embeddings for {model}: {exc}")
-        labels = np.array([CATEGORY_INDEX[it["category"]] for it in ds["items"]])
+        labels = _labels(ds)
         Y, diag = P.project(X, algorithm)
         # Isomap may drop points outside the giant k-NN component; everything is
         # evaluated on the projected subset and indices are mapped back to items.
@@ -108,14 +122,14 @@ def _compute(model: str, algorithm: str, ds: dict) -> dict:
             "hd_order": kept[np.argsort(rho, axis=1)[:, 1:K_PROBE_MAX + 1]],
             "ld_order": kept[np.argsort(r, axis=1)[:, 1:K_PROBE_MAX + 1]],
             "silhouette": silhouette(Y, labels[kept]),
-            "silhouette_2d": _silhouette_2d(X, algorithm, labels),
         }
         _projections[key] = out
         return out
 
 
-def _payload(model: str, algorithm: str, ds: dict) -> dict:
+def _payload(model: str, algorithm: str, ds: dict, silhouette_2d: bool = False) -> dict:
     res = _compute(model, algorithm, ds)
+    sil_2d = _with_silhouette_2d(res, algorithm, ds) if silhouette_2d else None
     X, Y, kept = res["X"], res["Y"], res["kept"]
     N = len(kept)
     nodes = []
@@ -156,7 +170,7 @@ def _payload(model: str, algorithm: str, ds: dict) -> dict:
             "K_curve": list(K_CURVE),
             "metrics": res["curves"],
             "silhouette_projected": res["silhouette"],
-            "silhouette_projected_2d": res["silhouette_2d"],
+            "silhouette_projected_2d": sil_2d,
             "category_colors": CATEGORY_COLORS,
         },
         "nodes": nodes,
@@ -218,21 +232,21 @@ def build_dataset(req: DatasetRequest):
 
 
 @app.get("/api/projection/{model}/{algorithm}")
-def get_projection(model: str, algorithm: str):
+def get_projection(model: str, algorithm: str, silhouette_2d: bool = Query(False)):
     ds = _require_dataset()
     model, algorithm = model.lower(), algorithm.lower()
     _check(model, algorithm, ds)
-    return _payload(model, algorithm, ds)
+    return _payload(model, algorithm, ds, silhouette_2d)
 
 
 @app.get("/api/projection/{algorithm}")
-def get_projection_default(algorithm: str, model: str = Query("qwen")):
+def get_projection_default(algorithm: str, model: str = Query("qwen"), silhouette_2d: bool = Query(False)):
     """Backwards-compatible route (defaults to Qwen)."""
-    return get_projection(model, algorithm)
+    return get_projection(model, algorithm, silhouette_2d)
 
 
 @app.get("/api/compare")
-def compare(models: str = Query(None)):
+def compare(models: str = Query(None), silhouette_2d: bool = Query(False)):
     """Metric curves for every (model, algorithm) of the main matrix (F5)."""
     ds = _require_dataset()
     keys = models.split(",") if models else [k for k in M.MODELS if k in ds["models"]]
@@ -243,8 +257,39 @@ def compare(models: str = Query(None)):
             res = _compute(mk, alg, ds)
             rows.append({"model": mk, "algorithm": alg, "curves": res["curves"],
                          "silhouette_projected": res["silhouette"],
-                         "silhouette_projected_2d": res["silhouette_2d"]})
+                         "silhouette_projected_2d": _with_silhouette_2d(res, alg, ds) if silhouette_2d else None})
     return {"dataset_hash": ds["dataset_hash"], "frozen": ds["frozen"], "N": ds["N"], "rows": rows}
+
+
+def _warm_up() -> None:
+    """
+    Background start-up work so the first projection a user asks for is fast:
+    load the embeddings of every model in the dataset (from disk after the first
+    run), compile UMAP's numba kernels and t-SNE's first call on a toy problem,
+    then compute the viewer's default projection.
+    """
+    ds = _state["dataset"]
+    if ds is None:
+        return
+    try:
+        rng = np.random.default_rng(0)
+        toy = rng.normal(size=(60, 8))
+        P.project(toy, "umap")
+        P.project(toy, "tsne")
+        for model in (k for k in M.MODELS if k in ds["models"]):
+            with _lock:
+                try:
+                    _cache.get(model, ds)
+                except Exception:  # gated model without a token, offline, ...
+                    continue
+        if "qwen" in ds["models"]:
+            _compute("qwen", "umap", ds)
+    except Exception as exc:  # warm-up is an optimisation; never take the server down
+        print(f"[warm-up] skipped: {exc}")
+
+
+if os.environ.get("ENSY_WARMUP", "1") != "0":
+    threading.Thread(target=_warm_up, name="ensy-warm-up", daemon=True).start()
 
 
 # ── static frontend (vite build output) ────────────────────────────────

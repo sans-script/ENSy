@@ -31,15 +31,13 @@ body {
 .highlighted-acad {
   font-size: 18px !important;
   font-weight: bold !important;
+  text-decoration: underline !important;
   z-index: 10000 !important;
-  /* the aimed word: dark text on a white chip, its dot's colour kept on the stripe */
+  /* the aimed word is drawn dark so it never matches its dot; the underline keeps the dot's colour */
   color: #111111 !important;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #111111;
-  border-left: 4px solid var(--dot, #111111);
-  border-radius: 3px;
-  padding: 0 5px 1px 4px;
-  text-shadow: none;
+  text-decoration-color: var(--dot, #111111) !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 3px;
 }
 
 /* Absolute math axes labels */

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ColorLayer, SemanticMeta } from '../types';
 import { Tex } from './Tex';
 
@@ -36,12 +36,23 @@ const Swatch: React.FC<{ color: string; label: string; opacity?: number }> = ({ 
   </span>
 );
 
+/** Loading ellipsis that steps 0 → 1 → 2 → 3 dots and back to 0 (no fading). */
+const SteppingDots: React.FC = () => {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setN((k) => (k + 1) % 4), 400);
+    return () => clearInterval(id);
+  }, []);
+  // fixed width so the text does not shift as dots appear
+  return <span className="inline-block w-[1.2em] text-left">{'.'.repeat(n)}</span>;
+};
+
 /** Co-ranking curves for the current (model, algorithm) and the active colour legend. */
 export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, colorLayer, probeEnabled, error, loading }) => {
   if (loading) {
     return (
-      <div className={`${CARD} max-w-[360px] px-4 py-2.5 text-[12px] animate-pulse`}>
-        Computing projection and co-ranking metrics…
+      <div className={`${CARD} max-w-[360px] px-4 py-2.5 text-[12px]`}>
+        Computing projection and co-ranking metrics<SteppingDots />
       </div>
     );
   }

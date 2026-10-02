@@ -8,11 +8,13 @@ tests/test_models.py) without materialising the whole model in RAM.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import struct
 import time
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -227,8 +229,18 @@ class EmbeddingCache:
     """In-memory cache keyed as in plan Sec. 10:
     (model_id, dataset_hash, extraction_config, preprocessing_config)."""
 
-    def __init__(self):
+    def __init__(self, disk_dir: str | os.PathLike | None = None):
+        """disk_dir: optional folder that keeps the extracted raw rows between runs
+        (one .npy per model revision and token-id list); None keeps memory only."""
         self._store: dict[tuple, np.ndarray] = {}
+        self._disk = Path(disk_dir) if disk_dir else None
+
+    def _disk_path(self, key: str, ids: list, revision: str | None) -> Path | None:
+        if self._disk is None:
+            return None
+        digest = hashlib.sha256(
+            json.dumps([MODELS[key].hf_id, revision, ids]).encode()).hexdigest()[:16]
+        return self._disk / f"{key}_{digest}.npy"
 
     def get(self, key: str, dataset: dict, normalise: bool = True) -> np.ndarray:
         ck = (MODELS[key].hf_id, dataset["dataset_hash"], "static_input_embedding",
@@ -236,10 +248,17 @@ class EmbeddingCache:
         if ck not in self._store:
             ids = [item["token_ids"][key] for item in dataset["items"]]
             revision = dataset["models"][key].get("revision")
-            if os.environ.get("ENSY_FULL_DOWNLOAD"):
-                X = embedding_matrix(key, revision)[ids]
+            path = self._disk_path(key, ids, revision)
+            if path is not None and path.exists():
+                X = np.load(path)
             else:
-                X = embedding_rows(key, ids, revision)
+                if os.environ.get("ENSY_FULL_DOWNLOAD"):
+                    X = embedding_matrix(key, revision)[ids]
+                else:
+                    X = embedding_rows(key, ids, revision)
+                if path is not None:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(path, X)
             self._store[ck] = l2_normalise(X) if normalise else X
         return self._store[ck]
 

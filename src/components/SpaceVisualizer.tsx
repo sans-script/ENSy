@@ -1072,7 +1072,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       const label = tokenLabelByIdRef.current.get(node.id!);
       if (label) {
         label.dom.style.color = labelColor ?? `#${tmp.getHexString()}`;
-        // the aimed word is drawn dark on a chip; this keeps the dot's colour on its stripe
+        // the aimed word is drawn dark; this keeps the dot's colour on its underline
         label.dom.style.setProperty("--dot", `#${tmp.getHexString()}`);
         label.dom.dataset.dim = alpha < 0.5 && h.visible ? "1" : "0";
       }

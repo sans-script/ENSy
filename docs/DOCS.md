@@ -222,7 +222,7 @@ _Figure 3: Neighbourhood probing after flying towards a token (BERT, UMAP, $K = 
 
 ### 4.4 Navigation and interface
 
-The viewer offers first-person 6-DOF flight (W/A/S/D, R/F, mouse look under pointer lock), perspective, parallel and two-point perspective cameras with LERP/SLERP transitions between front, top, side and isometric presets, an octant filter and a minimap. A central reticle selects the nearest token in screen space within 25 px; the selected word is drawn in dark type on a white label whose left edge keeps the colour of its dot, so it stays legible whatever its layer colour. The minimap is omitted from the figures of this paper.
+The viewer offers first-person 6-DOF flight (W/A/S/D, R/F, mouse look under pointer lock), perspective, parallel and two-point perspective cameras with LERP/SLERP transitions between front, top, side and isometric presets, an octant filter and a minimap. A central reticle selects the nearest token in screen space within 25 px; the selected word is drawn larger, in dark type, and underlined in the colour of its dot, so it stays legible whatever its layer colour. The minimap is omitted from the figures of this paper.
 
 <figure class="academic-figure">
   <img src="screenshots/fig08_metrics_panel.png" alt="Figure 4" style="width:100%" />
