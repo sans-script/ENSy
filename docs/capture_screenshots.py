@@ -18,10 +18,13 @@ import argparse
 import json
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from playwright.sync_api import Page, sync_playwright
 
 VIEWPORT = {"width": 1600, "height": 950}
+VIEWPORT_CLIP = {"x": 320, "y": 0, "width": 940, "height": 950}  # between the 320 px and 340 px sidebars
+APPROACH_MS = 1000  # forward flight after the isometric preset (14 units/s along the aim)
+DEVICE_SCALE = 2  # screenshots at 2x pixel density
 BASE_SETTINGS = {
     "projectionType": "umap", "modelKey": "qwen", "colorLayer": "category",
     "probeEnabled": True, "currentFilter": "all", "metricK": 10,
@@ -102,39 +105,25 @@ class Tour:
         self.page.wait_for_timeout(400)
 
     # ── capture -----------------------------------------------------------
+    def view(self, name: str) -> Path:
+        """The 3D viewport only (between the two sidebars)."""
+        path = self.out / f"{name}.png"
+        self.page.screenshot(path=str(path), clip=VIEWPORT_CLIP)
+        print("  ", path.name)
+        return path
+
     def shot(self, name: str, element: str | None = None, max_height: int | None = None) -> Path:
         path = self.out / f"{name}.png"
         if element:
             self.page.locator(element).first.screenshot(path=str(path))
         else:
             self.page.screenshot(path=str(path))
-        if max_height:  # drop the empty lower part of tall sidebars
+        if max_height:  # drop the empty lower part of tall sidebars (max_height in CSS px)
             img = Image.open(path)
-            img.crop((0, 0, img.width, min(img.height, max_height))).save(path)
+            h = max_height * DEVICE_SCALE
+            img.crop((0, 0, img.width, min(img.height, h))).save(path)
         print("  ", path.name)
         return path
-
-
-def grid(paths: list[Path], labels: list[str], out: Path, cols: int = 2, crop=(320, 0, 1260, 950)):
-    """Compose viewport crops into a labelled grid figure."""
-    tiles = [Image.open(p).crop(crop) for p in paths]
-    w, h = tiles[0].size
-    rows = (len(tiles) + cols - 1) // cols
-    sheet = Image.new("RGB", (cols * w, rows * h), "white")
-    try:
-        font = ImageFont.truetype("times.ttf", 30)
-    except OSError:
-        font = ImageFont.load_default()
-    for i, (tile, label) in enumerate(zip(tiles, labels)):
-        x, y = (i % cols) * w, (i // cols) * h
-        sheet.paste(tile, (x, y))
-        d = ImageDraw.Draw(sheet)
-        d.rectangle([x, y, x + w - 1, y + h - 1], outline="#111111", width=2)
-        d.rectangle([x + 12, y + h - 58, x + 14 + d.textlength(label, font=font) + 16, y + h - 14],
-                    fill="white", outline="#111111", width=2)
-        d.text((x + 22, y + h - 52), label, fill="#111111", font=font)
-    sheet.save(out)
-    print("  ", out.name)
 
 
 def main():
@@ -144,12 +133,10 @@ def main():
     ap.add_argument("--channel", default="msedge", help="browser channel ('' for bundled Chromium)")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    tmp = args.out / "_tiles"
-    tmp.mkdir(exist_ok=True)
 
     with sync_playwright() as p:
         browser = p.chromium.launch(channel=args.channel or None)
-        page = browser.new_page(viewport=VIEWPORT, device_scale_factor=1)
+        page = browser.new_page(viewport=VIEWPORT, device_scale_factor=DEVICE_SCALE)
         t = Tour(page, args.base_url, args.out)
 
         print("[1] full workspace")
@@ -158,44 +145,44 @@ def main():
         t.pin("market")
         t.shot("fig01_workspace")
 
+        # Figure views: viewport only (sidebars cropped), grid planes and their
+        # backgrounds off, HUD hidden, and a closer camera than the preset.
+        clean = dict(probeEnabled=False, showBottomHud=False, showGridPlanes=False, showPlaneBackground=False)
+
         print("[2] the five projections of one model (same camera)")
-        tiles = []
-        t.open(modelKey="gemma2", projectionType="pca", probeEnabled=False, showBottomHud=False, showPlaneBackground=False)
+        t.open(modelKey="gemma2", projectionType="pca", **clean)
         for algo in ALGO_NAMES:
             t.choose("Projection", algo)
             t.wait_for_data()
             t.preset("Isometric")
-            t.approach()
-            tiles.append(t.shot(f"_tiles/proj_{algo}"))
-        grid(tiles, [ALGO_NAMES[a] for a in ALGO_NAMES], args.out / "fig02_projections_gemma2.png", cols=3)
+            t.approach(APPROACH_MS)
+            t.view(f"fig02_{algo}")
 
         print("[3] the same algorithm across the four models")
-        tiles = []
-        t.open(modelKey="qwen", projectionType="umap", probeEnabled=False, showBottomHud=False, showPlaneBackground=False)
+        t.open(modelKey="qwen", projectionType="umap", **clean)
         for model in MODEL_NAMES:
             t.choose("Model", model)
             t.wait_for_data()
             t.preset("Isometric")
-            t.approach()
-            tiles.append(t.shot(f"_tiles/model_{model}"))
-        grid(tiles, [MODEL_NAMES[m] for m in MODEL_NAMES], args.out / "fig03_models_umap.png")
+            t.approach(APPROACH_MS)
+            t.view(f"fig03_{model}")
 
         print("[4] thermal camera, K = 10 and K = 20")
-        t.open(modelKey="qwen", projectionType="tsne", probeEnabled=False, showPlaneBackground=False)
+        t.open(modelKey="qwen", projectionType="tsne", **clean)
         t.choose("Colour layer", "heat")
         t.preset("Isometric")
-        t.approach()
-        t.shot("fig04_thermal_k10")
+        t.approach(APPROACH_MS)
+        t.view("fig04_thermal_k10")
         t.choose("Neighbourhood K", "20")
         t.page.wait_for_timeout(800)
-        t.shot("fig05_thermal_k20")
+        t.view("fig05_thermal_k20")
 
         print("[5] neighbourhood probing after flying towards a token")
-        t.open(modelKey="bert", projectionType="umap", showPlaneBackground=False)
+        t.open(modelKey="bert", projectionType="umap", **{**clean, "probeEnabled": True})
         t.preset("Isometric")
-        t.approach(800)
+        t.approach(APPROACH_MS)
         t.pin("wanted")  # a verb in the visible cluster; the pin holds while the reticle is empty
-        t.shot("fig06_probing")
+        t.view("fig06_probing")
         t.shot("fig07_inspector", "aside >> nth=1", max_height=600)
 
         print("[6] interface details")
@@ -218,9 +205,6 @@ def main():
 
         browser.close()
 
-    for f in tmp.glob("*.png"):
-        f.unlink()
-    tmp.rmdir()
 
 
 if __name__ == "__main__":

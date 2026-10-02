@@ -776,13 +776,9 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     const dir = new THREE.Vector3();
     const right = new THREE.Vector3();
 
-    activeCamera.getWorldDirection(dir);
-    dir.y = 0;
-    if (dir.lengthSq() < 0.0001) {
-      dir.set(0, 0, -1);
-    } else {
-      dir.normalize();
-    }
+    // W/S fly along the full aim direction (pitch included), so the camera goes
+    // where the reticle points; A/D strafe horizontally and R/F stay world-vertical.
+    activeCamera.getWorldDirection(dir).normalize();
 
     right.set(1, 0, 0).applyQuaternion(activeCamera.quaternion);
     right.y = 0;

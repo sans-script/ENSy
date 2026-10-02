@@ -208,11 +208,11 @@ Three layers share the colour channel with a fixed precedence — probing > ther
 
 ![Thermal camera](screenshots/fig04_thermal_k10.png)
 
-_Figure 2: Thermal camera on Qwen 2.5 with t-SNE (perplexity 5), $K = 10$: each token's local contribution to $B_{NX}(10)$ on the fixed scale $[-1, 1]$._
+_Figure 2: Thermal camera on Qwen 2.5 with t-SNE (perplexity 5), $K = 10$ (viewport only, grid planes off): each token's local contribution to $B_{NX}(10)$ on the fixed scale $[-1, 1]$._
 
 ![Neighbourhood probing](screenshots/fig06_probing.png)
 
-_Figure 3: Neighbourhood probing after flying towards a token (BERT, UMAP, $K = 10$). Green: genuine neighbours kept by the projection; red: false neighbours introduced by it; translucent blue: genuine neighbours it pushed away._
+_Figure 3: Neighbourhood probing after flying towards a token (BERT, UMAP, $K = 10$; viewport only, grid planes off). Green: genuine neighbours kept by the projection; red: false neighbours introduced by it; translucent blue: genuine neighbours it pushed away._
 
 ### 4.4 Navigation and interface
 
@@ -300,13 +300,53 @@ _Figure 7: Behaviour indicator $B_{NX}(K)$ over $K$ (positive: intrusive; negati
 
 ### 5.3 Visual comparison
 
-![Projections](screenshots/fig02_projections_gemma2.png)
+Figures 8–12 show the five projection configurations of the same model, and Figures 13–16 the same algorithm (UMAP) across the four models. All are seen from the same camera (isometric preset, then a one-second forward flight along the aim), with the grid planes switched off. Colours: indigo nouns, ochre verbs, magenta function words.
 
-_Figure 8: The five projection configurations of Gemma 2 2B seen from the same camera (isometric preset, then the same short forward flight), coloured by the reference partition (indigo: nouns; ochre: verbs; magenta: function words). The semi-opaque plane backgrounds are switched off so that tokens behind the coordinate planes stay visible._
+<figure class="academic-figure">
+  <img src="screenshots/fig02_pca.png" alt="Figure 8" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 8.</strong> Gemma 2 2B — PCA (centred).</figcaption>
+</figure>
 
-![Models](screenshots/fig03_models_umap.png)
+<figure class="academic-figure">
+  <img src="screenshots/fig02_tsne.png" alt="Figure 9" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 9.</strong> Gemma 2 2B — t-SNE, perplexity 5.</figcaption>
+</figure>
 
-_Figure 9: UMAP projections of the four models from the same camera and parameters (plane backgrounds off)._
+<figure class="academic-figure">
+  <img src="screenshots/fig02_tsne_p30.png" alt="Figure 10" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 10.</strong> Gemma 2 2B — t-SNE, perplexity 30.</figcaption>
+</figure>
+
+<figure class="academic-figure">
+  <img src="screenshots/fig02_umap.png" alt="Figure 11" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 11.</strong> Gemma 2 2B — UMAP.</figcaption>
+</figure>
+
+<figure class="academic-figure">
+  <img src="screenshots/fig02_isomap.png" alt="Figure 12" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 12.</strong> Gemma 2 2B — Isomap.</figcaption>
+</figure>
+
+<figure class="academic-figure">
+  <img src="screenshots/fig03_qwen.png" alt="Figure 13" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 13.</strong> Qwen 2.5 0.5B-Instruct — UMAP.</figcaption>
+</figure>
+
+<figure class="academic-figure">
+  <img src="screenshots/fig03_gemma.png" alt="Figure 14" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 14.</strong> Gemma 2B (v1) — UMAP.</figcaption>
+</figure>
+
+<figure class="academic-figure">
+  <img src="screenshots/fig03_gemma2.png" alt="Figure 15" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 15.</strong> Gemma 2 2B — UMAP.</figcaption>
+</figure>
+
+<figure class="academic-figure">
+  <img src="screenshots/fig03_bert.png" alt="Figure 16" style="width:56%" />
+  <figcaption><strong class="caption-label">Fig. 16.</strong> BERT base uncased — UMAP.</figcaption>
+</figure>
+
 
 ### 5.4 Sensitivity to seed and perplexity
 
@@ -396,25 +436,25 @@ python docs/md_to_pdf.py                  # build this PDF
 
 <figure class="academic-figure">
   <img src="screenshots/fig09_controls.png" alt="Figure 10" style="width:34%" />
-  <figcaption><strong class="caption-label">Fig. 10.</strong> Left sidebar: manifold properties, profiling, and the experiment selectors.</figcaption>
+  <figcaption><strong class="caption-label">Fig. 17.</strong> Left sidebar: manifold properties, profiling, and the experiment selectors.</figcaption>
 </figure>
 
 <figure class="academic-figure">
   <img src="screenshots/fig10_dropdown.png" alt="Figure 11" style="width:40%" />
-  <figcaption><strong class="caption-label">Fig. 11.</strong> The projection selector, listing both t-SNE perplexities and the PCA-NC ablation.</figcaption>
+  <figcaption><strong class="caption-label">Fig. 18.</strong> The projection selector, listing both t-SNE perplexities and the PCA-NC ablation.</figcaption>
 </figure>
 
 ![Thermal K20](screenshots/fig05_thermal_k20.png)
 
-_Figure 12: Thermal camera for the same projection as Figure 2 at $K = 20$._
+_Figure 19: Thermal camera for the same projection as Figure 2 at $K = 20$._
 
 ![Front view](screenshots/fig11_front.png)
 
-_Figure 13: Front (XY) camera preset on the PCA projection of Qwen 2.5._
+_Figure 20: Front (XY) camera preset on the PCA projection of Qwen 2.5._
 
 ![Top view](screenshots/fig12_top.png)
 
-_Figure 14: Top (XZ) camera preset on the PCA projection of Qwen 2.5._
+_Figure 21: Top (XZ) camera preset on the PCA projection of Qwen 2.5._
 
 ## Appendix C: API
 
@@ -437,7 +477,7 @@ _Figure 14: Top (XZ) camera preset on the PCA projection of Qwen 2.5._
 | Input | Action |
 |---|---|
 | Click viewport | engage pointer lock (flight mode) |
-| W / S | move forward / backward in the horizontal plane |
+| W / S | fly forward / backward along the aim direction (towards the reticle) |
 | A / D | strafe left / right |
 | R / F | move up / down |
 | Mouse | look (pitch clamped) |
