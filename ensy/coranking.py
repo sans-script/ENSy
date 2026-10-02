@@ -11,8 +11,9 @@ Conventions (plan v2.1.2, Section 9):
 * LT_K (k > l, both <= K) holds mild K-intrusions, UT_K (k < l) mild
   K-extrusions, LL_K hard K-intrusions and UR_K hard K-extrusions.
 * ``B_NX(K) = U_X(K) - U_N(K)`` with U_N over LT_K and U_X over UT_K, so
-  that B_NX > 0 marks an intrusive embedding. This sign was validated
-  empirically against B_TC = M_C - M_T (tests/test_coranking.py).
+  that B_NX > 0 marks an intrusive embedding (Lee & Verleysen, 2009,
+  Eq. 22-23, p. 1434). The sign is also validated empirically against
+  B_TC = M_C - M_T (Eq. 27) in tests/test_coranking.py.
 """
 from __future__ import annotations
 

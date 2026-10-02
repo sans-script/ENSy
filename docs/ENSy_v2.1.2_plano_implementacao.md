@@ -188,8 +188,8 @@ Nenhum algoritmo entra em produção sem esta tabela preenchida e travada antes 
 - `n_components = 3` para os quatro algoritmos.
 - t-SNE: `init="pca"`, `learning_rate="auto"`, `max_iter=1000`, `early_exaggeration=12`, `method="barnes_hut"`, `angle=0.5`.
 - PCA: SVD completo de $X_c$; sinal de cada componente fixado (maior carga positiva), pois o SVD tem sinal arbitrário.
-- Isomap: o número de componentes conexas do grafo $k$-NN é medido e registrado; o scikit-learn 1.6 liga componentes desconexas automaticamente (com aviso), o que deve ser reportado quando ocorrer. O documento de escopo do TCC prevê "filtragem prévia de componentes desconexos" — decidir qual das duas políticas vale.
-- **Decisão pendente (perplexidade):** a justificativa "pequeno tamanho amostral" para perplexidade 5 foi escrita para $N\approx150$. Com $N\approx440$, perplexidade 5 é um viés fortemente local (o default da biblioteca é 30). O valor continua travado, mas a justificativa precisa ser reescrita — ou o valor revisto — **antes** da coleta.
+- Isomap: o número de componentes conexas do grafo $k$-NN é medido e registrado; o scikit-learn 1.6 liga componentes desconexas automaticamente (com aviso), o que deve ser reportado quando ocorrer. O documento de escopo do TCC prevê "filtragem prévia de componentes desconexos", e a fonte primária apoia essa política: TENENBAUM et al. (2000, nota 19) indicam que pontos desconectados da componente gigante "can be deleted from further analysis". Decidir antes da coleta (filtrar e reportar quantos pontos saíram — o que muda o $N$ só do Isomap — ou manter a ligação automática). No resultado provisório o grafo foi conexo nos dois modelos.
+- **Decisão pendente (perplexidade):** a justificativa "pequeno tamanho amostral" para perplexidade 5 foi escrita para $N\approx150$. Com $N\approx440$, perplexidade 5 é um viés fortemente local (o default da biblioteca é 30). VAN DER MAATEN; HINTON (2008, p. 2582) dão a faixa típica "between 5 and 50": 5 é defensável, mas fica no extremo inferior, e no resultado provisório produziu pontos ejetados dependentes do seed. O valor continua travado; a justificativa precisa ser reescrita citando essa faixa — ou o valor revisto — **antes** da coleta.
 - Após a normalização L2, os postos por cosseno e por distância euclidiana coincidem (testado). A matriz $Q$ é, portanto, a mesma qualquer que seja a escolha entre as duas métricas em alta dimensão.
 
 Para algoritmos estocásticos (t-SNE, UMAP): seed fixo garante reprodutibilidade do resultado reportado, mas não caracteriza estabilidade. Se houver tempo, rodar com múltiplos seeds como análise de sensibilidade separada — não como parte do experimento principal.
@@ -287,7 +287,7 @@ $$B_{NX}(K) = U_X(K) - U_N(K)$$
 
 Esta é a fórmula do artigo original, sem intermediação de uma implementação de terceiros. Qualquer implementação de referência (biblioteca R, Python etc.) usada futuramente para validação cruzada deve ser conferida contra esta definição — não o contrário.
 
-**Nota de fonte (v2.1.3).** A convenção deve ser registrada **pelos blocos**, não só pelos nomes: $B_{NX}(K) = \frac{1}{KN}\big(\sum_{UT_K} q_{kl} - \sum_{LT_K} q_{kl}\big)$, com linhas = posto em alta dimensão. O precursor (LEE; VERLEYSEN, 2008, AISTATS, Eq. 11 e 14) chega ao **mesmo número** escrevendo $U_N$ sobre $UT_K$ e $B_{NX}=U_N-U_X$ — embora o próprio texto desse artigo situe as mild K-intrusions em $LT_K$. A "inversão" entre v2.1.1 e v2.1.2 é, muito provavelmente, uma questão de rótulo, não de valor. O mesmo artigo afirma ainda que $B_{NX} = W^{0,0}_N - W^{0,0}_X$, o que tem o sinal **oposto** ao de suas Eqs. 11+14 (erro da fonte). Por isso o sinal foi ancorado empiricamente: numa esfera esmagada por projeção ortográfica (mapa intrusivo clássico, $B_{TC}=M_C-M_T>0$), $\sum_{UT_K} \gg \sum_{LT_K}$ e $B_{NX}>0$; numa esfera rasgada (desenrolada), ambos são negativos (`tests/test_coranking.py::test_sign_anchor_*`). As Eq. 22–23 / p. 1434–1435 do artigo de 2009 citadas acima não puderam ser conferidas diretamente (servidor da UCLouvain inacessível durante a revisão).
+**Nota de fonte (v2.1.3, verificada no texto de 2009).** As Eq. 22–23 (p. 1434) dizem literalmente: $U_N(K)=\frac{1}{KN}\sum_{LT_K} q_{kl}$, $U_X(K)=\frac{1}{KN}\sum_{UT_K} q_{kl}$ e $B_{NX}(K)=U_X(K)-U_N(K)=W^{0,0}_X-W^{0,0}_N=-B^{0,0}_{wNX}(K)$, *"positive for intrusive embeddings and negative for extrusive ones"* — exatamente a convenção desta versão, nos rótulos e no valor. O precursor (LEE; VERLEYSEN, 2008, AISTATS, Eq. 11 e 14) trazia os rótulos trocados ($U_N$ sobre $UT_K$, $B_{NX}=U_N-U_X$), com o mesmo valor numérico; a versão de 2009 corrigiu. Independentemente da fonte, o sinal também foi ancorado empiricamente: numa esfera esmagada por projeção ortográfica (mapa intrusivo, $B_{TC}=M_C-M_T>0$, Eq. 27), $B_{NX}>0$; numa esfera rasgada (desenrolada), ambos são negativos (`tests/test_coranking.py::test_sign_anchor_*`). Recomenda-se definir $B_{NX}$ no texto do TCC também pelos blocos, para não depender dos rótulos.
 
 **Validação obrigatória antes de codificar a câmera térmica**, com casos sintéticos (corrigidos na v2.1.3 — implementados e aprovados):
 
@@ -400,7 +400,7 @@ O sistema de cor por cluster semântico fixo do SMVV v1 (hardcoded junto ao `CLU
 - K (vizinhança das métricas de co-ranking)
 
 ### Protocolo de K
-- K principal = 10 (referência: VENNA; KASKI, 2006)
+- K principal = 10 (referência: VENNA; KASKI, 2006, Neural Networks, p. 894: "a human analyst usually looks at a handful (say 10) data points around it" — heurística, não valor derivado; os próprios autores avaliam T&C como curvas sobre k)
 - K de análise = {5, 10, 15, 20} — calcular as quatro
   métricas ao longo dessa faixa e apresentar como curvas,
   não como valor único

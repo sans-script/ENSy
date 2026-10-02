@@ -2,7 +2,7 @@
 
 **Escopo:** revisão do plano `ENSy_v2.1.2_plano_implementacao.md` contra as fontes primárias e contra o código, seguida da implementação de referência (`ensy/`, `app.py`, frontend) e da validação em teste. Data: 2026-10-01.
 
-**Fontes consultadas:** LEE; VERLEYSEN (2008, AISTATS/FSDM, JMLR W&CP 4) — texto integral; documento de escopo do TCC (Google Drive). O artigo de 2009 (*Neurocomputing*) não pôde ser baixado (servidor da UCLouvain inacessível) e o caderno do NotebookLM exige login Google, sem conector disponível — as afirmações sobre a versão de 2009 permanecem como citadas no plano, não verificadas por esta revisão.
+**Fontes consultadas:** LEE; VERLEYSEN (2009, *Neurocomputing*) e (2008, AISTATS/FSDM) — textos integrais; documento de escopo do TCC; e as fontes do caderno NotebookLM "Matemática para Machine Learning" (74 fontes), lidas pelo CLI `nlm` como **texto bruto** (`nlm source content`, sem resumo por IA) e verificadas por busca literal: VENNA; KASKI (2006, *Neural Networks* e ESANN), VAN DER MAATEN; HINTON (2008), TENENBAUM et al. (2000), MCINNES et al. (2018). Atualizado em 2026-10-02.
 
 ---
 
@@ -14,23 +14,25 @@
 | $M_T(K)$, $M_C(K)$ e $G_K$ | Idênticos a `sklearn.manifold.trustworthiness` (erro $<10^{-12}$, $K\in\{5,10,15,20\}$) |
 | Nº de K-intrusões severas = nº de K-extrusões severas | Confere com Eq. (8) de 2008; testado |
 | $Q_{NX} = U_P+U_N+U_X = \text{LCMC} + K/(N-1)$ | Confere com Eq. (13) de 2008; testado contra a definição direta |
-| **Valor numérico** de $B_{NX}(K)$ da v2.1.2, positivo = intrusivo | **Confirmado empiricamente** (ver 2.1) |
+| $B_{NX}(K)=U_X-U_N$ da v2.1.2, positivo = intrusivo | **Confirmado no texto de 2009 (Eq. 22–23) e empiricamente** (ver 2.1) |
 | Decomposição local, $\text{mean}_i B_{NX,i} = B_{NX}$ | Exata por construção; testada (erro $<10^{-12}$) |
 | Identidade $|F_K(i)| = |M_K(i)|$ (Sec. 9.4) | Testada |
 | $\|\hat u-\hat v\|^2 = 2(1-\cos\theta)$ | Correto; consequência: após L2, postos por cosseno = postos euclidianos (testado) |
 
 ## 2. Erros e lacunas encontrados no plano
 
-### 2.1 $B_{NX}$: a convenção certa, pela razão errada
+### 2.1 $B_{NX}$: convenção da v2.1.2 confirmada na fonte de 2009
 
-O plano atribui a correção da v2.1.2 às Eq. 22–23 do artigo de 2009. No precursor de 2008 (mesmos autores, mesmo arcabouço):
+Texto de LEE; VERLEYSEN (2009, p. 1434), literal:
 
-- o texto põe as mild K-intrusions em $LT_K$ e as mild K-extrusions em $UT_K$;
-- mas a Eq. (11) define $U_N$ somando sobre $UT_K$ e $U_X$ sobre $LT_K$, e a Eq. (14) define $B_{NX} = U_N - U_X$;
-- logo, numericamente, $B_{NX} = \frac{1}{KN}(\sum_{UT_K} - \sum_{LT_K})$ — **o mesmo número** que a v2.1.2 obtém com $U_N$ sobre $LT_K$ e $B_{NX} = U_X - U_N$;
-- o mesmo artigo afirma que $B_{NX} = W^{0,0}_N - W^{0,0}_X$, que tem o **sinal oposto** ao das suas Eqs. 11+14.
+- Eq. 22: $U_N(K)=\frac{1}{KN}\sum_{(k,l)\in LT_K} q_{kl}$ e $U_X(K)=\frac{1}{KN}\sum_{(k,l)\in UT_K} q_{kl}$;
+- Eq. 23: $B_{NX}(K) = U_X(K) - U_N(K) = W^{0,0}_X - W^{0,0}_N = -B^{0,0}_{wNX}(K)$, *"Its value is positive for intrusive embeddings and negative for extrusive ones."*
 
-A fonte é internamente inconsistente quanto a rótulos. Por isso o sinal foi ancorado em algo inequívoco: o próprio artigo define $B_{TC} = M_C - M_T$ como indicador de comportamento, positivo para mapas intrusivos (o NLM "esmaga" a variedade e é intrusivo). Teste: esfera oca projetada ortograficamente (esmagamento, intrusivo) → $B_{TC}>0$ **e** $B_{NX}>0$; esfera desenrolada (rasgo, extrusivo) → ambos $<0$. Recomendação para o texto do TCC: definir $B_{NX}$ **pelos blocos**, não apenas por "$U_X - U_N$".
+A v2.1.2 citou isso corretamente, e a implementação segue a fonte nos rótulos e no valor. O mesmo trecho confirma a explicação do "paradoxo": uma K-intrusão severa é compensada por uma K-extrusão severa e por $(K - r_{ij})$ mild K-extrusions (Fig. 2) — exatamente o que o teste `test_hard_intrusion_shows_up_as_mild_extrusions` verifica.
+
+**O precursor de 2008 é que é inconsistente:** o texto põe as mild K-intrusions em $LT_K$, mas a Eq. (11) define $U_N$ sobre $UT_K$ e a Eq. (14) define $B_{NX}=U_N-U_X$ — mesmo valor, rótulos trocados — e afirma $B_{NX}=W^{0,0}_N-W^{0,0}_X$, com o sinal oposto. A versão de 2009 corrigiu tudo isso. Recomendação: citar só a versão de 2009 para estas definições.
+
+Âncora empírica independente (mantida nos testes): esfera oca projetada ortograficamente (esmagamento, intrusivo) → $B_{TC}=M_C-M_T>0$ (Eq. 27 de 2009) **e** $B_{NX}>0$; esfera desenrolada (rasgo, extrusivo) → ambos $<0$.
 
 ### 2.2 Casos sintéticos B e C com sinais trocados
 
@@ -62,7 +64,18 @@ A v2.1.2 dizia: "Caso B — promoção intrusiva → $B_{NX}<0$"; "Caso C — de
 
 O plano não definia: o mapeamento de tags PTB para a partição; o tratamento de auxiliares (*be/have/do*, etiquetados VB* no PTB); nomes próprios (incompatíveis com BERT-uncased); nem os artefatos de tokenização do PTB. Sem uma regra explícita, apareciam `ca` e `wo` (de `ca n't`, `wo n't`) e `de`, `la`, `le`, `del` (de nomes estrangeiros) como "palavras funcionais". Todas essas regras foram fixadas e registradas no JSON. Também falta a fonte: o PTB completo é licenciado pela LDC; usa-se a amostra gratuita do NLTK.
 
-### 2.6 Bugs científicos no código pré-existente (corrigidos)
+### 2.6 Citações verificadas contra o texto das fontes (NotebookLM)
+
+| Afirmação do plano | Texto da fonte | Veredito |
+|---|---|---|
+| $K$ principal $=10$ (VENNA; KASKI, 2006) | *Neural Networks*, p. 894: *"a human analyst usually looks at a handful (say 10) data points around it. Thus it is very important that the visualization preserves small neighborhoods well"*; os autores avaliam T&C como curvas sobre $k$ (Figs. 1–2) | Apoiada **como heurística**, não como valor derivado. O artigo ESANN 2006, citado no escopo, usa $k=6$ e **não** apoia $K=10$ — citar o de *Neural Networks*, com página |
+| Perplexidade 5 | VAN DER MAATEN; HINTON (2008, p. 2582): *"typical values are between 5 and 50"* | Dentro da faixa, no extremo inferior; usar essa citação na justificativa |
+| Isomap e grafo desconexo | TENENBAUM et al. (2000, nota 19): pontos desconectados da componente gigante *"can be deleted from further analysis"* | Apoia a **filtragem** prevista no escopo, não a ligação automática do scikit-learn |
+| UMAP `n_neighbors=15`, `min_dist=0.1` | O artigo (Sec. 4.3) define $n$ e *min-dist* como hiperparâmetros, sem valores padrão | São defaults da biblioteca `umap-learn` (como o plano já diz); citar a versão da biblioteca |
+| $B_{TC}=M_C-M_T$; $Q_{TC}=(M_T+M_C)/2$ | LEE; VERLEYSEN (2009), Eq. 26–27 | Confere (o precursor de 2008 não tinha o fator 1/2) |
+| Normalização $C^{0,0}_K = NK$ | LEE; VERLEYSEN (2009), nota 4: o valor exato seria $N\min\{N-2,K\}$; $NK$ é aproximação adotada pelos autores | Sem impacto em $B_{NX}$ (que usa $1/KN$ por definição); registrar se $W^{0,0}$ for reportado |
+
+### 2.7 Bugs científicos no código pré-existente (corrigidos)
 
 1. **Geometria falsa na visualização.** `getProjectedCoords` aplicava deformações cosméticas por algoritmo antes de desenhar: rotação e esticamento no PCA, potência 0,8 no t-SNE e torção espiral no Isomap. A nuvem exibida **não era** a saída do algoritmo. Removido; agora há só uma transformação de similaridade isotrópica (preserva razões de distância).
 2. **Dados fabricados.** Vetores aleatórios (`np.random`) eram servidos rotulados com o nome do Qwen enquanto o modelo carregava. Se o backend caísse, o frontend exibia em silêncio um JSON estático pré-computado (`semanticSpace.ts`). Tudo removido; sem dados, a UI mostra erro.
@@ -71,7 +84,7 @@ O plano não definia: o mapeamento de tags PTB para a partição; o tratamento d
 5. Os testes de contrato da API nunca rodavam: o arquivo era `tests/api.py`, que o pytest não coleta, e os scripts apontavam para `test_api.py`. Renomeado.
 6. Percurso de caminho no fallback de arquivos estáticos (`/{path}` aceitava `..`) — corrigido.
 
-### 2.7 Desempenho (Sec. 8) — o gargalo provável não era o previsto
+### 2.8 Desempenho (Sec. 8) — o gargalo provável não era o previsto
 
 Além das $N$ chamadas de desenho, o laço de animação fazia `labelElementsRef.find(...)` dentro de `forEach` sobre os tokens: **$O(N^2)$ por quadro**, mais um *raycast* de oclusão por rótulo. Correções: uma única `BufferGeometry` (RGBA por vértice), índice $O(1)$ de rótulos e *culling* dos 120 rótulos mais próximos. Medição (Edge, 1600×950, $N=438$): ~3–4,6 ms por quadro, laço do retículo 0,14–0,35 ms, 1 chamada de desenho para a nuvem (as outras ~62 são grade e eixos fixos, independentes de $N$). Sprites de canvas ficam para depois, condicionados ao profiling (item em aberto do plano).
 
@@ -118,6 +131,6 @@ Observações a confirmar com o dataset congelado:
 
 1. Habilitar o Gemma (licença HF + `HF_TOKEN`) e congelar `data/dataset.json` com os três tokenizers.
 2. `google/gemma-2b` ou `google/gemma-2-2b`.
-3. Perplexidade do t-SNE para $N\approx440$ (manter 5 com nova justificativa, ou rever) — antes da coleta.
-4. Política do Isomap para grafo desconexo (ligar × filtrar) e Silhouette em 2D × 3D, alinhando plano e escopo.
+3. Perplexidade do t-SNE para $N\approx440$ (manter 5 citando a faixa 5–50 de van der Maaten & Hinton, ou rever) — antes da coleta.
+4. Política do Isomap para grafo desconexo (ligar × filtrar; a fonte primária apoia filtrar) e Silhouette em 2D × 3D, alinhando plano e escopo.
 5. Política de balanceamento: as mais frequentes (adotada; embeddings melhor treinados) ou amostragem aleatória com seed.
