@@ -1,297 +1,256 @@
-import subprocess
-import sys
+"""ENSy local research server (plan v2.1.2).
+
+Serves projections of the frozen PTB-derived lexical dataset with co-ranking
+metrics. Nothing here fabricates data: if the dataset or a model is missing the
+API says so (HTTP 503/409) instead of returning placeholder vectors.
+
+Run:  .venv/Scripts/python.exe app.py   (port 3000)
+"""
+from __future__ import annotations
+
 import os
 import threading
+from pathlib import Path
+
 import numpy as np
-
-def install_deps():
-    print("[+] Checking and installing dependencies...")
-    required_packages = ["fastapi", "uvicorn", "transformers", "torch", "scikit-learn", "umap-learn"]
-    missing = []
-    for pkg in required_packages:
-        test_name = pkg
-        if pkg == "umap-learn":
-            test_name = "umap"
-        try:
-            __import__(test_name)
-        except ImportError:
-            missing.append(pkg)
-    if missing:
-        print(f"[+] Installing missing packages: {missing}")
-        try:
-            subprocess.check_call([
-                sys.executable, "-m", "pip", "install", 
-                *missing, "--no-cache-dir", "--quiet"
-            ])
-            print("[+] Dependencies installed successfully.")
-        except Exception as e:
-            print(f"[!] Failed to auto-install: {e}. Attempting manual fallback without quiet...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", *missing])
-
-# Perform dependency check-and-install
-install_deps()
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import torch
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE, Isomap
-import umap
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
-# Initialize FastAPI app
-app = FastAPI(title="Semantic Space Dimensionality Reduction Server")
+from ensy import coranking, dataset as D, models as M, projection as P
+from ensy.experiment import CATEGORY_INDEX, K_CURVE, K_MAIN, silhouette
 
-# Inject CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+ROOT = Path(__file__).resolve().parent
+DATASET_PATHS = (ROOT / "data" / "dataset.json", ROOT / "data" / "dataset.provisional.json")
+K_PROBE_MAX = max(K_CURVE)
+REDUCED_SAMPLE_N = 100  # engineering convention, not a statistical threshold (plan 9.6)
 
-# ══════════════════════════════════════════════
-# DATA CONFIGURATION & INITIAL STATES
-# ══════════════════════════════════════════════
-MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
-DEVICE = "cpu"
-
-CLUSTER_MAP = {
-    "Technology/File": [
-        "document", "file", "pdf", "text",
-        "data", "code", "computer", "hardware",
-        "byte", "format", "binary", "memory",
-    ],
-    "Biological/Fruit": [
-        "apple", "pineapple", "banana", "fruit",
-        "orange", "lemon", "strawberry", "mango",
-        "grape", "cherry", "peach", "plum",
-    ],
-    "Action/Verb": [
-        "write", "read", "open", "save",
-        "parse", "encode", "store", "delete",
-        "eat", "grow", "plant", "harvest",
-    ],
+# Layer 1 (plan 9.7): reference partition. Green is reserved for probing.
+CATEGORY_COLORS = {
+    "content_noun": "#4338ca",
+    "content_verb": "#a16207",
+    "function_word": "#be185d",
 }
 
-CLUSTER_COLORS = {
-    "Technology/File":  "#378ADD",
-    "Biological/Fruit": "#1D9E75",
-    "Action/Verb":      "#D85A30",
-}
+app = FastAPI(title="ENSy — Embedding Navigation System")
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
+                   allow_methods=["*"], allow_headers=["*"])
 
-# Flattend list of all target words from CLUSTER_MAP
-all_words = []
-for cluster_words in CLUSTER_MAP.values():
-    all_words.extend(cluster_words)
+_lock = threading.Lock()
+_cache = M.EmbeddingCache()
+_projections: dict[tuple, dict] = {}
+_state: dict = {"dataset": None, "dataset_path": None, "error": None}
 
-# Thread-safe global variables
-model_loaded = False
-load_error = None
 
-# Initial Bootstrap Data (calculated dynamically using high-quality deterministic pseudo-vectors)
-# This lets the app run instantly at 100% functionality without blocking on model downloads.
-bootstrap_vectors = np.random.RandomState(42).normal(0, 1, (len(all_words), 896))
-# Normalize vectors to unit length for cosine metric
-bootstrap_vectors /= np.linalg.norm(bootstrap_vectors, axis=1, keepdims=True)
+def _load_dataset() -> None:
+    for path in DATASET_PATHS:
+        if path.exists():
+            try:
+                _state["dataset"] = D.load(path)
+                _state["dataset_path"] = str(path.relative_to(ROOT))
+                _state["error"] = None
+            except Exception as exc:  # hash mismatch, malformed file
+                _state["error"] = f"{path.name}: {exc}"
+            return
+    _state["error"] = "no dataset found; build it with POST /api/dataset or python -m ensy.dataset"
 
-# Shared active pointers
-active_words = all_words.copy()
-active_vectors = bootstrap_vectors.copy()
 
-# Cached token registry mapping word to meta
-token_registry = {}
-for cluster_name, words in CLUSTER_MAP.items():
-    for i, word in enumerate(words):
-        token_registry[word] = {
-            "id": 1000 + i, # Placeholder ID
-            "cluster": cluster_name
+_load_dataset()
+
+
+def _require_dataset() -> dict:
+    ds = _state["dataset"]
+    if ds is None:
+        raise HTTPException(503, detail=_state["error"])
+    return ds
+
+
+def _check(model: str, algorithm: str, ds: dict) -> None:
+    if model not in M.MODELS:
+        raise HTTPException(400, detail=f"unknown model '{model}'")
+    if algorithm not in P.PARAMS:
+        raise HTTPException(400, detail=f"unsupported projection engine '{algorithm}'")
+    if model not in ds["models"]:
+        raise HTTPException(409, detail=f"dataset has no token ids for '{model}' "
+                                        f"(built with {sorted(ds['models'])})")
+
+
+def _compute(model: str, algorithm: str, ds: dict) -> dict:
+    key = (model, ds["dataset_hash"], algorithm)
+    with _lock:
+        if key in _projections:
+            return _projections[key]
+        try:
+            X = _cache.get(model, ds)
+        except Exception as exc:
+            raise HTTPException(503, detail=f"cannot load embeddings for {model}: {exc}")
+        labels = np.array([CATEGORY_INDEX[it["category"]] for it in ds["items"]])
+        Y, diag = P.project(X, algorithm)
+        ev = coranking.evaluate(X, Y, K_CURVE, high_metric="cosine")
+        rho, r = ev["rho"], ev["r"]
+        out = {
+            "X": X, "Y": Y, "diag": diag, "curves": ev["curves"],
+            "local": {K: v.tolist() for K, v in ev["local_b_nx"].items()},
+            "hd_order": np.argsort(rho, axis=1)[:, 1:K_PROBE_MAX + 1],
+            "ld_order": np.argsort(r, axis=1)[:, 1:K_PROBE_MAX + 1],
+            "silhouette": silhouette(Y, labels),
         }
+        _projections[key] = out
+        return out
 
-dropped_tokens = []
 
-# ══════════════════════════════════════════════
-# ASYNCHRONOUS MODEL LOADER THREAD
-# ══════════════════════════════════════════════
-def load_model_background():
-    global model_loaded, load_error, active_words, active_vectors, token_registry, dropped_tokens
-    try:
-        print(f"\n[+] Background thread: Launching Qwen model embedding downloader/loader ({MODEL_ID})...")
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-        
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_ID,
-            torch_dtype=torch.float16,
-            device_map=DEVICE,
-            low_cpu_mem_usage=True
-        )
-        
-        embedding_matrix = model.get_input_embeddings().weight.detach().float().numpy()
-        print(f"[+] Background thread: Embedding matrix loaded successfully: {embedding_matrix.shape}")
-        
-        # Token validation and multi-subtoken filtering
-        temp_registry = {}
-        temp_dropped = []
-        for cluster_name, words in CLUSTER_MAP.items():
-            for word in words:
-                ids = tokenizer.encode(word, add_special_tokens=False)
-                if len(ids) == 1:
-                    temp_registry[word] = {
-                        "id": int(ids[0]),
-                        "cluster": cluster_name,
-                        "vector": embedding_matrix[ids[0]].copy()
-                    }
-                else:
-                    temp_dropped.append(word)
-        
-        temp_words = list(temp_registry.keys())
-        temp_vectors = np.array([temp_registry[w]["vector"] for w in temp_words])
-        
-        # Switch pointers atomically
-        token_registry = temp_registry
-        dropped_tokens = temp_dropped
-        active_words = temp_words
-        active_vectors = temp_vectors
-        model_loaded = True
-        
-        print(f"[+] Background thread: Qwen model loading completed! Survived tokens: {len(active_words)} / {len(all_words)}")
-    except Exception as e:
-        print(f"[!] Background thread crashed/timed out: {e}")
-        load_error = str(e)
-
-# Start background loading thread on server start
-@app.on_event("startup")
-def startup_event():
-    threading.Thread(target=load_model_background, daemon=True).start()
-
-# ══════════════════════════════════════════════
-# DYNAMIC PROJECTION PATHWAY
-# ══════════════════════════════════════════════
-@app.get("/api/projection/{engine_type}")
-async def get_projection(engine_type: str):
-    engine_type = engine_type.lower()
-    if engine_type not in ["umap", "pca", "tsne", "isomap"]:
-        raise HTTPException(status_code=400, detail=f"Unsupported projection engine: {engine_type}")
-
-    N = len(active_words)
-    vectors = active_vectors
-    words = active_words
-
-    print(f"[+] Executing projection metric '{engine_type.upper()}' (Model Active: {model_loaded}). Words count: {N}")
-
-    try:
-        # Compute projection coordinates
-        if engine_type == "umap":
-            n_neighbors = min(4, N - 1)
-            umap_2d = umap.UMAP(n_components=2, n_neighbors=n_neighbors, min_dist=0.5, metric="cosine", random_state=42)
-            umap_3d = umap.UMAP(n_components=3, n_neighbors=n_neighbors, min_dist=0.5, metric="cosine", random_state=42)
-            coords_2d = umap_2d.fit_transform(vectors)
-            coords_3d = umap_3d.fit_transform(vectors)
-            params = {"n_neighbors": n_neighbors, "min_dist": 0.5, "metric": "cosine"}
-
-        elif engine_type == "pca":
-            pca_2d = PCA(n_components=2, random_state=42)
-            pca_3d = PCA(n_components=3, random_state=42)
-            coords_2d = pca_2d.fit_transform(vectors)
-            coords_3d = pca_3d.fit_transform(vectors)
-            params = {"n_components": 3, "svd_solver": "auto"}
-
-        elif engine_type == "tsne":
-            perplexity = min(5, max(2, N // 4))
-            tsne_2d = TSNE(n_components=2, metric="cosine", perplexity=perplexity, random_state=42, init="random")
-            tsne_3d = TSNE(n_components=3, metric="cosine", perplexity=perplexity, random_state=42, init="random")
-            coords_2d = tsne_2d.fit_transform(vectors)
-            coords_3d = tsne_3d.fit_transform(vectors)
-            params = {"perplexity": perplexity, "metric": "cosine", "init": "random"}
-
-        elif engine_type == "isomap":
-            n_neighbors = min(5, N - 1)
-            isomap_2d = Isomap(n_components=2, n_neighbors=n_neighbors, metric="cosine")
-            isomap_3d = Isomap(n_components=3, n_neighbors=n_neighbors, metric="cosine")
-            coords_2d = isomap_2d.fit_transform(vectors)
-            coords_3d = isomap_3d.fit_transform(vectors)
-            params = {"n_neighbors": n_neighbors, "metric": "cosine"}
-
-    except Exception as e:
-        print(f"[!] Error during {engine_type} calculation: {e}")
-        raise HTTPException(status_code=500, detail=f"Projection computation error: {str(e)}")
-
-    # Compute genuine cosine similarity for nearest neighbor context
-    sim_matrix = cosine_similarity(vectors)
-
+def _payload(model: str, algorithm: str, ds: dict) -> dict:
+    res = _compute(model, algorithm, ds)
+    X, Y = res["X"], res["Y"]
+    N = len(ds["items"])
     nodes = []
-    for i, word in enumerate(words):
-        cluster = token_registry[word]["cluster"]
-        neighbors = sorted(
-            [(words[j], float(sim_matrix[i][j])) for j in range(N) if j != i],
-            key=lambda x: x[1], reverse=True
-        )[:5]
-
+    for i, item in enumerate(ds["items"]):
+        hd = res["hd_order"][i]
+        top5 = [{"label": ds["items"][j]["word"], "cosine_similarity": round(float(X[i] @ X[j]), 6)}
+                for j in hd[:5]]
         nodes.append({
             "id": i,
-            "label": word,
-            "token_id": token_registry[word].get("id", 1000 + i),
-            "cluster": cluster,
-            "color": CLUSTER_COLORS.get(cluster, "#888780"),
-            "coords": {
-                "x2d": float(coords_2d[i][0]),
-                "y2d": float(coords_2d[i][1]),
-                "x3d": float(coords_3d[i][0]),
-                "y3d": float(coords_3d[i][1]),
-                "z3d": float(coords_3d[i][2]),
-            },
-            "top5_neighbors": [
-                {"label": w, "cosine_similarity": round(s, 6)}
-                for w, s in neighbors
-            ],
+            "label": item["word"],
+            "token_id": item["token_ids"][model],
+            "cluster": item["category"],
+            "color": CATEGORY_COLORS[item["category"]],
+            "coords": {"x2d": float(Y[i, 0]), "y2d": float(Y[i, 1]),
+                       "x3d": float(Y[i, 0]), "y3d": float(Y[i, 1]), "z3d": float(Y[i, 2])},
+            "top5_neighbors": top5,
+            "hd_neighbors": hd.tolist(),
+            "ld_neighbors": res["ld_order"][i].tolist(),
+            "b_nx_local": {str(K): res["local"][K][i] for K in K_CURVE},
         })
-
-    model_label = MODEL_ID if model_loaded else f"{MODEL_ID} (BOOTSTRAPPING...)"
     return {
-        "status": "STABLE" if model_loaded else "LOADING",
+        "status": "STABLE",
         "meta": {
-            "model": model_label,
-            "embedding_dim": int(vectors.shape[1]),
-            "total_tokens": len(nodes),
-            "dropped_tokens": dropped_tokens,
-            f"{engine_type}_params": params,
+            "model": M.MODELS[model].hf_id,
+            "model_key": model,
+            "algorithm": algorithm,
+            "params": P.PARAMS[algorithm],
+            "diagnostics": res["diag"],
+            "embedding_dim": int(X.shape[1]),
+            "total_tokens": N,
+            "dataset_hash": ds["dataset_hash"],
+            "dataset_frozen": ds["frozen"],
+            "dataset_note": ds.get("note"),
+            "reduced_sample": N < REDUCED_SAMPLE_N,
+            "K_main": K_MAIN,
+            "K_curve": list(K_CURVE),
+            "metrics": res["curves"],
+            "silhouette_projected": res["silhouette"],
+            "category_colors": CATEGORY_COLORS,
         },
-        "nodes": nodes
+        "nodes": nodes,
     }
 
-# ══════════════════════════════════════════════
-# SERVING REACT STATIC FILES & SPA ROUTING
-# ══════════════════════════════════════════════
-dist_path = os.path.join(os.getcwd(), "dist")
 
-if os.path.exists(dist_path):
-    print(f"[+] Static frontend files found in: {dist_path}. Mounting static directory...")
-    # Serve assets folder
-    assets_dir = os.path.join(dist_path, "assets")
-    if os.path.exists(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+@app.get("/api/health")
+def health():
+    ds = _state["dataset"]
+    return {"dataset_loaded": ds is not None, "dataset_path": _state["dataset_path"],
+            "error": _state["error"], "N": ds["N"] if ds else None,
+            "frozen": ds["frozen"] if ds else None}
+
+
+@app.get("/api/models")
+def list_models():
+    ds = _state["dataset"]
+    return [{"key": k, "hf_id": s.hf_id, "family": s.family, "gated": s.gated,
+             "token_available": bool(M.hf_token()) if s.gated else True,
+             "in_dataset": bool(ds and k in ds["models"])}
+            for k, s in M.MODELS.items()]
+
+
+@app.get("/api/dataset")
+def get_dataset():
+    ds = _require_dataset()
+    return {k: v for k, v in ds.items() if k != "items"} | {
+        "items": [{"word": it["word"], "category": it["category"]} for it in ds["items"]]}
+
+
+class DatasetRequest(BaseModel):
+    models: list[str] = list(M.MODELS)
+    force: bool = False
+
+
+@app.post("/api/dataset")
+def build_dataset(req: DatasetRequest):
+    unknown = set(req.models) - set(M.MODELS)
+    if unknown:
+        raise HTTPException(400, detail=f"unknown models {sorted(unknown)}")
+    complete = set(req.models) == set(M.MODELS)
+    path = DATASET_PATHS[0] if complete else DATASET_PATHS[1]
+    if path.exists() and complete and not req.force:
+        raise HTTPException(409, detail="a frozen dataset already exists; pass force=true to rebuild")
+    try:
+        ds = D.build(tuple(req.models))
+    except Exception as exc:
+        raise HTTPException(502, detail=f"dataset build failed: {exc}")
+    import json
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ds, indent=1, ensure_ascii=False), encoding="utf-8")
+    with _lock:
+        _projections.clear()
+        _cache.clear()
+    _load_dataset()
+    return {"path": str(path.relative_to(ROOT)), "N": ds["N"], "frozen": ds["frozen"],
+            "dataset_hash": ds["dataset_hash"], "counts": ds["counts"]}
+
+
+@app.get("/api/projection/{model}/{algorithm}")
+def get_projection(model: str, algorithm: str):
+    ds = _require_dataset()
+    model, algorithm = model.lower(), algorithm.lower()
+    _check(model, algorithm, ds)
+    return _payload(model, algorithm, ds)
+
+
+@app.get("/api/projection/{algorithm}")
+def get_projection_default(algorithm: str, model: str = Query("qwen")):
+    """Backwards-compatible route (defaults to Qwen)."""
+    return get_projection(model, algorithm)
+
+
+@app.get("/api/compare")
+def compare(models: str = Query(None)):
+    """Metric curves for every (model, algorithm) of the main matrix (F5)."""
+    ds = _require_dataset()
+    keys = models.split(",") if models else [k for k in M.MODELS if k in ds["models"]]
+    rows = []
+    for mk in keys:
+        for alg in P.MAIN_ALGORITHMS:
+            _check(mk, alg, ds)
+            res = _compute(mk, alg, ds)
+            rows.append({"model": mk, "algorithm": alg, "curves": res["curves"],
+                         "silhouette_projected": res["silhouette"]})
+    return {"dataset_hash": ds["dataset_hash"], "frozen": ds["frozen"], "N": ds["N"], "rows": rows}
+
+
+# ── static frontend (vite build output) ────────────────────────────────
+dist_path = ROOT / "dist"
+if dist_path.exists():
+    if (dist_path / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=dist_path / "assets"), name="assets")
 
     @app.get("/")
     async def serve_index():
-        return FileResponse(os.path.join(dist_path, "index.html"))
+        return FileResponse(dist_path / "index.html")
 
     @app.get("/{rest_of_path:path}")
     async def spa_fallback(rest_of_path: str):
-        # Shield API routes from static fallback
         if rest_of_path.startswith("api/"):
-            raise HTTPException(status_code=404, detail="API route not found")
-        
-        file_target = os.path.join(dist_path, rest_of_path)
-        if os.path.exists(file_target) and os.path.isfile(file_target):
-            return FileResponse(file_target)
-        return FileResponse(os.path.join(dist_path, "index.html"))
-else:
-    print("[!] Warning: dist directory not found.")
+            raise HTTPException(404, detail="API route not found")
+        target = (dist_path / rest_of_path).resolve()
+        if dist_path.resolve() in target.parents and target.is_file():
+            return FileResponse(target)
+        return FileResponse(dist_path / "index.html")
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=3000, reload=False)
+
+    uvicorn.run("app:app", host="127.0.0.1", port=int(os.environ.get("PORT", 3000)), reload=False)

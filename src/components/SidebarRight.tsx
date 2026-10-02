@@ -1,11 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { SemanticNode } from '../types';
+import { SemanticNode, probeSets } from '../types';
+import { Tex } from './Tex';
+import { fmt } from './MetricsPanel';
 
 interface SidebarRightProps {
   activeNode: SemanticNode | null;
+  nodes: SemanticNode[] | null;
+  metricK: number;
+  probeEnabled: boolean;
 }
 
-export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode }) => {
+const ProbeList: React.FC<{ title: string; color: string; ids: Set<number>; nodes: SemanticNode[] }> = ({ title, color, ids, nodes }) => (
+  <div className="text-[12px]">
+    <span className="font-semibold" style={{ color }}>{title} ({ids.size})</span>
+    <div className="font-serif italic text-[12.5px] leading-snug text-[#111111] break-words">
+      {[...ids].map((j) => nodes[j]?.label).join(', ') || '—'}
+    </div>
+  </div>
+);
+
+export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, metricK, probeEnabled }) => {
+  const probe = activeNode && probeEnabled ? probeSets(activeNode, metricK) : null;
+  const localB = activeNode?.b_nx_local?.[String(metricK)];
   const containerRef = useRef<HTMLDivElement>(null);
   const matrixRef = useRef<HTMLDivElement>(null);
   const [isTypesetting, setIsTypesetting] = useState(false);
@@ -37,7 +53,7 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode }) => {
   }, [activeNode]);
 
   return (
-    <aside className="w-[280px] h-full border-l border-[#111111] bg-[#fcfcfc] flex flex-col justify-between p-[18px] overflow-y-auto shrink-0 select-none font-sans text-[#111111]">
+    <aside className="w-[340px] h-full border-l border-[#111111] bg-[#fcfcfc] flex flex-col justify-between p-[18px] overflow-y-auto shrink-0 select-none font-sans text-[#111111]">
       <div className="flex flex-col h-full overflow-hidden" ref={containerRef}>
         <span className="block font-serif text-[14px] font-bold uppercase tracking-[0.5px] border-b border-[#111111] pb-[4px] mb-[12px] text-black shrink-0">
           Manifold Vector Analysis
@@ -53,30 +69,50 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode }) => {
             {/* Vector Equation and Matrix */}
             <div className={`matrix-math flex flex-col items-center justify-center text-[22px] text-black my-1 shrink-0 min-h-[110px] transition-opacity ${isTypesetting ? 'opacity-0 duration-0' : 'opacity-100 duration-500'}`}>
               <div ref={matrixRef} className="w-full text-center">
-                {`$$\\vec{v} = \\begin{bmatrix} ${activeNode.coords.x3d.toFixed(4)} \\\\ ${activeNode.coords.y3d.toFixed(4)} \\\\ ${activeNode.coords.z3d.toFixed(4)} \\end{bmatrix}$$`}
+                {`$$\\mathbf{y}_i =\\begin{bmatrix} ${activeNode.coords.x3d.toFixed(4)} \\\\ ${activeNode.coords.y3d.toFixed(4)} \\\\ ${activeNode.coords.z3d.toFixed(4)} \\end{bmatrix}$$`}
               </div>
             </div>
 
             <div className="flex flex-col gap-2.5 shrink-0">
               <div className="text-[13px] flex flex-col gap-1 border-b border-dashed border-[#cccccc] pb-2">
-                <span className="font-serif text-[#111111]">Vector Matrix Index</span>
+                <span className="font-serif text-[#111111]">Token</span>
+                <span className="font-serif italic text-[16px] font-semibold text-black">{activeNode.label}</span>
+              </div>
+
+              <div className="text-[13px] flex flex-col gap-1 border-b border-dashed border-[#cccccc] pb-2">
+                <span className="font-serif text-[#111111]">Embedding row (token id)</span>
                 <span className="font-times-numbers text-[14px] font-semibold text-black">
                   {activeNode.token_id}
                 </span>
               </div>
 
               <div className="text-[13px] flex flex-col gap-1 border-b border-dashed border-[#cccccc] pb-2">
-                <span className="font-serif text-[#111111]">Sub-Manifold Cluster</span>
+                <span className="font-serif text-[#111111]">Reference partition</span>
                 <span className="font-mono text-[12.5px] font-semibold text-black">
                   {activeNode.cluster}
                 </span>
               </div>
+
+              {localB !== undefined && (
+                <div className="text-[13px] flex justify-between border-b border-dashed border-[#cccccc] pb-2" title="Net contribution of this token to intrusive (+) / extrusive (−) behaviour via mild K-intrusions/extrusions — not 'local distortion'">
+                  <span className="font-serif text-[#111111]"><Tex tex={`B_{NX,i}\\ (K = ${metricK})`} /></span>
+                  <span className="font-times-numbers text-[14px] font-semibold text-black">{fmt(localB, true)}</span>
+                </div>
+              )}
+
+              {probe && nodes && (
+                <div className="flex flex-col gap-1.5 border-b border-dashed border-[#cccccc] pb-2">
+                  <ProbeList title="True neighbours" color="#16a34a" ids={probe.true} nodes={nodes} />
+                  <ProbeList title="False neighbours" color="#dc2626" ids={probe.false} nodes={nodes} />
+                  <ProbeList title="Missing neighbours" color="#3b82f6" ids={probe.missing} nodes={nodes} />
+                </div>
+              )}
             </div>
 
             {/* Nearest Neighbors section */}
             <div className="mt-1 flex-1 flex flex-col min-h-0">
               <span className="block font-serif text-[13px] font-bold uppercase tracking-[0.3px] border-b border-dashed border-[#cccccc] pb-[4px] mb-[10px] text-black shrink-0">
-                Local Neighbors
+                Nearest Neighbours (cosine, <Tex className="normal-case" tex="\mathbb{R}^n" />)
               </span>
               
               <div className="flex-1 overflow-y-auto mb-2 pr-1">
@@ -125,7 +161,7 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode }) => {
       </div>
 
       <div className="text-[12px] font-serif italic text-slate-700 text-center border-t border-dashed border-[#cccccc] pt-[12px] mt-[14px] shrink-0">
-        Topological Data Analysis v0.4
+        ENSy v2.1.2 — projected coordinates y<sub>i</sub> ∈ ℝ³
       </div>
     </aside>
   );

@@ -1,0 +1,88 @@
+"""Projection algorithms with the frozen parameter table (plan Section 7).
+
+Every value that influences the output is spelled out, including the library
+defaults the plan leaves implicit, so the record does not depend on the
+installed library version's defaults.
+"""
+from __future__ import annotations
+
+import warnings
+
+import numpy as np
+from scipy.sparse.csgraph import connected_components
+
+SEED = 42
+N_COMPONENTS = 3
+
+PARAMS: dict[str, dict] = {
+    "pca": {"n_components": N_COMPONENTS, "centering": True, "solver": "full SVD of X_c"},
+    "pca_nc": {"n_components": N_COMPONENTS, "centering": False, "solver": "full SVD of X",
+               "role": "ablation"},
+    "tsne": {"n_components": N_COMPONENTS, "perplexity": 5.0, "metric": "cosine",
+             "random_state": SEED, "init": "pca", "learning_rate": "auto",
+             "max_iter": 1000, "early_exaggeration": 12.0, "method": "barnes_hut",
+             "angle": 0.5},
+    "umap": {"n_components": N_COMPONENTS, "n_neighbors": 15, "min_dist": 0.1,
+             "metric": "cosine", "random_state": SEED},
+    "isomap": {"n_components": N_COMPONENTS, "n_neighbors": 15, "metric": "cosine"},
+}
+
+MAIN_ALGORITHMS = ("pca", "tsne", "umap", "isomap")
+
+
+def _svd_projection(X: np.ndarray, center: bool) -> tuple[np.ndarray, dict]:
+    Xc = X - X.mean(axis=0) if center else X
+    U, S, Vt = np.linalg.svd(Xc.astype(np.float64), full_matrices=False)
+    # SVD sign is arbitrary: fix it so each component's largest loading is positive.
+    signs = np.sign(Vt[np.arange(N_COMPONENTS), np.abs(Vt[:N_COMPONENTS]).argmax(axis=1)])
+    V = Vt[:N_COMPONENTS].T * signs
+    Y = Xc @ V
+    var = S**2
+    info = {"explained_variance_ratio": (var[:N_COMPONENTS] / var.sum()).tolist()}
+    return Y, info
+
+
+def isomap_graph_components(X: np.ndarray, n_neighbors: int, metric: str) -> int:
+    from sklearn.neighbors import kneighbors_graph
+
+    G = kneighbors_graph(X, n_neighbors, metric=metric, mode="connectivity")
+    n, _ = connected_components(G, directed=False)
+    return int(n)
+
+
+def project(X: np.ndarray, algorithm: str) -> tuple[np.ndarray, dict]:
+    """Return (Y in R^3, diagnostics). X is expected L2-normalised."""
+    p = PARAMS[algorithm]
+    diag: dict = {}
+    if algorithm in ("pca", "pca_nc"):
+        Y, diag = _svd_projection(X, center=p["centering"])
+    elif algorithm == "tsne":
+        from sklearn.manifold import TSNE
+
+        if p["perplexity"] >= len(X):
+            raise ValueError("t-SNE perplexity must be smaller than N")
+        kw = {k: v for k, v in p.items()}
+        Y = TSNE(**kw).fit_transform(X)
+    elif algorithm == "umap":
+        import umap
+
+        with warnings.catch_warnings():
+            # "n_jobs overridden by setting random_state" is the expected price of determinism
+            warnings.filterwarnings("ignore", message=".*n_jobs.*")
+            Y = umap.UMAP(**p).fit_transform(X)
+    elif algorithm == "isomap":
+        from sklearn.manifold import Isomap
+
+        n_cc = isomap_graph_components(X, p["n_neighbors"], p["metric"])
+        diag["knn_graph_components"] = n_cc
+        diag["components_bridged_by_sklearn"] = n_cc > 1
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            Y = Isomap(**p).fit_transform(X)
+        diag["warnings"] = sorted({str(w.message)[:160] for w in caught})
+    else:
+        raise KeyError(algorithm)
+    Y = np.asarray(Y, dtype=np.float64)
+    if not np.all(np.isfinite(Y)):
+        raise FloatingPointError(f"{algorithm} produced non-finite coordinates")
+    return Y, diag

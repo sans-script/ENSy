@@ -16,6 +16,7 @@ import urllib.request
 
 import pytest
 
+pytestmark = pytest.mark.api
 
 BACKEND_URL = "http://127.0.0.1:3000"
 ENGINES = ["umap", "pca", "tsne", "isomap"]
@@ -60,9 +61,9 @@ class TestProjectionAPI:
 
     @pytest.mark.parametrize("engine", ENGINES)
     def test_status_is_valid(self, engine: str) -> None:
-        """status must be either 'STABLE' or 'LOADING'."""
+        """status must be 'STABLE' (no placeholder/bootstrapping data is ever served)."""
         data = fetch_json(f"{BACKEND_URL}/api/projection/{engine}")
-        assert data["status"] in ("STABLE", "LOADING"), (
+        assert data["status"] == "STABLE", (
             f"Unexpected status value: {data['status']!r}"
         )
 
@@ -149,5 +150,41 @@ class TestProjectionAPI:
             assert exc.code == 400, (
                 f"Expected HTTP 400 for invalid engine, got {exc.code}"
             )
+        except urllib.error.URLError:
+            pytest.skip("Backend unreachable")
+
+
+class TestResearchAPI:
+    """Contract tests for the ENSy v2.1.2 endpoints."""
+
+    def test_health_reports_dataset(self) -> None:
+        h = fetch_json(f"{BACKEND_URL}/api/health")
+        assert h["dataset_loaded"], h["error"]
+
+    def test_categories_are_reference_partition(self) -> None:
+        nodes = fetch_json(f"{BACKEND_URL}/api/projection/qwen/pca")["nodes"]
+        assert {n["cluster"] for n in nodes} == {"content_noun", "content_verb", "function_word"}
+
+    def test_metrics_curves_and_local_consistency(self) -> None:
+        data = fetch_json(f"{BACKEND_URL}/api/projection/qwen/umap")
+        curves = data["meta"]["metrics"]
+        assert [c["K"] for c in curves] == [5, 10, 15, 20]
+        for c in curves:
+            assert 0 <= c["trustworthiness"] <= 1 and 0 <= c["continuity"] <= 1
+            local = [n["b_nx_local"][str(c["K"])] for n in data["nodes"]]
+            assert math.isclose(sum(local) / len(local), c["B_NX"], abs_tol=1e-9)
+
+    def test_probe_neighbour_lists(self) -> None:
+        nodes = fetch_json(f"{BACKEND_URL}/api/projection/qwen/tsne")["nodes"]
+        for n in nodes[:10]:
+            assert len(n["hd_neighbors"]) == len(n["ld_neighbors"]) == 20
+            assert n["id"] not in n["hd_neighbors"]
+
+    def test_unknown_model_is_400(self) -> None:
+        try:
+            with urllib.request.urlopen(f"{BACKEND_URL}/api/projection/gpt/pca", timeout=10):
+                pytest.fail("unknown model returned 200")
+        except urllib.error.HTTPError as exc:
+            assert exc.code == 400
         except urllib.error.URLError:
             pytest.skip("Backend unreachable")

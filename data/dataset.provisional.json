@@ -1,0 +1,4477 @@
+{
+ "name": "ENSy lexical dataset derived from the Penn Treebank",
+ "version": "2.1.2",
+ "frozen": false,
+ "note": "PROVISIONAL: built without all three tokenizers; not valid for experiments",
+ "created_utc": "2026-10-01T21:46:37+00:00",
+ "source": "nltk.corpus.treebank (PTB WSJ sample)",
+ "models": {
+  "qwen": {
+   "hf_id": "Qwen/Qwen2.5-0.5B-Instruct",
+   "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+   "surface_form": "' '+word"
+  },
+  "bert": {
+   "hf_id": "bert-base-uncased",
+   "revision": "86b5e0934494bd15c9632b12f734a8a67f723594",
+   "surface_form": "word"
+  }
+ },
+ "rules": {
+  "normalisation": "lower-case, alphabetic only, proper nouns (NNP/NNPS) excluded",
+  "artefacts": "clitic stems (always before n't) excluded; function-word forms that are name-internal (NNP count >= other count, or >50% of occurrences between two NNP tokens) excluded",
+  "tag_map": {
+   "NN": "content_noun",
+   "NNS": "content_noun",
+   "VB": "content_verb",
+   "VBD": "content_verb",
+   "VBG": "content_verb",
+   "VBN": "content_verb",
+   "VBP": "content_verb",
+   "VBZ": "content_verb",
+   "DT": "function_word",
+   "PDT": "function_word",
+   "IN": "function_word",
+   "CC": "function_word",
+   "TO": "function_word",
+   "MD": "function_word",
+   "PRP": "function_word",
+   "PRP$": "function_word",
+   "WDT": "function_word",
+   "WP": "function_word",
+   "WP$": "function_word",
+   "WRB": "function_word",
+   "EX": "function_word",
+   "RP": "function_word"
+  },
+  "auxiliaries_as_function_words": [
+   "am",
+   "are",
+   "be",
+   "been",
+   "being",
+   "did",
+   "do",
+   "does",
+   "had",
+   "has",
+   "have",
+   "is",
+   "was",
+   "were"
+  ],
+  "disambiguation": "majority category over all PTB occurrences; ties and out-of-partition majorities excluded",
+  "single_token": "exactly one id, add_special_tokens=False, not unk/special, decodes back to the word, in every model",
+  "balancing": "n per category = min category size; most frequent forms kept"
+ },
+ "counts": {
+  "ptb_tokens": 100676,
+  "lexical_types": 7295,
+  "excluded_artefacts": {
+   "ca": "clitic_stem",
+   "de": "name_internal",
+   "wo": "clitic_stem",
+   "la": "name_internal",
+   "le": "name_internal",
+   "ai": "clitic_stem",
+   "del": "name_internal"
+  },
+  "after_disambiguation": 5792,
+  "excluded_tie": 78,
+  "excluded_outside_partition": 1418,
+  "dropped_multi_token": {
+   "qwen": 932,
+   "bert": 316
+  },
+  "single_token_per_category": {
+   "content_noun": 2686,
+   "content_verb": 1712,
+   "function_word": 146
+  },
+  "N": 438
+ },
+ "N": 438,
+ "dataset_hash": "a4eed31405ab04a0018cb3bacca66cda89b3422868484184961b61097088c2ac",
+ "items": [
+  {
+   "word": "action",
+   "category": "content_noun",
+   "frequency": 27,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1917,
+    "bert": 2895
+   }
+  },
+  {
+   "word": "ad",
+   "category": "content_noun",
+   "frequency": 28,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 993,
+    "bert": 4748
+   }
+  },
+  {
+   "word": "administration",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8567,
+    "bert": 3447
+   }
+  },
+  {
+   "word": "analyst",
+   "category": "content_noun",
+   "frequency": 27,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 18237,
+    "bert": 12941
+   }
+  },
+  {
+   "word": "analysts",
+   "category": "content_noun",
+   "frequency": 39,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 30399,
+    "bert": 18288
+   }
+  },
+  {
+   "word": "appropriations",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 92566,
+    "bert": 22713
+   }
+  },
+  {
+   "word": "bank",
+   "category": "content_noun",
+   "frequency": 38,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6073,
+    "bert": 2924
+   }
+  },
+  {
+   "word": "banks",
+   "category": "content_noun",
+   "frequency": 53,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 13959,
+    "bert": 5085
+   }
+  },
+  {
+   "word": "bid",
+   "category": "content_noun",
+   "frequency": 36,
+   "category_share": 0.8611111111111112,
+   "token_ids": {
+    "qwen": 14103,
+    "bert": 7226
+   }
+  },
+  {
+   "word": "bill",
+   "category": "content_noun",
+   "frequency": 33,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4031,
+    "bert": 3021
+   }
+  },
+  {
+   "word": "board",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4479,
+    "bert": 2604
+   }
+  },
+  {
+   "word": "bond",
+   "category": "content_noun",
+   "frequency": 28,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 10815,
+    "bert": 5416
+   }
+  },
+  {
+   "word": "bonds",
+   "category": "content_noun",
+   "frequency": 61,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 26363,
+    "bert": 9547
+   }
+  },
+  {
+   "word": "business",
+   "category": "content_noun",
+   "frequency": 77,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2562,
+    "bert": 2449
+   }
+  },
+  {
+   "word": "capital",
+   "category": "content_noun",
+   "frequency": 32,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6722,
+    "bert": 3007
+   }
+  },
+  {
+   "word": "case",
+   "category": "content_noun",
+   "frequency": 29,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1142,
+    "bert": 2553
+   }
+  },
+  {
+   "word": "cash",
+   "category": "content_noun",
+   "frequency": 43,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8350,
+    "bert": 5356
+   }
+  },
+  {
+   "word": "cents",
+   "category": "content_noun",
+   "frequency": 70,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 30191,
+    "bert": 16653
+   }
+  },
+  {
+   "word": "chairman",
+   "category": "content_noun",
+   "frequency": 45,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 21201,
+    "bert": 3472
+   }
+  },
+  {
+   "word": "charge",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 0.8333333333333334,
+   "token_ids": {
+    "qwen": 6757,
+    "bert": 3715
+   }
+  },
+  {
+   "word": "chief",
+   "category": "content_noun",
+   "frequency": 51,
+   "category_share": 0.803921568627451,
+   "token_ids": {
+    "qwen": 10178,
+    "bert": 2708
+   }
+  },
+  {
+   "word": "companies",
+   "category": "content_noun",
+   "frequency": 64,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5110,
+    "bert": 3316
+   }
+  },
+  {
+   "word": "company",
+   "category": "content_noun",
+   "frequency": 260,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2813,
+    "bert": 2194
+   }
+  },
+  {
+   "word": "concern",
+   "category": "content_noun",
+   "frequency": 42,
+   "category_share": 0.9761904761904762,
+   "token_ids": {
+    "qwen": 4643,
+    "bert": 5142
+   }
+  },
+  {
+   "word": "construction",
+   "category": "content_noun",
+   "frequency": 31,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8086,
+    "bert": 2810
+   }
+  },
+  {
+   "word": "contract",
+   "category": "content_noun",
+   "frequency": 37,
+   "category_share": 0.972972972972973,
+   "token_ids": {
+    "qwen": 5116,
+    "bert": 3206
+   }
+  },
+  {
+   "word": "contracts",
+   "category": "content_noun",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 17080,
+    "bert": 8311
+   }
+  },
+  {
+   "word": "costs",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 0.8461538461538461,
+   "token_ids": {
+    "qwen": 7049,
+    "bert": 5366
+   }
+  },
+  {
+   "word": "country",
+   "category": "content_noun",
+   "frequency": 47,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3146,
+    "bert": 2406
+   }
+  },
+  {
+   "word": "court",
+   "category": "content_noun",
+   "frequency": 35,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5473,
+    "bert": 2457
+   }
+  },
+  {
+   "word": "customers",
+   "category": "content_noun",
+   "frequency": 24,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6310,
+    "bert": 6304
+   }
+  },
+  {
+   "word": "days",
+   "category": "content_noun",
+   "frequency": 51,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2849,
+    "bert": 2420
+   }
+  },
+  {
+   "word": "debt",
+   "category": "content_noun",
+   "frequency": 46,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 11636,
+    "bert": 7016
+   }
+  },
+  {
+   "word": "demand",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 0.9666666666666667,
+   "token_ids": {
+    "qwen": 7479,
+    "bert": 5157
+   }
+  },
+  {
+   "word": "department",
+   "category": "content_noun",
+   "frequency": 29,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 9292,
+    "bert": 2533
+   }
+  },
+  {
+   "word": "director",
+   "category": "content_noun",
+   "frequency": 32,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7538,
+    "bert": 2472
+   }
+  },
+  {
+   "word": "division",
+   "category": "content_noun",
+   "frequency": 24,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 12804,
+    "bert": 2407
+   }
+  },
+  {
+   "word": "earnings",
+   "category": "content_noun",
+   "frequency": 40,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 23681,
+    "bert": 16565
+   }
+  },
+  {
+   "word": "economy",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8584,
+    "bert": 4610
+   }
+  },
+  {
+   "word": "end",
+   "category": "content_noun",
+   "frequency": 31,
+   "category_share": 0.7741935483870968,
+   "token_ids": {
+    "qwen": 835,
+    "bert": 2203
+   }
+  },
+  {
+   "word": "example",
+   "category": "content_noun",
+   "frequency": 27,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3110,
+    "bert": 2742
+   }
+  },
+  {
+   "word": "executive",
+   "category": "content_noun",
+   "frequency": 68,
+   "category_share": 0.5882352941176471,
+   "token_ids": {
+    "qwen": 10905,
+    "bert": 3237
+   }
+  },
+  {
+   "word": "fall",
+   "category": "content_noun",
+   "frequency": 25,
+   "category_share": 0.64,
+   "token_ids": {
+    "qwen": 4399,
+    "bert": 2991
+   }
+  },
+  {
+   "word": "fees",
+   "category": "content_noun",
+   "frequency": 24,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 12436,
+    "bert": 9883
+   }
+  },
+  {
+   "word": "fine",
+   "category": "content_noun",
+   "frequency": 25,
+   "category_share": 0.96,
+   "token_ids": {
+    "qwen": 6915,
+    "bert": 2986
+   }
+  },
+  {
+   "word": "firm",
+   "category": "content_noun",
+   "frequency": 40,
+   "category_share": 0.95,
+   "token_ids": {
+    "qwen": 7474,
+    "bert": 3813
+   }
+  },
+  {
+   "word": "firms",
+   "category": "content_noun",
+   "frequency": 35,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 18809,
+    "bert": 9786
+   }
+  },
+  {
+   "word": "funds",
+   "category": "content_noun",
+   "frequency": 67,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 10514,
+    "bert": 5029
+   }
+  },
+  {
+   "word": "futures",
+   "category": "content_noun",
+   "frequency": 66,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 36823,
+    "bert": 17795
+   }
+  },
+  {
+   "word": "government",
+   "category": "content_noun",
+   "frequency": 85,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3033,
+    "bert": 2231
+   }
+  },
+  {
+   "word": "group",
+   "category": "content_noun",
+   "frequency": 43,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1874,
+    "bert": 2177
+   }
+  },
+  {
+   "word": "growth",
+   "category": "content_noun",
+   "frequency": 42,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6513,
+    "bert": 3930
+   }
+  },
+  {
+   "word": "income",
+   "category": "content_noun",
+   "frequency": 42,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7911,
+    "bert": 3318
+   }
+  },
+  {
+   "word": "increase",
+   "category": "content_noun",
+   "frequency": 31,
+   "category_share": 0.6451612903225806,
+   "token_ids": {
+    "qwen": 5263,
+    "bert": 3623
+   }
+  },
+  {
+   "word": "index",
+   "category": "content_noun",
+   "frequency": 66,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1922,
+    "bert": 5950
+   }
+  },
+  {
+   "word": "industry",
+   "category": "content_noun",
+   "frequency": 41,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4958,
+    "bert": 3068
+   }
+  },
+  {
+   "word": "information",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1995,
+    "bert": 2592
+   }
+  },
+  {
+   "word": "interest",
+   "category": "content_noun",
+   "frequency": 53,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2734,
+    "bert": 3037
+   }
+  },
+  {
+   "word": "investment",
+   "category": "content_noun",
+   "frequency": 56,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 9162,
+    "bert": 5211
+   }
+  },
+  {
+   "word": "investor",
+   "category": "content_noun",
+   "frequency": 39,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 29593,
+    "bert": 14316
+   }
+  },
+  {
+   "word": "investors",
+   "category": "content_noun",
+   "frequency": 66,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 14823,
+    "bert": 9387
+   }
+  },
+  {
+   "word": "issue",
+   "category": "content_noun",
+   "frequency": 60,
+   "category_share": 0.9,
+   "token_ids": {
+    "qwen": 4265,
+    "bert": 3277
+   }
+  },
+  {
+   "word": "issues",
+   "category": "content_noun",
+   "frequency": 37,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4714,
+    "bert": 3314
+   }
+  },
+  {
+   "word": "junk",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 0.9666666666666667,
+   "token_ids": {
+    "qwen": 29674,
+    "bert": 18015
+   }
+  },
+  {
+   "word": "law",
+   "category": "content_noun",
+   "frequency": 38,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2329,
+    "bert": 2375
+   }
+  },
+  {
+   "word": "loss",
+   "category": "content_noun",
+   "frequency": 32,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4709,
+    "bert": 3279
+   }
+  },
+  {
+   "word": "maker",
+   "category": "content_noun",
+   "frequency": 28,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 24232,
+    "bert": 9338
+   }
+  },
+  {
+   "word": "manager",
+   "category": "content_noun",
+   "frequency": 27,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6645,
+    "bert": 3208
+   }
+  },
+  {
+   "word": "managers",
+   "category": "content_noun",
+   "frequency": 40,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 19680,
+    "bert": 10489
+   }
+  },
+  {
+   "word": "market",
+   "category": "content_noun",
+   "frequency": 178,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3081,
+    "bert": 3006
+   }
+  },
+  {
+   "word": "markets",
+   "category": "content_noun",
+   "frequency": 54,
+   "category_share": 0.9814814814814815,
+   "token_ids": {
+    "qwen": 11725,
+    "bert": 6089
+   }
+  },
+  {
+   "word": "members",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3613,
+    "bert": 2372
+   }
+  },
+  {
+   "word": "money",
+   "category": "content_noun",
+   "frequency": 56,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3220,
+    "bert": 2769
+   }
+  },
+  {
+   "word": "month",
+   "category": "content_noun",
+   "frequency": 44,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2254,
+    "bert": 3204
+   }
+  },
+  {
+   "word": "months",
+   "category": "content_noun",
+   "frequency": 59,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3951,
+    "bert": 2706
+   }
+  },
+  {
+   "word": "move",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 0.6923076923076923,
+   "token_ids": {
+    "qwen": 3271,
+    "bert": 2693
+   }
+  },
+  {
+   "word": "nation",
+   "category": "content_noun",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6995,
+    "bert": 3842
+   }
+  },
+  {
+   "word": "news",
+   "category": "content_noun",
+   "frequency": 24,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3669,
+    "bert": 2739
+   }
+  },
+  {
+   "word": "notes",
+   "category": "content_noun",
+   "frequency": 32,
+   "category_share": 0.90625,
+   "token_ids": {
+    "qwen": 8388,
+    "bert": 3964
+   }
+  },
+  {
+   "word": "number",
+   "category": "content_noun",
+   "frequency": 45,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1372,
+    "bert": 2193
+   }
+  },
+  {
+   "word": "offer",
+   "category": "content_noun",
+   "frequency": 47,
+   "category_share": 0.7872340425531915,
+   "token_ids": {
+    "qwen": 3010,
+    "bert": 3749
+   }
+  },
+  {
+   "word": "offering",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 0.5769230769230769,
+   "token_ids": {
+    "qwen": 10004,
+    "bert": 5378
+   }
+  },
+  {
+   "word": "officer",
+   "category": "content_noun",
+   "frequency": 32,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 9452,
+    "bert": 2961
+   }
+  },
+  {
+   "word": "officials",
+   "category": "content_noun",
+   "frequency": 50,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7359,
+    "bert": 4584
+   }
+  },
+  {
+   "word": "operating",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 0.5769230769230769,
+   "token_ids": {
+    "qwen": 10350,
+    "bert": 4082
+   }
+  },
+  {
+   "word": "operations",
+   "category": "content_noun",
+   "frequency": 29,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7525,
+    "bert": 3136
+   }
+  },
+  {
+   "word": "orders",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 0.9666666666666667,
+   "token_ids": {
+    "qwen": 10163,
+    "bert": 4449
+   }
+  },
+  {
+   "word": "paper",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5567,
+    "bert": 3259
+   }
+  },
+  {
+   "word": "part",
+   "category": "content_noun",
+   "frequency": 40,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 949,
+    "bert": 2112
+   }
+  },
+  {
+   "word": "people",
+   "category": "content_noun",
+   "frequency": 61,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1251,
+    "bert": 2111
+   }
+  },
+  {
+   "word": "period",
+   "category": "content_noun",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4168,
+    "bert": 2558
+   }
+  },
+  {
+   "word": "plan",
+   "category": "content_noun",
+   "frequency": 48,
+   "category_share": 0.9375,
+   "token_ids": {
+    "qwen": 3119,
+    "bert": 2933
+   }
+  },
+  {
+   "word": "point",
+   "category": "content_noun",
+   "frequency": 29,
+   "category_share": 0.896551724137931,
+   "token_ids": {
+    "qwen": 1459,
+    "bert": 2391
+   }
+  },
+  {
+   "word": "points",
+   "category": "content_noun",
+   "frequency": 31,
+   "category_share": 0.967741935483871,
+   "token_ids": {
+    "qwen": 3501,
+    "bert": 2685
+   }
+  },
+  {
+   "word": "power",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2355,
+    "bert": 2373
+   }
+  },
+  {
+   "word": "president",
+   "category": "content_noun",
+   "frequency": 133,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4767,
+    "bert": 2343
+   }
+  },
+  {
+   "word": "price",
+   "category": "content_noun",
+   "frequency": 67,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3349,
+    "bert": 3976
+   }
+  },
+  {
+   "word": "prices",
+   "category": "content_noun",
+   "frequency": 89,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7576,
+    "bert": 7597
+   }
+  },
+  {
+   "word": "problem",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3491,
+    "bert": 3291
+   }
+  },
+  {
+   "word": "problems",
+   "category": "content_noun",
+   "frequency": 28,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5322,
+    "bert": 3471
+   }
+  },
+  {
+   "word": "products",
+   "category": "content_noun",
+   "frequency": 32,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3871,
+    "bert": 3688
+   }
+  },
+  {
+   "word": "profit",
+   "category": "content_noun",
+   "frequency": 64,
+   "category_share": 0.9375,
+   "token_ids": {
+    "qwen": 11372,
+    "bert": 5618
+   }
+  },
+  {
+   "word": "program",
+   "category": "content_noun",
+   "frequency": 137,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2025,
+    "bert": 2565
+   }
+  },
+  {
+   "word": "programs",
+   "category": "content_noun",
+   "frequency": 24,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7468,
+    "bert": 3454
+   }
+  },
+  {
+   "word": "purchase",
+   "category": "content_noun",
+   "frequency": 25,
+   "category_share": 0.92,
+   "token_ids": {
+    "qwen": 7627,
+    "bert": 5309
+   }
+  },
+  {
+   "word": "quarter",
+   "category": "content_noun",
+   "frequency": 36,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8338,
+    "bert": 4284
+   }
+  },
+  {
+   "word": "rate",
+   "category": "content_noun",
+   "frequency": 42,
+   "category_share": 0.9761904761904762,
+   "token_ids": {
+    "qwen": 4379,
+    "bert": 3446
+   }
+  },
+  {
+   "word": "rates",
+   "category": "content_noun",
+   "frequency": 51,
+   "category_share": 0.9803921568627451,
+   "token_ids": {
+    "qwen": 7813,
+    "bert": 6165
+   }
+  },
+  {
+   "word": "record",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 0.8333333333333334,
+   "token_ids": {
+    "qwen": 3255,
+    "bert": 2501
+   }
+  },
+  {
+   "word": "report",
+   "category": "content_noun",
+   "frequency": 40,
+   "category_share": 0.775,
+   "token_ids": {
+    "qwen": 1895,
+    "bert": 3189
+   }
+  },
+  {
+   "word": "research",
+   "category": "content_noun",
+   "frequency": 33,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3412,
+    "bert": 2470
+   }
+  },
+  {
+   "word": "return",
+   "category": "content_noun",
+   "frequency": 28,
+   "category_share": 0.7857142857142857,
+   "token_ids": {
+    "qwen": 470,
+    "bert": 2709
+   }
+  },
+  {
+   "word": "right",
+   "category": "content_noun",
+   "frequency": 36,
+   "category_share": 0.6111111111111112,
+   "token_ids": {
+    "qwen": 1290,
+    "bert": 2157
+   }
+  },
+  {
+   "word": "safety",
+   "category": "content_noun",
+   "frequency": 24,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7149,
+    "bert": 3808
+   }
+  },
+  {
+   "word": "sale",
+   "category": "content_noun",
+   "frequency": 27,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6278,
+    "bert": 5096
+   }
+  },
+  {
+   "word": "sales",
+   "category": "content_noun",
+   "frequency": 78,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6625,
+    "bert": 4341
+   }
+  },
+  {
+   "word": "securities",
+   "category": "content_noun",
+   "frequency": 34,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 33819,
+    "bert": 12012
+   }
+  },
+  {
+   "word": "service",
+   "category": "content_noun",
+   "frequency": 24,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2473,
+    "bert": 2326
+   }
+  },
+  {
+   "word": "services",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3516,
+    "bert": 2578
+   }
+  },
+  {
+   "word": "share",
+   "category": "content_noun",
+   "frequency": 120,
+   "category_share": 0.975,
+   "token_ids": {
+    "qwen": 4332,
+    "bert": 3745
+   }
+  },
+  {
+   "word": "shares",
+   "category": "content_noun",
+   "frequency": 114,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 13248,
+    "bert": 6661
+   }
+  },
+  {
+   "word": "spending",
+   "category": "content_noun",
+   "frequency": 27,
+   "category_share": 0.9259259259259259,
+   "token_ids": {
+    "qwen": 10164,
+    "bert": 5938
+   }
+  },
+  {
+   "word": "spokesman",
+   "category": "content_noun",
+   "frequency": 39,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 17885,
+    "bert": 14056
+   }
+  },
+  {
+   "word": "stake",
+   "category": "content_noun",
+   "frequency": 24,
+   "category_share": 0.9583333333333334,
+   "token_ids": {
+    "qwen": 18279,
+    "bert": 8406
+   }
+  },
+  {
+   "word": "state",
+   "category": "content_noun",
+   "frequency": 33,
+   "category_share": 0.9696969696969697,
+   "token_ids": {
+    "qwen": 1584,
+    "bert": 2110
+   }
+  },
+  {
+   "word": "stock",
+   "category": "content_noun",
+   "frequency": 139,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5591,
+    "bert": 4518
+   }
+  },
+  {
+   "word": "stocks",
+   "category": "content_noun",
+   "frequency": 69,
+   "category_share": 0.9855072463768116,
+   "token_ids": {
+    "qwen": 22488,
+    "bert": 15768
+   }
+  },
+  {
+   "word": "students",
+   "category": "content_noun",
+   "frequency": 31,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4143,
+    "bert": 2493
+   }
+  },
+  {
+   "word": "suspension",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 24301,
+    "bert": 8636
+   }
+  },
+  {
+   "word": "terms",
+   "category": "content_noun",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3793,
+    "bert": 3408
+   }
+  },
+  {
+   "word": "test",
+   "category": "content_noun",
+   "frequency": 39,
+   "category_share": 0.9487179487179487,
+   "token_ids": {
+    "qwen": 1273,
+    "bert": 3231
+   }
+  },
+  {
+   "word": "time",
+   "category": "content_noun",
+   "frequency": 63,
+   "category_share": 0.9841269841269841,
+   "token_ids": {
+    "qwen": 882,
+    "bert": 2051
+   }
+  },
+  {
+   "word": "today",
+   "category": "content_noun",
+   "frequency": 28,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3351,
+    "bert": 2651
+   }
+  },
+  {
+   "word": "trade",
+   "category": "content_noun",
+   "frequency": 50,
+   "category_share": 0.76,
+   "token_ids": {
+    "qwen": 6559,
+    "bert": 3119
+   }
+  },
+  {
+   "word": "traders",
+   "category": "content_noun",
+   "frequency": 50,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 34587,
+    "bert": 13066
+   }
+  },
+  {
+   "word": "trading",
+   "category": "content_noun",
+   "frequency": 165,
+   "category_share": 0.8909090909090909,
+   "token_ids": {
+    "qwen": 11133,
+    "bert": 6202
+   }
+  },
+  {
+   "word": "unit",
+   "category": "content_noun",
+   "frequency": 36,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4982,
+    "bert": 3131
+   }
+  },
+  {
+   "word": "vice",
+   "category": "content_noun",
+   "frequency": 44,
+   "category_share": 0.9772727272727273,
+   "token_ids": {
+    "qwen": 16774,
+    "bert": 3580
+   }
+  },
+  {
+   "word": "volume",
+   "category": "content_noun",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8123,
+    "bert": 3872
+   }
+  },
+  {
+   "word": "way",
+   "category": "content_noun",
+   "frequency": 30,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1616,
+    "bert": 2126
+   }
+  },
+  {
+   "word": "week",
+   "category": "content_noun",
+   "frequency": 55,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2003,
+    "bert": 2733
+   }
+  },
+  {
+   "word": "work",
+   "category": "content_noun",
+   "frequency": 27,
+   "category_share": 0.7037037037037037,
+   "token_ids": {
+    "qwen": 975,
+    "bert": 2147
+   }
+  },
+  {
+   "word": "year",
+   "category": "content_noun",
+   "frequency": 214,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1042,
+    "bert": 2095
+   }
+  },
+  {
+   "word": "years",
+   "category": "content_noun",
+   "frequency": 115,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1635,
+    "bert": 2086
+   }
+  },
+  {
+   "word": "yen",
+   "category": "content_noun",
+   "frequency": 56,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 57340,
+    "bert": 18371
+   }
+  },
+  {
+   "word": "yesterday",
+   "category": "content_noun",
+   "frequency": 67,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 13671,
+    "bert": 7483
+   }
+  },
+  {
+   "word": "according",
+   "category": "content_verb",
+   "frequency": 42,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4092,
+    "bert": 2429
+   }
+  },
+  {
+   "word": "acquired",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 18892,
+    "bert": 3734
+   }
+  },
+  {
+   "word": "added",
+   "category": "content_verb",
+   "frequency": 40,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3694,
+    "bert": 2794
+   }
+  },
+  {
+   "word": "adds",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 11367,
+    "bert": 9909
+   }
+  },
+  {
+   "word": "agreed",
+   "category": "content_verb",
+   "frequency": 17,
+   "category_share": 0.9411764705882353,
+   "token_ids": {
+    "qwen": 7230,
+    "bert": 3530
+   }
+  },
+  {
+   "word": "alleged",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 0.6923076923076923,
+   "token_ids": {
+    "qwen": 10491,
+    "bert": 6884
+   }
+  },
+  {
+   "word": "announced",
+   "category": "content_verb",
+   "frequency": 17,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7228,
+    "bert": 2623
+   }
+  },
+  {
+   "word": "approved",
+   "category": "content_verb",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 11792,
+    "bert": 4844
+   }
+  },
+  {
+   "word": "asked",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4588,
+    "bert": 2356
+   }
+  },
+  {
+   "word": "based",
+   "category": "content_verb",
+   "frequency": 31,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3118,
+    "bert": 2241
+   }
+  },
+  {
+   "word": "became",
+   "category": "content_verb",
+   "frequency": 17,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6116,
+    "bert": 2150
+   }
+  },
+  {
+   "word": "become",
+   "category": "content_verb",
+   "frequency": 23,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3635,
+    "bert": 2468
+   }
+  },
+  {
+   "word": "began",
+   "category": "content_verb",
+   "frequency": 32,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6009,
+    "bert": 2211
+   }
+  },
+  {
+   "word": "believe",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4411,
+    "bert": 2903
+   }
+  },
+  {
+   "word": "believes",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 13605,
+    "bert": 7164
+   }
+  },
+  {
+   "word": "built",
+   "category": "content_verb",
+   "frequency": 15,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5798,
+    "bert": 2328
+   }
+  },
+  {
+   "word": "buy",
+   "category": "content_verb",
+   "frequency": 56,
+   "category_share": 0.9285714285714286,
+   "token_ids": {
+    "qwen": 3695,
+    "bert": 4965
+   }
+  },
+  {
+   "word": "buying",
+   "category": "content_verb",
+   "frequency": 21,
+   "category_share": 0.7142857142857143,
+   "token_ids": {
+    "qwen": 11833,
+    "bert": 9343
+   }
+  },
+  {
+   "word": "called",
+   "category": "content_verb",
+   "frequency": 20,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2598,
+    "bert": 2170
+   }
+  },
+  {
+   "word": "came",
+   "category": "content_verb",
+   "frequency": 21,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3697,
+    "bert": 2234
+   }
+  },
+  {
+   "word": "caused",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8881,
+    "bert": 3303
+   }
+  },
+  {
+   "word": "changed",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5497,
+    "bert": 2904
+   }
+  },
+  {
+   "word": "closed",
+   "category": "content_verb",
+   "frequency": 30,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7877,
+    "bert": 2701
+   }
+  },
+  {
+   "word": "come",
+   "category": "content_verb",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2525,
+    "bert": 2272
+   }
+  },
+  {
+   "word": "coming",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5001,
+    "bert": 2746
+   }
+  },
+  {
+   "word": "compared",
+   "category": "content_verb",
+   "frequency": 33,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7707,
+    "bert": 4102
+   }
+  },
+  {
+   "word": "completed",
+   "category": "content_verb",
+   "frequency": 15,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8145,
+    "bert": 2949
+   }
+  },
+  {
+   "word": "continue",
+   "category": "content_verb",
+   "frequency": 20,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3060,
+    "bert": 3613
+   }
+  },
+  {
+   "word": "continued",
+   "category": "content_verb",
+   "frequency": 15,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8570,
+    "bert": 2506
+   }
+  },
+  {
+   "word": "continues",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 9539,
+    "bert": 4247
+   }
+  },
+  {
+   "word": "continuing",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 14354,
+    "bert": 5719
+   }
+  },
+  {
+   "word": "cut",
+   "category": "content_verb",
+   "frequency": 28,
+   "category_share": 0.8928571428571429,
+   "token_ids": {
+    "qwen": 3931,
+    "bert": 3013
+   }
+  },
+  {
+   "word": "decided",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6635,
+    "bert": 2787
+   }
+  },
+  {
+   "word": "declined",
+   "category": "content_verb",
+   "frequency": 22,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 18758,
+    "bert": 6430
+   }
+  },
+  {
+   "word": "designed",
+   "category": "content_verb",
+   "frequency": 20,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6188,
+    "bert": 2881
+   }
+  },
+  {
+   "word": "disclosed",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 35389,
+    "bert": 21362
+   }
+  },
+  {
+   "word": "dropped",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 12226,
+    "bert": 3333
+   }
+  },
+  {
+   "word": "ended",
+   "category": "content_verb",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 9482,
+    "bert": 3092
+   }
+  },
+  {
+   "word": "estimated",
+   "category": "content_verb",
+   "frequency": 22,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 12943,
+    "bert": 4358
+   }
+  },
+  {
+   "word": "expected",
+   "category": "content_verb",
+   "frequency": 52,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3601,
+    "bert": 3517
+   }
+  },
+  {
+   "word": "expects",
+   "category": "content_verb",
+   "frequency": 19,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 24297,
+    "bert": 24273
+   }
+  },
+  {
+   "word": "face",
+   "category": "content_verb",
+   "frequency": 23,
+   "category_share": 0.5652173913043478,
+   "token_ids": {
+    "qwen": 3579,
+    "bert": 2227
+   }
+  },
+  {
+   "word": "failed",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4641,
+    "bert": 3478
+   }
+  },
+  {
+   "word": "fell",
+   "category": "content_verb",
+   "frequency": 32,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 11052,
+    "bert": 3062
+   }
+  },
+  {
+   "word": "filed",
+   "category": "content_verb",
+   "frequency": 17,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 12729,
+    "bert": 6406
+   }
+  },
+  {
+   "word": "find",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1477,
+    "bert": 2424
+   }
+  },
+  {
+   "word": "fined",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 53881,
+    "bert": 16981
+   }
+  },
+  {
+   "word": "followed",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8110,
+    "bert": 2628
+   }
+  },
+  {
+   "word": "following",
+   "category": "content_verb",
+   "frequency": 17,
+   "category_share": 0.8235294117647058,
+   "token_ids": {
+    "qwen": 2701,
+    "bert": 2206
+   }
+  },
+  {
+   "word": "found",
+   "category": "content_verb",
+   "frequency": 23,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1730,
+    "bert": 2179
+   }
+  },
+  {
+   "word": "gained",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 18163,
+    "bert": 4227
+   }
+  },
+  {
+   "word": "get",
+   "category": "content_verb",
+   "frequency": 47,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 633,
+    "bert": 2131
+   }
+  },
+  {
+   "word": "give",
+   "category": "content_verb",
+   "frequency": 21,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2968,
+    "bert": 2507
+   }
+  },
+  {
+   "word": "given",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2661,
+    "bert": 2445
+   }
+  },
+  {
+   "word": "gives",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6696,
+    "bert": 3957
+   }
+  },
+  {
+   "word": "go",
+   "category": "content_verb",
+   "frequency": 22,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 728,
+    "bert": 2175
+   }
+  },
+  {
+   "word": "goes",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5780,
+    "bert": 3632
+   }
+  },
+  {
+   "word": "going",
+   "category": "content_verb",
+   "frequency": 20,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2087,
+    "bert": 2183
+   }
+  },
+  {
+   "word": "got",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2684,
+    "bert": 2288
+   }
+  },
+  {
+   "word": "growing",
+   "category": "content_verb",
+   "frequency": 23,
+   "category_share": 0.9565217391304348,
+   "token_ids": {
+    "qwen": 7826,
+    "bert": 3652
+   }
+  },
+  {
+   "word": "having",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3432,
+    "bert": 2383
+   }
+  },
+  {
+   "word": "held",
+   "category": "content_verb",
+   "frequency": 21,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5644,
+    "bert": 2218
+   }
+  },
+  {
+   "word": "help",
+   "category": "content_verb",
+   "frequency": 43,
+   "category_share": 0.9069767441860465,
+   "token_ids": {
+    "qwen": 1492,
+    "bert": 2393
+   }
+  },
+  {
+   "word": "helped",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8910,
+    "bert": 3271
+   }
+  },
+  {
+   "word": "holding",
+   "category": "content_verb",
+   "frequency": 20,
+   "category_share": 0.85,
+   "token_ids": {
+    "qwen": 9963,
+    "bert": 3173
+   }
+  },
+  {
+   "word": "improve",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7269,
+    "bert": 5335
+   }
+  },
+  {
+   "word": "include",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2924,
+    "bert": 2421
+   }
+  },
+  {
+   "word": "included",
+   "category": "content_verb",
+   "frequency": 17,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5230,
+    "bert": 2443
+   }
+  },
+  {
+   "word": "includes",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5646,
+    "bert": 2950
+   }
+  },
+  {
+   "word": "including",
+   "category": "content_verb",
+   "frequency": 39,
+   "category_share": 0.9743589743589743,
+   "token_ids": {
+    "qwen": 2670,
+    "bert": 2164
+   }
+  },
+  {
+   "word": "increased",
+   "category": "content_verb",
+   "frequency": 23,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7172,
+    "bert": 3445
+   }
+  },
+  {
+   "word": "increasing",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7703,
+    "bert": 4852
+   }
+  },
+  {
+   "word": "indicated",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 16317,
+    "bert": 5393
+   }
+  },
+  {
+   "word": "involved",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6398,
+    "bert": 2920
+   }
+  },
+  {
+   "word": "issued",
+   "category": "content_verb",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 10897,
+    "bert": 3843
+   }
+  },
+  {
+   "word": "keep",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2506,
+    "bert": 2562
+   }
+  },
+  {
+   "word": "know",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1414,
+    "bert": 2113
+   }
+  },
+  {
+   "word": "known",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 0.9230769230769231,
+   "token_ids": {
+    "qwen": 3881,
+    "bert": 2124
+   }
+  },
+  {
+   "word": "launched",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 11626,
+    "bert": 3390
+   }
+  },
+  {
+   "word": "lead",
+   "category": "content_verb",
+   "frequency": 20,
+   "category_share": 0.65,
+   "token_ids": {
+    "qwen": 2990,
+    "bert": 2599
+   }
+  },
+  {
+   "word": "leading",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 0.9230769230769231,
+   "token_ids": {
+    "qwen": 6388,
+    "bert": 2877
+   }
+  },
+  {
+   "word": "led",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6069,
+    "bert": 2419
+   }
+  },
+  {
+   "word": "look",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 0.6428571428571429,
+   "token_ids": {
+    "qwen": 1401,
+    "bert": 2298
+   }
+  },
+  {
+   "word": "lost",
+   "category": "content_verb",
+   "frequency": 15,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5558,
+    "bert": 2439
+   }
+  },
+  {
+   "word": "made",
+   "category": "content_verb",
+   "frequency": 56,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1865,
+    "bert": 2081
+   }
+  },
+  {
+   "word": "make",
+   "category": "content_verb",
+   "frequency": 74,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1281,
+    "bert": 2191
+   }
+  },
+  {
+   "word": "making",
+   "category": "content_verb",
+   "frequency": 20,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3259,
+    "bert": 2437
+   }
+  },
+  {
+   "word": "named",
+   "category": "content_verb",
+   "frequency": 23,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6941,
+    "bert": 2315
+   }
+  },
+  {
+   "word": "need",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 0.7777777777777778,
+   "token_ids": {
+    "qwen": 1184,
+    "bert": 2342
+   }
+  },
+  {
+   "word": "needed",
+   "category": "content_verb",
+   "frequency": 15,
+   "category_share": 0.9333333333333333,
+   "token_ids": {
+    "qwen": 4362,
+    "bert": 2734
+   }
+  },
+  {
+   "word": "noted",
+   "category": "content_verb",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 10342,
+    "bert": 3264
+   }
+  },
+  {
+   "word": "offered",
+   "category": "content_verb",
+   "frequency": 27,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8900,
+    "bert": 3253
+   }
+  },
+  {
+   "word": "ordered",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 11457,
+    "bert": 3641
+   }
+  },
+  {
+   "word": "owns",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 24256,
+    "bert": 8617
+   }
+  },
+  {
+   "word": "paid",
+   "category": "content_verb",
+   "frequency": 20,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7171,
+    "bert": 3825
+   }
+  },
+  {
+   "word": "pay",
+   "category": "content_verb",
+   "frequency": 41,
+   "category_share": 0.8048780487804879,
+   "token_ids": {
+    "qwen": 2291,
+    "bert": 3477
+   }
+  },
+  {
+   "word": "paying",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 12515,
+    "bert": 7079
+   }
+  },
+  {
+   "word": "planned",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 0.9285714285714286,
+   "token_ids": {
+    "qwen": 12909,
+    "bert": 3740
+   }
+  },
+  {
+   "word": "plans",
+   "category": "content_verb",
+   "frequency": 36,
+   "category_share": 0.5277777777777778,
+   "token_ids": {
+    "qwen": 6649,
+    "bert": 3488
+   }
+  },
+  {
+   "word": "posted",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8454,
+    "bert": 6866
+   }
+  },
+  {
+   "word": "preferred",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 0.7692307692307693,
+   "token_ids": {
+    "qwen": 14890,
+    "bert": 6871
+   }
+  },
+  {
+   "word": "priced",
+   "category": "content_verb",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 32605,
+    "bert": 21125
+   }
+  },
+  {
+   "word": "proposed",
+   "category": "content_verb",
+   "frequency": 22,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 10981,
+    "bert": 3818
+   }
+  },
+  {
+   "word": "provide",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3410,
+    "bert": 3073
+   }
+  },
+  {
+   "word": "purchasing",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 0.6428571428571429,
+   "token_ids": {
+    "qwen": 22577,
+    "bert": 13131
+   }
+  },
+  {
+   "word": "put",
+   "category": "content_verb",
+   "frequency": 25,
+   "category_share": 0.96,
+   "token_ids": {
+    "qwen": 2182,
+    "bert": 2404
+   }
+  },
+  {
+   "word": "raise",
+   "category": "content_verb",
+   "frequency": 21,
+   "category_share": 0.9523809523809523,
+   "token_ids": {
+    "qwen": 4828,
+    "bert": 5333
+   }
+  },
+  {
+   "word": "raised",
+   "category": "content_verb",
+   "frequency": 15,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 9226,
+    "bert": 2992
+   }
+  },
+  {
+   "word": "reached",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8643,
+    "bert": 2584
+   }
+  },
+  {
+   "word": "receive",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5258,
+    "bert": 4374
+   }
+  },
+  {
+   "word": "received",
+   "category": "content_verb",
+   "frequency": 22,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3949,
+    "bert": 2363
+   }
+  },
+  {
+   "word": "reduce",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7949,
+    "bert": 5547
+   }
+  },
+  {
+   "word": "remains",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8458,
+    "bert": 3464
+   }
+  },
+  {
+   "word": "reported",
+   "category": "content_verb",
+   "frequency": 37,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4961,
+    "bert": 2988
+   }
+  },
+  {
+   "word": "result",
+   "category": "content_verb",
+   "frequency": 24,
+   "category_share": 0.5833333333333334,
+   "token_ids": {
+    "qwen": 1102,
+    "bert": 2765
+   }
+  },
+  {
+   "word": "rise",
+   "category": "content_verb",
+   "frequency": 21,
+   "category_share": 0.5714285714285714,
+   "token_ids": {
+    "qwen": 10000,
+    "bert": 4125
+   }
+  },
+  {
+   "word": "rose",
+   "category": "content_verb",
+   "frequency": 61,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 16009,
+    "bert": 3123
+   }
+  },
+  {
+   "word": "run",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 0.8888888888888888,
+   "token_ids": {
+    "qwen": 1598,
+    "bert": 2448
+   }
+  },
+  {
+   "word": "said",
+   "category": "content_verb",
+   "frequency": 628,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1053,
+    "bert": 2056
+   }
+  },
+  {
+   "word": "say",
+   "category": "content_verb",
+   "frequency": 75,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1977,
+    "bert": 2360
+   }
+  },
+  {
+   "word": "saying",
+   "category": "content_verb",
+   "frequency": 18,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5488,
+    "bert": 3038
+   }
+  },
+  {
+   "word": "says",
+   "category": "content_verb",
+   "frequency": 217,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2727,
+    "bert": 2758
+   }
+  },
+  {
+   "word": "scheduled",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 13537,
+    "bert": 5115
+   }
+  },
+  {
+   "word": "see",
+   "category": "content_verb",
+   "frequency": 29,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1490,
+    "bert": 2156
+   }
+  },
+  {
+   "word": "seek",
+   "category": "content_verb",
+   "frequency": 17,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5931,
+    "bert": 6148
+   }
+  },
+  {
+   "word": "seeking",
+   "category": "content_verb",
+   "frequency": 19,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 10887,
+    "bert": 6224
+   }
+  },
+  {
+   "word": "sell",
+   "category": "content_verb",
+   "frequency": 46,
+   "category_share": 0.8913043478260869,
+   "token_ids": {
+    "qwen": 4559,
+    "bert": 5271
+   }
+  },
+  {
+   "word": "set",
+   "category": "content_verb",
+   "frequency": 29,
+   "category_share": 0.896551724137931,
+   "token_ids": {
+    "qwen": 738,
+    "bert": 2275
+   }
+  },
+  {
+   "word": "showed",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8542,
+    "bert": 3662
+   }
+  },
+  {
+   "word": "sold",
+   "category": "content_verb",
+   "frequency": 39,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6088,
+    "bert": 2853
+   }
+  },
+  {
+   "word": "take",
+   "category": "content_verb",
+   "frequency": 54,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1896,
+    "bert": 2202
+   }
+  },
+  {
+   "word": "taken",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4429,
+    "bert": 2579
+   }
+  },
+  {
+   "word": "think",
+   "category": "content_verb",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1744,
+    "bert": 2228
+   }
+  },
+  {
+   "word": "told",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3229,
+    "bert": 2409
+   }
+  },
+  {
+   "word": "took",
+   "category": "content_verb",
+   "frequency": 28,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3867,
+    "bert": 2165
+   }
+  },
+  {
+   "word": "traded",
+   "category": "content_verb",
+   "frequency": 15,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 30107,
+    "bert": 7007
+   }
+  },
+  {
+   "word": "trying",
+   "category": "content_verb",
+   "frequency": 22,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4460,
+    "bert": 2667
+   }
+  },
+  {
+   "word": "use",
+   "category": "content_verb",
+   "frequency": 39,
+   "category_share": 0.5384615384615384,
+   "token_ids": {
+    "qwen": 990,
+    "bert": 2224
+   }
+  },
+  {
+   "word": "used",
+   "category": "content_verb",
+   "frequency": 33,
+   "category_share": 0.9393939393939394,
+   "token_ids": {
+    "qwen": 1483,
+    "bert": 2109
+   }
+  },
+  {
+   "word": "using",
+   "category": "content_verb",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1667,
+    "bert": 2478
+   }
+  },
+  {
+   "word": "want",
+   "category": "content_verb",
+   "frequency": 29,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1366,
+    "bert": 2215
+   }
+  },
+  {
+   "word": "wanted",
+   "category": "content_verb",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4829,
+    "bert": 2359
+   }
+  },
+  {
+   "word": "wants",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6801,
+    "bert": 4122
+   }
+  },
+  {
+   "word": "went",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3937,
+    "bert": 2253
+   }
+  },
+  {
+   "word": "working",
+   "category": "content_verb",
+   "frequency": 14,
+   "category_share": 0.6428571428571429,
+   "token_ids": {
+    "qwen": 3238,
+    "bert": 2551
+   }
+  },
+  {
+   "word": "yield",
+   "category": "content_verb",
+   "frequency": 48,
+   "category_share": 0.5833333333333334,
+   "token_ids": {
+    "qwen": 7540,
+    "bert": 10750
+   }
+  },
+  {
+   "word": "a",
+   "category": "function_word",
+   "frequency": 1986,
+   "category_share": 0.9969788519637462,
+   "token_ids": {
+    "qwen": 264,
+    "bert": 1037
+   }
+  },
+  {
+   "word": "aboard",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 36506,
+    "bert": 7548
+   }
+  },
+  {
+   "word": "about",
+   "category": "function_word",
+   "frequency": 212,
+   "category_share": 0.8726415094339622,
+   "token_ids": {
+    "qwen": 911,
+    "bert": 2055
+   }
+  },
+  {
+   "word": "above",
+   "category": "function_word",
+   "frequency": 19,
+   "category_share": 0.8421052631578947,
+   "token_ids": {
+    "qwen": 3403,
+    "bert": 2682
+   }
+  },
+  {
+   "word": "across",
+   "category": "function_word",
+   "frequency": 15,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3941,
+    "bert": 2408
+   }
+  },
+  {
+   "word": "after",
+   "category": "function_word",
+   "frequency": 89,
+   "category_share": 0.9775280898876404,
+   "token_ids": {
+    "qwen": 1283,
+    "bert": 2044
+   }
+  },
+  {
+   "word": "against",
+   "category": "function_word",
+   "frequency": 35,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2348,
+    "bert": 2114
+   }
+  },
+  {
+   "word": "ago",
+   "category": "function_word",
+   "frequency": 38,
+   "category_share": 0.5789473684210527,
+   "token_ids": {
+    "qwen": 4134,
+    "bert": 3283
+   }
+  },
+  {
+   "word": "all",
+   "category": "function_word",
+   "frequency": 116,
+   "category_share": 0.9741379310344828,
+   "token_ids": {
+    "qwen": 678,
+    "bert": 2035
+   }
+  },
+  {
+   "word": "along",
+   "category": "function_word",
+   "frequency": 8,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3156,
+    "bert": 2247
+   }
+  },
+  {
+   "word": "although",
+   "category": "function_word",
+   "frequency": 27,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7892,
+    "bert": 2348
+   }
+  },
+  {
+   "word": "am",
+   "category": "function_word",
+   "frequency": 2,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1079,
+    "bert": 2572
+   }
+  },
+  {
+   "word": "amid",
+   "category": "function_word",
+   "frequency": 4,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 22617,
+    "bert": 13463
+   }
+  },
+  {
+   "word": "among",
+   "category": "function_word",
+   "frequency": 44,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4221,
+    "bert": 2426
+   }
+  },
+  {
+   "word": "an",
+   "category": "function_word",
+   "frequency": 335,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 458,
+    "bert": 2019
+   }
+  },
+  {
+   "word": "and",
+   "category": "function_word",
+   "frequency": 1555,
+   "category_share": 0.9967845659163987,
+   "token_ids": {
+    "qwen": 323,
+    "bert": 1998
+   }
+  },
+  {
+   "word": "another",
+   "category": "function_word",
+   "frequency": 48,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2441,
+    "bert": 2178
+   }
+  },
+  {
+   "word": "any",
+   "category": "function_word",
+   "frequency": 108,
+   "category_share": 0.9814814814814815,
+   "token_ids": {
+    "qwen": 894,
+    "bert": 2151
+   }
+  },
+  {
+   "word": "are",
+   "category": "function_word",
+   "frequency": 369,
+   "category_share": 0.997289972899729,
+   "token_ids": {
+    "qwen": 525,
+    "bert": 2024
+   }
+  },
+  {
+   "word": "around",
+   "category": "function_word",
+   "frequency": 30,
+   "category_share": 0.9,
+   "token_ids": {
+    "qwen": 2163,
+    "bert": 2105
+   }
+  },
+  {
+   "word": "as",
+   "category": "function_word",
+   "frequency": 415,
+   "category_share": 0.8722891566265061,
+   "token_ids": {
+    "qwen": 438,
+    "bert": 2004
+   }
+  },
+  {
+   "word": "at",
+   "category": "function_word",
+   "frequency": 430,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 518,
+    "bert": 2012
+   }
+  },
+  {
+   "word": "be",
+   "category": "function_word",
+   "frequency": 356,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 387,
+    "bert": 2022
+   }
+  },
+  {
+   "word": "because",
+   "category": "function_word",
+   "frequency": 124,
+   "category_share": 0.9838709677419355,
+   "token_ids": {
+    "qwen": 1576,
+    "bert": 2138
+   }
+  },
+  {
+   "word": "been",
+   "category": "function_word",
+   "frequency": 150,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1012,
+    "bert": 2042
+   }
+  },
+  {
+   "word": "before",
+   "category": "function_word",
+   "frequency": 50,
+   "category_share": 0.88,
+   "token_ids": {
+    "qwen": 1573,
+    "bert": 2077
+   }
+  },
+  {
+   "word": "behind",
+   "category": "function_word",
+   "frequency": 5,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4815,
+    "bert": 2369
+   }
+  },
+  {
+   "word": "being",
+   "category": "function_word",
+   "frequency": 34,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1660,
+    "bert": 2108
+   }
+  },
+  {
+   "word": "below",
+   "category": "function_word",
+   "frequency": 33,
+   "category_share": 0.9696969696969697,
+   "token_ids": {
+    "qwen": 3685,
+    "bert": 2917
+   }
+  },
+  {
+   "word": "besides",
+   "category": "function_word",
+   "frequency": 4,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 27758,
+    "bert": 4661
+   }
+  },
+  {
+   "word": "between",
+   "category": "function_word",
+   "frequency": 36,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1948,
+    "bert": 2090
+   }
+  },
+  {
+   "word": "beyond",
+   "category": "function_word",
+   "frequency": 4,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7797,
+    "bert": 3458
+   }
+  },
+  {
+   "word": "both",
+   "category": "function_word",
+   "frequency": 44,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2176,
+    "bert": 2119
+   }
+  },
+  {
+   "word": "but",
+   "category": "function_word",
+   "frequency": 309,
+   "category_share": 0.9967637540453075,
+   "token_ids": {
+    "qwen": 714,
+    "bert": 2021
+   }
+  },
+  {
+   "word": "by",
+   "category": "function_word",
+   "frequency": 440,
+   "category_share": 0.9977272727272727,
+   "token_ids": {
+    "qwen": 553,
+    "bert": 2011
+   }
+  },
+  {
+   "word": "can",
+   "category": "function_word",
+   "frequency": 95,
+   "category_share": 0.9894736842105263,
+   "token_ids": {
+    "qwen": 646,
+    "bert": 2064
+   }
+  },
+  {
+   "word": "could",
+   "category": "function_word",
+   "frequency": 121,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1410,
+    "bert": 2071
+   }
+  },
+  {
+   "word": "despite",
+   "category": "function_word",
+   "frequency": 25,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8818,
+    "bert": 2750
+   }
+  },
+  {
+   "word": "did",
+   "category": "function_word",
+   "frequency": 62,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1521,
+    "bert": 2106
+   }
+  },
+  {
+   "word": "do",
+   "category": "function_word",
+   "frequency": 89,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 653,
+    "bert": 2079
+   }
+  },
+  {
+   "word": "does",
+   "category": "function_word",
+   "frequency": 54,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1558,
+    "bert": 2515
+   }
+  },
+  {
+   "word": "down",
+   "category": "function_word",
+   "frequency": 56,
+   "category_share": 0.5892857142857143,
+   "token_ids": {
+    "qwen": 1495,
+    "bert": 2091
+   }
+  },
+  {
+   "word": "during",
+   "category": "function_word",
+   "frequency": 43,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2337,
+    "bert": 2076
+   }
+  },
+  {
+   "word": "each",
+   "category": "function_word",
+   "frequency": 46,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1817,
+    "bert": 2169
+   }
+  },
+  {
+   "word": "either",
+   "category": "function_word",
+   "frequency": 10,
+   "category_share": 0.8,
+   "token_ids": {
+    "qwen": 2987,
+    "bert": 2593
+   }
+  },
+  {
+   "word": "every",
+   "category": "function_word",
+   "frequency": 21,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1449,
+    "bert": 2296
+   }
+  },
+  {
+   "word": "except",
+   "category": "function_word",
+   "frequency": 8,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3650,
+    "bert": 3272
+   }
+  },
+  {
+   "word": "for",
+   "category": "function_word",
+   "frequency": 853,
+   "category_share": 0.9988276670574443,
+   "token_ids": {
+    "qwen": 369,
+    "bert": 2005
+   }
+  },
+  {
+   "word": "from",
+   "category": "function_word",
+   "frequency": 391,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 504,
+    "bert": 2013
+   }
+  },
+  {
+   "word": "had",
+   "category": "function_word",
+   "frequency": 165,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1030,
+    "bert": 2018
+   }
+  },
+  {
+   "word": "half",
+   "category": "function_word",
+   "frequency": 23,
+   "category_share": 0.6086956521739131,
+   "token_ids": {
+    "qwen": 4279,
+    "bert": 2431
+   }
+  },
+  {
+   "word": "has",
+   "category": "function_word",
+   "frequency": 339,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 702,
+    "bert": 2038
+   }
+  },
+  {
+   "word": "have",
+   "category": "function_word",
+   "frequency": 323,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 614,
+    "bert": 2031
+   }
+  },
+  {
+   "word": "he",
+   "category": "function_word",
+   "frequency": 303,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 566,
+    "bert": 2002
+   }
+  },
+  {
+   "word": "her",
+   "category": "function_word",
+   "frequency": 55,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1059,
+    "bert": 2014
+   }
+  },
+  {
+   "word": "herself",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 11675,
+    "bert": 2841
+   }
+  },
+  {
+   "word": "him",
+   "category": "function_word",
+   "frequency": 16,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1435,
+    "bert": 2032
+   }
+  },
+  {
+   "word": "himself",
+   "category": "function_word",
+   "frequency": 9,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5561,
+    "bert": 2370
+   }
+  },
+  {
+   "word": "his",
+   "category": "function_word",
+   "frequency": 126,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 806,
+    "bert": 2010
+   }
+  },
+  {
+   "word": "how",
+   "category": "function_word",
+   "frequency": 28,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1246,
+    "bert": 2129
+   }
+  },
+  {
+   "word": "i",
+   "category": "function_word",
+   "frequency": 113,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 600,
+    "bert": 1045
+   }
+  },
+  {
+   "word": "if",
+   "category": "function_word",
+   "frequency": 121,
+   "category_share": 0.9917355371900827,
+   "token_ids": {
+    "qwen": 421,
+    "bert": 2065
+   }
+  },
+  {
+   "word": "in",
+   "category": "function_word",
+   "frequency": 1767,
+   "category_share": 0.99830220713073,
+   "token_ids": {
+    "qwen": 304,
+    "bert": 1999
+   }
+  },
+  {
+   "word": "into",
+   "category": "function_word",
+   "frequency": 87,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1119,
+    "bert": 2046
+   }
+  },
+  {
+   "word": "is",
+   "category": "function_word",
+   "frequency": 672,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 374,
+    "bert": 2003
+   }
+  },
+  {
+   "word": "it",
+   "category": "function_word",
+   "frequency": 577,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 432,
+    "bert": 2009
+   }
+  },
+  {
+   "word": "its",
+   "category": "function_word",
+   "frequency": 343,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1181,
+    "bert": 2049
+   }
+  },
+  {
+   "word": "itself",
+   "category": "function_word",
+   "frequency": 7,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5086,
+    "bert": 2993
+   }
+  },
+  {
+   "word": "like",
+   "category": "function_word",
+   "frequency": 62,
+   "category_share": 0.7903225806451613,
+   "token_ids": {
+    "qwen": 1075,
+    "bert": 2066
+   }
+  },
+  {
+   "word": "may",
+   "category": "function_word",
+   "frequency": 70,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1231,
+    "bert": 2089
+   }
+  },
+  {
+   "word": "me",
+   "category": "function_word",
+   "frequency": 9,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 752,
+    "bert": 2033
+   }
+  },
+  {
+   "word": "might",
+   "category": "function_word",
+   "frequency": 44,
+   "category_share": 0.9772727272727273,
+   "token_ids": {
+    "qwen": 2578,
+    "bert": 2453
+   }
+  },
+  {
+   "word": "must",
+   "category": "function_word",
+   "frequency": 19,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1969,
+    "bert": 2442
+   }
+  },
+  {
+   "word": "my",
+   "category": "function_word",
+   "frequency": 20,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 847,
+    "bert": 2026
+   }
+  },
+  {
+   "word": "near",
+   "category": "function_word",
+   "frequency": 9,
+   "category_share": 0.8888888888888888,
+   "token_ids": {
+    "qwen": 3143,
+    "bert": 2379
+   }
+  },
+  {
+   "word": "neither",
+   "category": "function_word",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 13866,
+    "bert": 4445
+   }
+  },
+  {
+   "word": "no",
+   "category": "function_word",
+   "frequency": 98,
+   "category_share": 0.8775510204081632,
+   "token_ids": {
+    "qwen": 902,
+    "bert": 2053
+   }
+  },
+  {
+   "word": "nor",
+   "category": "function_word",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6329,
+    "bert": 4496
+   }
+  },
+  {
+   "word": "notwithstanding",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 71565,
+    "bert": 26206
+   }
+  },
+  {
+   "word": "of",
+   "category": "function_word",
+   "frequency": 2325,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 315,
+    "bert": 1997
+   }
+  },
+  {
+   "word": "off",
+   "category": "function_word",
+   "frequency": 45,
+   "category_share": 0.8666666666666667,
+   "token_ids": {
+    "qwen": 1007,
+    "bert": 2125
+   }
+  },
+  {
+   "word": "on",
+   "category": "function_word",
+   "frequency": 507,
+   "category_share": 0.9980276134122288,
+   "token_ids": {
+    "qwen": 389,
+    "bert": 2006
+   }
+  },
+  {
+   "word": "onto",
+   "category": "function_word",
+   "frequency": 2,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8630,
+    "bert": 3031
+   }
+  },
+  {
+   "word": "or",
+   "category": "function_word",
+   "frequency": 294,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 476,
+    "bert": 2030
+   }
+  },
+  {
+   "word": "ought",
+   "category": "function_word",
+   "frequency": 3,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 21776,
+    "bert": 11276
+   }
+  },
+  {
+   "word": "our",
+   "category": "function_word",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1039,
+    "bert": 2256
+   }
+  },
+  {
+   "word": "out",
+   "category": "function_word",
+   "frequency": 78,
+   "category_share": 0.9615384615384616,
+   "token_ids": {
+    "qwen": 700,
+    "bert": 2041
+   }
+  },
+  {
+   "word": "over",
+   "category": "function_word",
+   "frequency": 85,
+   "category_share": 0.9647058823529412,
+   "token_ids": {
+    "qwen": 916,
+    "bert": 2058
+   }
+  },
+  {
+   "word": "per",
+   "category": "function_word",
+   "frequency": 9,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 817,
+    "bert": 2566
+   }
+  },
+  {
+   "word": "plus",
+   "category": "function_word",
+   "frequency": 5,
+   "category_share": 0.6,
+   "token_ids": {
+    "qwen": 5519,
+    "bert": 4606
+   }
+  },
+  {
+   "word": "shall",
+   "category": "function_word",
+   "frequency": 7,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4880,
+    "bert": 4618
+   }
+  },
+  {
+   "word": "she",
+   "category": "function_word",
+   "frequency": 98,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1340,
+    "bert": 2016
+   }
+  },
+  {
+   "word": "should",
+   "category": "function_word",
+   "frequency": 38,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1265,
+    "bert": 2323
+   }
+  },
+  {
+   "word": "since",
+   "category": "function_word",
+   "frequency": 56,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2474,
+    "bert": 2144
+   }
+  },
+  {
+   "word": "some",
+   "category": "function_word",
+   "frequency": 146,
+   "category_share": 0.9863013698630136,
+   "token_ids": {
+    "qwen": 1045,
+    "bert": 2070
+   }
+  },
+  {
+   "word": "than",
+   "category": "function_word",
+   "frequency": 181,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1091,
+    "bert": 2084
+   }
+  },
+  {
+   "word": "that",
+   "category": "function_word",
+   "frequency": 848,
+   "category_share": 0.9964622641509434,
+   "token_ids": {
+    "qwen": 429,
+    "bert": 2008
+   }
+  },
+  {
+   "word": "the",
+   "category": "function_word",
+   "frequency": 4759,
+   "category_share": 0.9987392309308678,
+   "token_ids": {
+    "qwen": 279,
+    "bert": 1996
+   }
+  },
+  {
+   "word": "their",
+   "category": "function_word",
+   "frequency": 184,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 862,
+    "bert": 2037
+   }
+  },
+  {
+   "word": "them",
+   "category": "function_word",
+   "frequency": 70,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1105,
+    "bert": 2068
+   }
+  },
+  {
+   "word": "themselves",
+   "category": "function_word",
+   "frequency": 12,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5577,
+    "bert": 3209
+   }
+  },
+  {
+   "word": "there",
+   "category": "function_word",
+   "frequency": 100,
+   "category_share": 0.88,
+   "token_ids": {
+    "qwen": 1052,
+    "bert": 2045
+   }
+  },
+  {
+   "word": "these",
+   "category": "function_word",
+   "frequency": 77,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1493,
+    "bert": 2122
+   }
+  },
+  {
+   "word": "they",
+   "category": "function_word",
+   "frequency": 263,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 807,
+    "bert": 2027
+   }
+  },
+  {
+   "word": "this",
+   "category": "function_word",
+   "frequency": 224,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 419,
+    "bert": 2023
+   }
+  },
+  {
+   "word": "those",
+   "category": "function_word",
+   "frequency": 61,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1846,
+    "bert": 2216
+   }
+  },
+  {
+   "word": "though",
+   "category": "function_word",
+   "frequency": 30,
+   "category_share": 0.8666666666666667,
+   "token_ids": {
+    "qwen": 3498,
+    "bert": 2295
+   }
+  },
+  {
+   "word": "through",
+   "category": "function_word",
+   "frequency": 42,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1526,
+    "bert": 2083
+   }
+  },
+  {
+   "word": "throughout",
+   "category": "function_word",
+   "frequency": 5,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6814,
+    "bert": 2802
+   }
+  },
+  {
+   "word": "till",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 11956,
+    "bert": 6229
+   }
+  },
+  {
+   "word": "to",
+   "category": "function_word",
+   "frequency": 2182,
+   "category_share": 0.9995417048579285,
+   "token_ids": {
+    "qwen": 311,
+    "bert": 2000
+   }
+  },
+  {
+   "word": "toward",
+   "category": "function_word",
+   "frequency": 5,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8841,
+    "bert": 2646
+   }
+  },
+  {
+   "word": "under",
+   "category": "function_word",
+   "frequency": 74,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1212,
+    "bert": 2104
+   }
+  },
+  {
+   "word": "unless",
+   "category": "function_word",
+   "frequency": 10,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 7241,
+    "bert": 4983
+   }
+  },
+  {
+   "word": "unlike",
+   "category": "function_word",
+   "frequency": 6,
+   "category_share": 0.8333333333333334,
+   "token_ids": {
+    "qwen": 19836,
+    "bert": 4406
+   }
+  },
+  {
+   "word": "until",
+   "category": "function_word",
+   "frequency": 36,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3080,
+    "bert": 2127
+   }
+  },
+  {
+   "word": "up",
+   "category": "function_word",
+   "frequency": 153,
+   "category_share": 0.6797385620915033,
+   "token_ids": {
+    "qwen": 705,
+    "bert": 2039
+   }
+  },
+  {
+   "word": "upon",
+   "category": "function_word",
+   "frequency": 8,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 5193,
+    "bert": 2588
+   }
+  },
+  {
+   "word": "us",
+   "category": "function_word",
+   "frequency": 26,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 601,
+    "bert": 2149
+   }
+  },
+  {
+   "word": "versus",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 19041,
+    "bert": 6431
+   }
+  },
+  {
+   "word": "via",
+   "category": "function_word",
+   "frequency": 15,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 4566,
+    "bert": 3081
+   }
+  },
+  {
+   "word": "was",
+   "category": "function_word",
+   "frequency": 367,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 572,
+    "bert": 2001
+   }
+  },
+  {
+   "word": "we",
+   "category": "function_word",
+   "frequency": 95,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 582,
+    "bert": 2057
+   }
+  },
+  {
+   "word": "were",
+   "category": "function_word",
+   "frequency": 197,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1033,
+    "bert": 2020
+   }
+  },
+  {
+   "word": "what",
+   "category": "function_word",
+   "frequency": 71,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1128,
+    "bert": 2054
+   }
+  },
+  {
+   "word": "when",
+   "category": "function_word",
+   "frequency": 98,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 979,
+    "bert": 2043
+   }
+  },
+  {
+   "word": "whenever",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 15356,
+    "bert": 7188
+   }
+  },
+  {
+   "word": "where",
+   "category": "function_word",
+   "frequency": 36,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1380,
+    "bert": 2073
+   }
+  },
+  {
+   "word": "whereas",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 19853,
+    "bert": 6168
+   }
+  },
+  {
+   "word": "whereby",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 47901,
+    "bert": 13557
+   }
+  },
+  {
+   "word": "whether",
+   "category": "function_word",
+   "frequency": 29,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3425,
+    "bert": 3251
+   }
+  },
+  {
+   "word": "which",
+   "category": "function_word",
+   "frequency": 225,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 892,
+    "bert": 2029
+   }
+  },
+  {
+   "word": "whichever",
+   "category": "function_word",
+   "frequency": 1,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 53684,
+    "bert": 29221
+   }
+  },
+  {
+   "word": "while",
+   "category": "function_word",
+   "frequency": 74,
+   "category_share": 0.972972972972973,
+   "token_ids": {
+    "qwen": 1393,
+    "bert": 2096
+   }
+  },
+  {
+   "word": "who",
+   "category": "function_word",
+   "frequency": 167,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 879,
+    "bert": 2040
+   }
+  },
+  {
+   "word": "whom",
+   "category": "function_word",
+   "frequency": 6,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 8711,
+    "bert": 3183
+   }
+  },
+  {
+   "word": "whose",
+   "category": "function_word",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6693,
+    "bert": 3005
+   }
+  },
+  {
+   "word": "why",
+   "category": "function_word",
+   "frequency": 14,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 3170,
+    "bert": 2339
+   }
+  },
+  {
+   "word": "will",
+   "category": "function_word",
+   "frequency": 281,
+   "category_share": 0.99644128113879,
+   "token_ids": {
+    "qwen": 686,
+    "bert": 2097
+   }
+  },
+  {
+   "word": "with",
+   "category": "function_word",
+   "frequency": 398,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 448,
+    "bert": 2007
+   }
+  },
+  {
+   "word": "within",
+   "category": "function_word",
+   "frequency": 13,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2878,
+    "bert": 2306
+   }
+  },
+  {
+   "word": "without",
+   "category": "function_word",
+   "frequency": 35,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 2041,
+    "bert": 2302
+   }
+  },
+  {
+   "word": "would",
+   "category": "function_word",
+   "frequency": 209,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 1035,
+    "bert": 2052
+   }
+  },
+  {
+   "word": "you",
+   "category": "function_word",
+   "frequency": 94,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 498,
+    "bert": 2017
+   }
+  },
+  {
+   "word": "your",
+   "category": "function_word",
+   "frequency": 30,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 697,
+    "bert": 2115
+   }
+  },
+  {
+   "word": "yourself",
+   "category": "function_word",
+   "frequency": 3,
+   "category_share": 1.0,
+   "token_ids": {
+    "qwen": 6133,
+    "bert": 4426
+   }
+  }
+ ]
+}

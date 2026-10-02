@@ -1,10 +1,25 @@
 import React from 'react';
 import { Sliders } from 'lucide-react';
+import { Algorithm, ColorLayer, ModelKey } from '../types';
+import type { PerfSample } from './SpaceVisualizer';
+import { Dropdown } from './Dropdown';
+import { Tex } from './Tex';
+
+const K_OPTIONS = [5, 10, 15, 20];
 
 interface SidebarLeftProps {
   modelName: string;
-  projectionType: 'umap' | 'tsne' | 'pca' | 'isomap';
-  onProjectionTypeChange: (type: 'umap' | 'tsne' | 'pca' | 'isomap') => void;
+  modelKey: ModelKey;
+  onModelKeyChange: (key: ModelKey) => void;
+  projectionType: Algorithm;
+  onProjectionTypeChange: (type: Algorithm) => void;
+  colorLayer: ColorLayer;
+  onColorLayerChange: (layer: ColorLayer) => void;
+  metricK: number;
+  onMetricKChange: (k: number) => void;
+  probeEnabled: boolean;
+  onProbeEnabledChange: (val: boolean) => void;
+  perf: PerfSample | null;
   embeddingDim: number;
   totalTokens: number;
   fps: number;
@@ -35,8 +50,17 @@ interface SidebarLeftProps {
 
 export const SidebarLeft: React.FC<SidebarLeftProps> = ({
   modelName,
+  modelKey,
+  onModelKeyChange,
   projectionType,
   onProjectionTypeChange,
+  colorLayer,
+  onColorLayerChange,
+  metricK,
+  onMetricKChange,
+  probeEnabled,
+  onProbeEnabledChange,
+  perf,
   embeddingDim,
   totalTokens,
   fps,
@@ -65,7 +89,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
   status,
 }) => {
   return (
-    <aside className="w-[280px] h-full border-r border-[#111111] bg-[#fcfcfc] flex flex-col p-[18px] overflow-y-auto shrink-0 select-none font-sans text-[#111111]">
+    <aside className="w-[320px] h-full border-r border-[#111111] bg-[#fcfcfc] flex flex-col p-[18px] overflow-y-auto shrink-0 select-none font-sans text-[#111111]">
       <div className="flex flex-col gap-[14px]">
         {/* Manifold Properties Section */}
         <div>
@@ -106,7 +130,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
             <div className="text-[13px] flex justify-between items-center">
               <div className="flex items-center gap-1.5 font-serif">
                 <span>{"$\\mathcal{V}_c$"}</span>
-                <span className="text-[#111111]">(Vocabulary)</span>
+                <span className="text-[#111111]">(Lexical items N)</span>
               </div>
               <span className="font-times-numbers text-[14px] font-semibold text-black">{totalTokens}</span>
             </div>
@@ -115,6 +139,20 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
               <span className="font-serif">Refresh Rate</span>
               <span className="font-times-numbers text-[14px] font-semibold text-black">{fps > 0 ? fps.toFixed(1) : '—'}</span>
             </div>
+
+            {/* Engineering profiling (plan 8.4) — not a scientific result */}
+            {[
+              ['Frame Time', perf ? `${perf.frameTimeMs.toFixed(2)} ms` : '—'],
+              ['Reticle Loop', perf ? `${perf.selectionLoopMs.toFixed(3)} ms` : '—'],
+              ['Draw Calls', perf ? String(perf.drawCalls) : '—'],
+              ['Geometries', perf ? String(perf.geometries) : '—'],
+              ['Rendered Labels', perf ? String(perf.visibleLabels) : '—'],
+            ].map(([label, value]) => (
+              <div key={label} className="text-[13px] flex justify-between items-center">
+                <span className="font-serif">{label}</span>
+                <span className="font-times-numbers text-[14px] font-semibold text-black">{value}</span>
+              </div>
+            ))}
 
             <div className="text-[13px] flex justify-between items-center">
               <div className="flex items-center gap-1.5 font-serif">
@@ -142,53 +180,89 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
           </div>
         </div>
 
-        {/* Engine and Filter Section */}
-        <div className="pt-2 border-t border-dashed border-[#cccccc] flex gap-2 w-full">
-          {/* Manifold Projection Engine */}
-          <div className="flex-1 min-w-0">
-            <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5 truncate" title="Manifold Projection Engine">
-              Projection Engine:
-            </span>
-            <div className="relative w-full">
-              <select
-                value={projectionType}
-                onChange={(e) => onProjectionTypeChange(e.target.value as any)}
-                className="w-full appearance-none bg-white border border-[#111111] font-serif text-[14px] font-semibold text-black pl-2 pr-8 py-1.5 outline-none cursor-pointer hover:bg-slate-50 rounded-sm transition-colors text-ellipsis"
-              >
-                <option value="umap">UMAP</option>
-                <option value="tsne">t-SNE</option>
-                <option value="pca">PCA</option>
-                <option value="isomap">Isomap</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[#111111]">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
+        {/* Experiment selection: model x algorithm, colour layer and K */}
+        <div className="pt-2 border-t border-dashed border-[#cccccc] grid grid-cols-2 gap-2 w-full">
+          <div className="min-w-0">
+            <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5">Model:</span>
+            <Dropdown
+              ariaLabel="Model"
+              value={modelKey}
+              onChange={onModelKeyChange}
+              options={[
+                { value: 'qwen', label: 'Qwen 2.5 0.5B-Instruct', text: 'Qwen 2.5 0.5B-Instruct' },
+                { value: 'gemma', label: 'Gemma 2B', text: 'Gemma 2B' },
+                { value: 'bert', label: 'BERT base uncased', text: 'BERT base uncased' },
+              ]}
+            />
           </div>
-
-          {/* Manifold Filter Section */}
-          <div className="flex-1 min-w-0">
-            <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5 truncate" title="Manifold Quadrant Filter">
-              Quadrant Filter:
+          <div className="min-w-0">
+            <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5">Projection:</span>
+            <Dropdown
+              ariaLabel="Projection"
+              align="right"
+              value={projectionType}
+              onChange={onProjectionTypeChange}
+              options={[
+                { value: 'umap', label: 'UMAP', text: 'UMAP' },
+                { value: 'tsne', label: 't-SNE', text: 't-SNE' },
+                { value: 'pca', label: 'PCA (centered)', text: 'PCA (centered)' },
+                { value: 'isomap', label: 'Isomap', text: 'Isomap' },
+                { value: 'pca_nc', label: 'PCA-NC (ablation)', text: 'PCA-NC (ablation)' },
+              ]}
+            />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5">Colour Layer:</span>
+            <Dropdown
+              ariaLabel="Colour layer"
+              value={colorLayer}
+              onChange={onColorLayerChange}
+              options={[
+                { value: 'category', label: 'Reference partition', text: 'Reference partition' },
+                {
+                  value: 'heat',
+                  label: <>Thermal <Tex tex="B_{NX,i}\ (K)" /></>,
+                  text: 'Thermal camera B_NX,i(K)',
+                },
+              ]}
+            />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5">
+              Neighbourhood <Tex tex="K" />:
             </span>
-            <div className="relative w-full">
-              <select
-                value={currentFilter}
-                onChange={(e) => onFilterChange(e.target.value as any)}
-                className="w-full appearance-none bg-white border border-[#111111] font-serif text-[14px] font-semibold text-black pl-2 pr-8 py-1.5 outline-none cursor-pointer hover:bg-slate-50 rounded-sm transition-colors text-ellipsis"
-              >
-                <option value="all">ℝ³</option>
-                <option value="positive">ℝ³₊</option>
-                <option value="negative">ℝ³₋</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[#111111]">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
+            <Dropdown
+              ariaLabel="Neighbourhood K"
+              align="right"
+              value={metricK}
+              onChange={onMetricKChange}
+              options={K_OPTIONS.map((k) => ({
+                value: k,
+                label: <><Tex tex={`K = ${k}`} />{k === 10 ? ' (main)' : ''}</>,
+                text: `K = ${k}${k === 10 ? ' (main)' : ''}`,
+              }))}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onProbeEnabledChange(!probeEnabled)}
+            className={`col-span-2 flex items-center justify-center gap-1.5 bg-white border rounded-sm py-2 px-1 cursor-pointer text-[10px] border-[#111111] ${probeEnabled ? 'bg-[#111111]/15 font-bold' : 'hover:bg-slate-50'}`}
+          >
+            <span className={`w-2 h-2 rounded-full ${probeEnabled ? 'bg-[#16a34a]' : 'bg-slate-300'}`} />
+            Neighbourhood probing on reticle target
+          </button>
+          <div className="col-span-2 min-w-0">
+            <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5">Quadrant Filter:</span>
+            <Dropdown
+              ariaLabel="Quadrant filter"
+              value={currentFilter}
+              onChange={onFilterChange}
+              options={[
+                { value: 'all', label: <Tex tex="\mathbb{R}^3" />, text: 'R³ (all octants)' },
+                { value: 'positive', label: <Tex tex="\mathbb{R}^3_{+}" />, text: 'R³₊ (positive octant)' },
+                { value: 'negative', label: <Tex tex="\mathbb{R}^3_{-}" />, text: 'R³₋ (negative octant)' },
+              ]}
+            />
           </div>
         </div>
 

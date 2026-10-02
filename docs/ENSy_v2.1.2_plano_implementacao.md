@@ -3,7 +3,7 @@
 
 **Instrumento de pesquisa do TCC — UFMA, 2026**
 
-**Status:** v2.1.2 — corrigida a convenção de sinal de $B_{NX}(K)$ contra a fonte primária (LEE; VERLEYSEN, 2009), que havia sido invertida por engano na v2.1.1. Demais itens da v2.1.1 permanecem válidos. Em aberto: execução real do pipeline de dataset e validação empírica de $B_{NX,i}(K)$ com casos sintéticos.
+**Status:** v2.1.3 — implementação de referência em `ensy/` e validação em código (`tests/test_coranking.py`). A convenção numérica de $B_{NX}(K)$ da v2.1.2 foi **confirmada empiricamente** (âncora de sinal $B_{TC}=M_C-M_T$); os Casos B e C da Seção 9.2 estavam com sinais trocados e foram corrigidos; o protocolo de extração (Seção 4) e o de dataset (Seção 5) ganharam regras operacionais que faltavam. Registro completo da revisão: `docs/ENSy_v2.1.3_revisao_cientifica.md`. Em aberto: acesso ao Gemma (modelo gated) para congelar o dataset final.
 
 **Escopo:** ferramenta de laboratório local (browser + FastAPI local), sem distribuição, sem desktop shell.
 
@@ -65,6 +65,16 @@ O ENSy é o instrumento que produz a evidência do TCC. Ele não é o objeto de 
 - **dtype:** float32
 - **Normalização:** L2, aplicada após extração, antes de qualquer métrica
 
+**Regras operacionais adicionadas na v2.1.3** (implementadas em `ensy/models.py`):
+
+- **Forma de superfície.** Tokenizers BPE em bytes (Qwen) e SentencePiece (Gemma) distinguem a forma interna/início de texto (`run`, id 6108 no Qwen) da forma inicial de palavra em texto corrido (`Ġrun`, id 1598) — são **linhas diferentes** da matriz. Adotado: `" " + palavra` para Qwen/Gemma; a palavra sem prefixo para o WordPiece (BERT), que não tem essa distinção para palavras inteiras. Sem essa regra, o critério single-token é ambíguo.
+- **Token desconhecido.** No BERT, uma palavra fora do vocabulário pode virar o único id `[UNK]` — o que passaria no critério "exatamente um ID". Excluem-se explicitamente `unk` e tokens especiais, e exige-se que o id decodifique de volta para a própria palavra.
+- **Tokens especiais:** `add_special_tokens=False` (BERT adicionaria `[CLS]/[SEP]`; Gemma, `<bos>`).
+- **Linha válida:** a matriz do Qwen tem 151.936 linhas para 151.665 tokens (linhas de preenchimento); o id precisa ser $< $ número de linhas.
+- **Identidade exata do modelo.** "Gemma 2B" é ambíguo: `google/gemma-2b` (Gemma 1, $d=2048$) ou `google/gemma-2-2b` (Gemma 2, $d=2304$). Padrão adotado: `google/gemma-2b` (configurável por `ENSY_GEMMA_ID`). O SHA da revisão de cada checkpoint é registrado no dataset e nos resultados.
+- **Leitura da matriz:** o tensor é lido diretamente do shard safetensors; é idêntico a `get_input_embeddings().weight` (verificado para Qwen e BERT em `tests/test_models.py`).
+- **Observações para a redação:** Gemma multiplica os embeddings por $\sqrt{d}$ no forward — irrelevante após a normalização L2. Os três modelos usam embeddings de entrada **amarrados** (tied) à camada de saída; a matriz estudada é, portanto, também a do *LM/MLM head*.
+
 **Nota de precisão sobre "token único":** "a palavra é representada por um único token" não implica "a palavra possui um token lexical independente" — o mesmo string pode ser um único token num tokenizer e uma sequência de subwords em outro. O critério de inclusão acima é operacionalmente inequívoco (testável por código, não por interpretação).
 
 Hidden states contextualizados ficam como extensão futura (fora do experimento principal do TCC).
@@ -110,6 +120,17 @@ balanceada entre categorias)
 **Critério de aceitação:** "o dataset deve maximizar itens no vocabulário comum aos três modelos, mantendo distribuição equilibrada entre categorias de referência" — não um número fixo. Se resultar $N=137$, o TCC reporta $N=137$; não infla artificialmente para 150.
 
 O dataset final é registrado como arquivo JSON versionado no repositório (reprodutibilidade).
+
+**Regras operacionais adicionadas na v2.1.3** (implementadas em `ensy/dataset.py`, testadas em `tests/test_dataset.py`):
+
+- **Fonte disponível:** o PTB completo é licenciado pela LDC. A implementação usa a amostra gratuita do NLTK (WSJ, 199 arquivos, 3.914 sentenças, 100.676 tokens). Se o PTB completo for obtido, basta trocar a fonte; o hash do dataset muda.
+- **Mapeamento de tags:** `NN, NNS` → `content_noun`; `VB, VBD, VBG, VBN, VBP, VBZ` → `content_verb`; `DT, PDT, IN, CC, TO, MD, PRP, PRP$, WDT, WP, WP$, WRB, EX, RP` → `function_word`. Adjetivos, advérbios, numerais etc. ficam fora da partição.
+- **Auxiliares:** formas de *be/have/do* (`be am is are was were been being have has had do does did`) etiquetadas `VB*` contam como `function_word` (lista fechada fixa), para não contaminar `content_verb`.
+- **Nomes próprios** (`NNP/NNPS`) são excluídos: a caixa baixa exigida pelo BERT-uncased os fundiria com palavras comuns.
+- **Artefatos de tokenização do PTB:** radicais clíticos (`ca`, `wo`, `ai` de `ca n't`, `wo n't`, `ai n't`) e formas funcionais internas a nomes estrangeiros (`de`, `la`, `le`, `del`) são excluídos por regra fixa, registrada no JSON.
+- **Desambiguação:** maioria sobre **todas** as ocorrências (inclusive as de fora da partição); empate → exclusão; maioria fora da partição → exclusão.
+- **Balanceamento:** $n$ por categoria = tamanho da menor categoria; dentro de cada categoria ficam as formas mais frequentes (empates em ordem alfabética).
+- **Resultado provisório (Qwen + BERT, sem Gemma):** 7.295 tipos → 5.799 após desambiguação → single-token: 2.686 nomes, 1.712 verbos, **146 palavras funcionais** → $N = 438$. As palavras funcionais são o gargalo. O $N$ final (com Gemma) será $\le 438$, bem acima dos 150–200 assumidos na Seção 8 — ver revisão da justificativa de perplexidade na Seção 7.
 
 **Sequência operacional completa (21 passos, executar antes do pipeline de métricas; engenharia de renderização/infraestrutura pode avançar em paralelo):**
 
@@ -161,6 +182,15 @@ Nenhum algoritmo entra em produção sem esta tabela preenchida e travada antes 
 | UMAP | random_state | 42 |
 | Isomap | n_neighbors | 15 — escala de vizinhança fixa adotada para comparabilidade aproximada com o UMAP, não valor canônico do algoritmo |
 | Isomap | metric | cosine |
+
+**Complementos da v2.1.3** (valores implícitos agora explícitos em `ensy/projection.py`, para não depender dos defaults da versão instalada):
+
+- `n_components = 3` para os quatro algoritmos.
+- t-SNE: `init="pca"`, `learning_rate="auto"`, `max_iter=1000`, `early_exaggeration=12`, `method="barnes_hut"`, `angle=0.5`.
+- PCA: SVD completo de $X_c$; sinal de cada componente fixado (maior carga positiva), pois o SVD tem sinal arbitrário.
+- Isomap: o número de componentes conexas do grafo $k$-NN é medido e registrado; o scikit-learn 1.6 liga componentes desconexas automaticamente (com aviso), o que deve ser reportado quando ocorrer. O documento de escopo do TCC prevê "filtragem prévia de componentes desconexos" — decidir qual das duas políticas vale.
+- **Decisão pendente (perplexidade):** a justificativa "pequeno tamanho amostral" para perplexidade 5 foi escrita para $N\approx150$. Com $N\approx440$, perplexidade 5 é um viés fortemente local (o default da biblioteca é 30). O valor continua travado, mas a justificativa precisa ser reescrita — ou o valor revisto — **antes** da coleta.
+- Após a normalização L2, os postos por cosseno e por distância euclidiana coincidem (testado). A matriz $Q$ é, portanto, a mesma qualquer que seja a escolha entre as duas métricas em alta dimensão.
 
 Para algoritmos estocásticos (t-SNE, UMAP): seed fixo garante reprodutibilidade do resultado reportado, mas não caracteriza estabilidade. Se houver tempo, rodar com múltiplos seeds como análise de sensibilidade separada — não como parte do experimento principal.
 
@@ -249,19 +279,26 @@ $$\boxed{B_{NX}(K) = U_X(K) - U_N(K)}$$
 
 $$B_{NX}(K) = U_X(K) - U_N(K)$$
 
-- $B_{NX}(K) > 0$: comportamento **intrusivo** (crowding — ex.: t-SNE em áreas esparsas)
-- $B_{NX}(K) < 0$: comportamento **extrusivo** (tearing — ex.: Isomap sob colapso de componentes)
+- $B_{NX}(K) > 0$: comportamento **intrusivo** (crowding — vizinhos falsos aproximados)
+- $B_{NX}(K) < 0$: comportamento **extrusivo** (tearing — vizinhos genuínos afastados)
+
+(v2.1.3: removidos os exemplos "t-SNE em áreas esparsas" e "Isomap sob colapso" — eram expectativas não verificadas e antecipavam o resultado do experimento.)
 - $B_{NX}(K) \approx 0$: comportamento aproximadamente equilibrado
 
 Esta é a fórmula do artigo original, sem intermediação de uma implementação de terceiros. Qualquer implementação de referência (biblioteca R, Python etc.) usada futuramente para validação cruzada deve ser conferida contra esta definição — não o contrário.
 
-**Validação obrigatória antes de codificar a câmera térmica**, com casos sintéticos:
+**Nota de fonte (v2.1.3).** A convenção deve ser registrada **pelos blocos**, não só pelos nomes: $B_{NX}(K) = \frac{1}{KN}\big(\sum_{UT_K} q_{kl} - \sum_{LT_K} q_{kl}\big)$, com linhas = posto em alta dimensão. O precursor (LEE; VERLEYSEN, 2008, AISTATS, Eq. 11 e 14) chega ao **mesmo número** escrevendo $U_N$ sobre $UT_K$ e $B_{NX}=U_N-U_X$ — embora o próprio texto desse artigo situe as mild K-intrusions em $LT_K$. A "inversão" entre v2.1.1 e v2.1.2 é, muito provavelmente, uma questão de rótulo, não de valor. O mesmo artigo afirma ainda que $B_{NX} = W^{0,0}_N - W^{0,0}_X$, o que tem o sinal **oposto** ao de suas Eqs. 11+14 (erro da fonte). Por isso o sinal foi ancorado empiricamente: numa esfera esmagada por projeção ortográfica (mapa intrusivo clássico, $B_{TC}=M_C-M_T>0$), $\sum_{UT_K} \gg \sum_{LT_K}$ e $B_{NX}>0$; numa esfera rasgada (desenrolada), ambos são negativos (`tests/test_coranking.py::test_sign_anchor_*`). As Eq. 22–23 / p. 1434–1435 do artigo de 2009 citadas acima não puderam ser conferidas diretamente (servidor da UCLouvain inacessível durante a revisão).
 
-1. **Caso A — identidade:** $r_{ij} = \hat r_{ij}$ para todos os pares. Resultado esperado: $B_{NX}(K) \approx 0$.
-2. **Caso B — promoção intrusiva:** pares construídos com $\hat r_{ij} < r_{ij} \le K$ (mild K-intrusion, aumenta $U_N$). Resultado esperado: $B_{NX}(K) < 0$ (mais mild intrusions relativas a extrusions).
-3. **Caso C — degradação extrusiva:** pares construídos com $r_{ij} < \hat r_{ij} \le K$ (mild K-extrusion, aumenta $U_X$). Resultado esperado: $B_{NX}(K) > 0$.
+**Validação obrigatória antes de codificar a câmera térmica**, com casos sintéticos (corrigidos na v2.1.3 — implementados e aprovados):
 
-**Nota importante sobre os testes:** os casos sintéticos devem ser construídos por **permutação controlada de ranks**, não por deslocamento geométrico de pontos — um deslocamento geométrico pode produzir K-intrusões severas em vez de leves, que não contribuem para $U_N$/$U_X$ da forma esperada. Os testes B e C acima já refletem essa correção (permutação direta de rank, não posição espacial).
+1. **Caso A — identidade:** $r_{ij} = \hat r_{ij}$ para todos os pares. Resultado: $B_{NX}(K) = 0$, $M_T=M_C=Q_{NX}=1$.
+2. **Caso B — promoção (evento intrusivo):** num ponto $i$, o item de posto $m \le K$ é promovido ao posto 1; os itens de postos $1..m-1$ descem uma posição. Isso gera **1** mild K-intrusion ($LT_K$) e **$m-1$** mild K-extrusions ($UT_K$). Resultado: $B_{NX,i}(K) = (m-2)/K > 0$ e $B_{NX}(K)>0$ — intrusivo.
+3. **Caso C — rebaixamento (evento extrusivo):** o item de posto 1 desce ao posto $m \le K$. Gera 1 mild extrusion e $m-1$ mild intrusions. Resultado: $B_{NX,i}(K) = -(m-2)/K < 0$ — extrusivo.
+4. **Aritmética por elemento:** uma troca simples de dois postos dentro de $K$ produz exatamente uma entrada em $LT_K$ e uma em $UT_K$: $U_N=U_X=1/(KN)$, $B_{NX}=0$.
+
+**Correção da v2.1.3:** a v2.1.2 descrevia o Caso B como "promoção intrusiva" com resultado esperado $B_{NX}<0$, e o Caso C com $B_{NX}>0$ — o que contradiz a própria regra "$B_{NX}>0$ = intrusivo". Além disso, sob permutação é impossível criar uma mild intrusion isolada: toda promoção desloca outros itens. Os casos acima substituem os anteriores.
+
+**Nota importante sobre os testes:** os casos sintéticos devem ser construídos por **permutação controlada de ranks**, não por deslocamento geométrico de pontos — um deslocamento geométrico pode produzir K-intrusões severas em vez de leves. Os casos B e C acima usam permutação direta de rank.
 
 ### 9.3 Preservação Geral $Q_{NX}(K)$
 
@@ -295,17 +332,19 @@ $$\left| B_{NX}(K) - \frac{1}{N}\sum_{i=1}^N B_{NX,i}(K) \right| < \epsilon$$
 
 para todos os $K$ testados. Se esse teste passar, há garantia de que a câmera térmica é uma decomposição local matematicamente consistente do $B_{NX}$ global, e não uma métrica inventada separadamente.
 
-**Intervalo do escore local:** com $B_{NX,i}(K) = (U_{X,i}-U_{N,i})/K$, tem-se aproximadamente $-1 \le B_{NX,i}(K) \le 1$. Isso permite uma escala bipolar normalizada e **global e fixa** em $[-1,1]$ para a câmera térmica — não normalizada dinamicamente por frame ou por projeção. Caso contrário, dois algoritmos poderiam ter o mesmo valor local e receber cores diferentes dependendo da distribuição dos demais pontos naquele frame específico.
+**Intervalo do escore local:** com $U_{N,i}$ e $U_{X,i}$ já normalizados por $K$, o limite é exato: $|B_{NX,i}(K)| \le (K-1)/K < 1$ (dentro do bloco $K\times K$ de uma linha há no máximo $K-1$ itens rebaixados ou promovidos). A escala fixa $[-1,1]$ continua válida. Isso permite uma escala bipolar normalizada e **global e fixa** em $[-1,1]$ para a câmera térmica — não normalizada dinamicamente por frame ou por projeção. Caso contrário, dois algoritmos poderiam ter o mesmo valor local e receber cores diferentes dependendo da distribuição dos demais pontos naquele frame específico.
 
 **Validação obrigatória:** os mesmos três casos sintéticos da Seção 9.2, agora ponto-a-ponto (ex.: no Caso C, os pontos com pares artificialmente afastados em rank devem mostrar $B_{NX,i}>0$ enquanto os demais permanecem próximos de zero).
 
-**Precisão semântica para a UI/documentação:** a câmera térmica não mostra "quanto este token foi distorcido" — mostra "qual é a contribuição líquida deste token para o comportamento intrusivo/extrusivo, segundo as mild intrusions/extrusions em $K$". Um ponto pode sofrer muitas K-intrusões severas e ainda assim ter $B_{NX,i}(K) \approx 0$, porque intrusões severas não entram diretamente nesta estatística local (elas se manifestam indiretamente via $U_{X,i}$, pela mesma relação estrutural da Seção 9.2). Nomenclatura recomendada na UI: **"Câmera térmica — contribuição local para $B_{NX}(K)$"**, não "distorção local".
+**Precisão semântica para a UI/documentação:** a câmera térmica não mostra "quanto este token foi distorcido" — mostra "qual é a contribuição líquida deste token para o comportamento intrusivo/extrusivo, segundo as mild intrusions/extrusions em $K$". Intrusões severas não entram diretamente nesta estatística local; elas se manifestam indiretamente via $U_{X,i}$, e a intensidade depende do posto em que o intruso aterrissa: um intruso no posto 1 rebaixa todos os $K-1$ vizinhos genuínos restantes ($U_{X,i}=(K-1)/K$, verificado em `test_hard_intrusion_shows_up_as_mild_extrusions`), enquanto um intruso no posto $K$ não altera $U_{X,i}$. Por isso um ponto com várias K-intrusões severas pode, sim, ter $B_{NX,i}(K)\approx 0$ — se os intrusos ocuparem o fim da vizinhança. Nomenclatura recomendada na UI: **"Câmera térmica — contribuição local para $B_{NX}(K)$"**, não "distorção local".
 
 ### 9.5 Silhouette Score com partição de referência linguística
 
 $$s(i) = \frac{b(i)-a(i)}{\max(a(i),b(i))}$$
 
 Calculado sobre as coordenadas projetadas $Y_i \in \mathbb{R}^3$, usando `content_noun`/`content_verb`/`function_word` como partição de referência (ROUSSEEUW, 1987). Redação adotada: "fornece medida complementar de separação das classes no espaço projetado" — não "distingue crowding" (Silhouette mede separação, não identifica causa).
+
+**v2.1.3:** como referência, registra-se também o Silhouette no espaço original (métrica cosseno, mesma partição). Ele não é variável dependente; serve apenas para ler o valor projetado em relação à separação que já existe antes da projeção. Inconsistência a resolver: o documento de escopo do TCC fala em Silhouette "calculado sobre a projeção 2D", enquanto este plano usa $\mathbb{R}^3$.
 
 **Não aplicar Class-Conditional Centering antes deste cálculo** — constitui data leakage: usar rótulos de classe para centralizar antes de um algoritmo de projeção não supervisionado infla artificialmente a separação inter-classe na alta dimensão, invalidando o uso do Silhouette para avaliar a capacidade autônoma da projeção.
 
@@ -463,12 +502,15 @@ cache_key = (model_id, dataset_hash, extraction_config, preprocessing_config)
 8. ~~Convenção de sinal de $B_{NX}(K)$~~ → corrigida contra a fonte primária (LEE; VERLEYSEN, 2009): $B_{NX} = U_X - U_N$, positivo = intrusivo. **A versão anterior deste plano (v2.1.1) tinha o sinal invertido** e citava uma verificação contra implementação de terceiros que não pôde ser confirmada.
 9. ~~Definição matemática de $B_{NX,i}(K)$~~ → decomposição da matriz de co-ranking por ponto antes da agregação, Seção 9.4, com convenção de sinal consistente com o item 8
 
+10. ~~Validar empiricamente $B_{NX}(K)$ e $B_{NX,i}(K)$~~ → 28 testes em `tests/test_coranking.py`: casos A/B/C corrigidos, consistência $\text{mean}_i B_{NX,i} = B_{NX}$ (erro $<10^{-12}$), âncora de sinal contra $B_{TC}$, e $M_T/M_C$ idênticos ao `sklearn.manifold.trustworthiness` (implementação independente). F2 desbloqueada.
+11. ~~Pipeline do dataset~~ → implementado (`python -m ensy.dataset`); execução provisória com Qwen + BERT: $N=438$.
+
 ### Ainda em aberto (ordem de prioridade)
 
-1. **Validar empiricamente $B_{NX}(K)$ e $B_{NX,i}(K)$** com os três casos sintéticos (Seção 9.2 e 9.4) — fórmulas corrigidas contra a fonte primária, ainda não testadas em código. Bloqueia toda a F2.
-2. Executar a sequência operacional completa do dataset (Seção 5, passos 1–10) para descobrir o $N$ real e congelar `dataset.json` — antes do pipeline de métricas, pode correr em paralelo com engenharia de renderização/infraestrutura.
-3. Resolver acesso ao Gemma 2B (gated model) na Fase 0.
-4. Confirmar por profiling (Seção 8.4) se o overlay de DOM é de fato o gargalo de FPS, antes de investir tempo na substituição por sprites de canvas.
+1. **Acesso ao Gemma 2B** (gated): aceitar a licença no Hugging Face e definir `HF_TOKEN`. Depois, rodar `python -m ensy.dataset` com os três modelos para congelar `data/dataset.json` (o arquivo atual é `dataset.provisional.json`, marcado `frozen: false`; o runner de experimentos se recusa a usá-lo sem `--allow-provisional`).
+2. Fixar a identidade do Gemma (`gemma-2b` × `gemma-2-2b`) e reescrever a justificativa da perplexidade do t-SNE para o $N$ real (Seção 7).
+3. Decidir a política do Isomap para grafo desconexo (ligar componentes × filtrar) e alinhar o Silhouette (2D × 3D) com o documento de escopo.
+4. Confirmar por profiling (Seção 8.4, painel na barra lateral) se o overlay de DOM ainda é gargalo após a correção do laço $O(N^2)$; só então decidir sobre sprites de canvas.
 
 Depois desses quatro pontos — e, especialmente, depois de rodar a construção real do dataset e validar $B_{NX,i}(K)$ em código — o protocolo experimental pode ser considerado congelado. O próximo passo não é mais revisão textual: é executar a sequência do dataset e a suíte de testes sintéticos de co-ranking.
 
@@ -478,6 +520,8 @@ Depois desses quatro pontos — e, especialmente, depois de rodar a construção
 
 - CAI, Xingyu et al. Isotropy in the Contextual Embedding Space: Clusters and Manifolds. **ICLR**, 2021.
 - ETHAYARAJH, Kawin. How Contextual are Contextualized Word Representations? **EMNLP-IJCNLP**, 2019.
+- CHEN, Lisha; BUJA, Andreas. Local multidimensional scaling for nonlinear dimension reduction, graph drawing, and proximity analysis. **Journal of the American Statistical Association**, v. 104, n. 485, p. 209–219, 2009. (origem do LCMC)
+- LEE, John A.; VERLEYSEN, Michel. Quality assessment of nonlinear dimensionality reduction based on K-ary neighborhoods. **JMLR Workshop and Conference Proceedings**, v. 4 (FSDM/AISTATS), p. 21–35, 2008. (precursor; define $U_N$, $U_X$, $Q_{NX}$, $B_{NX}$ e $B_{TC}$)
 - LEE, John A.; VERLEYSEN, Michel. Quality assessment of dimensionality reduction: Rank-based criteria. **Neurocomputing**, v. 72, p. 1431–1443, 2009.
 - LUEKS, W. et al. How to Evaluate Dimensionality Reduction? Improving the Co-ranking Matrix. **arXiv:1110.3917**, 2011.
 - MCINNES, Leland et al. UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction. **arXiv**, 2018.
@@ -485,4 +529,5 @@ Depois desses quatro pontos — e, especialmente, depois de rodar a construção
 - ROUSSEEUW, Peter J. Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. **J. Comput. Appl. Math.**, 1987.
 - TENENBAUM, Joshua B. et al. A global geometric framework for nonlinear dimensionality reduction. **Science**, 2000.
 - VAN DER MAATEN, Laurens; HINTON, Geoffrey. Visualizing data using t-SNE. **JMLR**, 2008.
-- VENNA, Jarkko; KASKI, Samuel. Local multidimensional scaling. **Neural Networks**, 2006.
+- VENNA, Jarkko; KASKI, Samuel. Local multidimensional scaling. **Neural Networks**, v. 19, n. 6–7, p. 889–899, 2006. (o documento de escopo cita outro trabalho — VENNA; KASKI, ESANN 2006, "Visualizing gene interaction graphs with local multidimensional scaling"; unificar a citação usada para K≈10)
+- VENNA, Jarkko; KASKI, Samuel. Neighborhood preservation in nonlinear projection methods: an experimental study. **ICANN**, LNCS 2130, p. 485–491, 2001. (origem de trustworthiness/continuity)

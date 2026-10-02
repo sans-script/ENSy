@@ -1,10 +1,60 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { SemanticNode, SemanticSpace } from "../types";
-import { semanticSpaceData } from "../data/semanticSpace";
+import { ColorLayer, SemanticNode, SemanticSpace, probeSets } from "../types";
+
+const EMPTY_NODES: SemanticNode[] = [];
+
+/** Lightweight per-token handle; the rendered geometry is one shared Points cloud. */
+interface TokenHandle {
+  position: THREE.Vector3;
+  visible: boolean;
+  userData: any;
+}
+
+export interface PerfSample {
+  fps: number;
+  frameTimeMs: number;
+  selectionLoopMs: number;
+  drawCalls: number;
+  geometries: number;
+  textures: number;
+  visibleLabels: number;
+}
+
+interface LabelEntry {
+  dom: HTMLDivElement;
+  position: THREE.Vector3;
+  type: "token" | "latex";
+  userData?: SemanticNode;
+  axisId?: "x" | "y" | "z";
+}
+
+const MAX_TOKEN_LABELS = 120; // DOM label culling (plan 8.2): nearest labels only
+
+// Layer 2 (plan 9.7): fixed global bipolar scale on [-1, 1]; neutral is light grey, never green.
+const HEAT_NEG = new THREE.Color("#0891b2"); // extrusive (tearing)
+const HEAT_MID = new THREE.Color("#d4d4d8");
+const HEAT_POS = new THREE.Color("#ea580c"); // intrusive (crowding)
+// Layer 3 (plan 9.7): probing.
+const PROBE_TRUE = new THREE.Color("#16a34a");
+const PROBE_FALSE = new THREE.Color("#dc2626");
+const PROBE_MISSING = new THREE.Color("#3b82f6");
+const PROBE_SELECTED = new THREE.Color("#111111");
+
+export const heatColor = (b: number) => {
+  const t = Math.max(-1, Math.min(1, b));
+  return t < 0
+    ? HEAT_MID.clone().lerp(HEAT_NEG, -t)
+    : HEAT_MID.clone().lerp(HEAT_POS, t);
+};
 
 interface SpaceVisualizerProps {
-  projectionType: "umap" | "tsne" | "pca" | "isomap";
+  colorLayer: ColorLayer;
+  heatK: number;
+  probeEnabled: boolean;
+  probeK: number;
+  onPerfUpdate?: (sample: PerfSample) => void;
+  projectionType: "umap" | "tsne" | "pca" | "isomap" | "pca_nc";
   currentFilter: "all" | "positive" | "negative";
   cameraMode: "perspective" | "parallel" | "twopoint";
   fov: number;
@@ -38,6 +88,11 @@ interface SpaceVisualizerProps {
 }
 
 export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
+  colorLayer,
+  heatK,
+  probeEnabled,
+  probeK,
+  onPerfUpdate,
   projectionType,
   currentFilter,
   cameraMode,
@@ -70,7 +125,20 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   const perspCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const orthoCameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const activeCameraRef = useRef<THREE.Camera | null>(null);
-  const tokenPointsRef = useRef<THREE.Points[]>([]);
+  const tokenPointsRef = useRef<TokenHandle[]>([]);
+  const cloudRef = useRef<THREE.Points | null>(null);
+  const tokenLabelByIdRef = useRef<Map<number, LabelEntry>>(new Map());
+  const tokenSetKeyRef = useRef<string>("");
+  const colorLayerRef = useRef(colorLayer);
+  const heatKRef = useRef(heatK);
+  const probeEnabledRef = useRef(probeEnabled);
+  const probeKRef = useRef(probeK);
+  const hoveredIdRef = useRef<number | null>(null);
+  const pinnedIdRef = useRef<number | null>(null);
+  const shownLabelIdsRef = useRef<Set<number>>(new Set());
+  const colorsDirtyRef = useRef(true);
+  const perfRef = useRef({ frames: 0, frameTime: 0, selection: 0, visibleLabels: 0 });
+  const onPerfUpdateRef = useRef(onPerfUpdate);
   const gridGroupRef = useRef<THREE.Group | null>(null);
   const lastTimeRef = useRef(performance.now());
 
@@ -90,15 +158,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   } | null>(null);
 
   // Floating coordinates labels & grid scales
-  const labelElementsRef = useRef<
-    {
-      dom: HTMLDivElement;
-      position: THREE.Vector3;
-      type: "token" | "latex";
-      userData?: SemanticNode;
-      axisId?: "x" | "y" | "z";
-    }[]
-  >([]);
+  const labelElementsRef = useRef<LabelEntry[]>([]);
   const gridNumberElementsRef = useRef<
     { dom: HTMLDivElement; position: THREE.Vector3 }[]
   >([]);
@@ -128,7 +188,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     Math.abs(v.x) < MAX_COORD && Math.abs(v.y) < MAX_COORD && Math.abs(v.z) < MAX_COORD;
 
   const safeApplyPosition = (
-    pts: THREE.Points,
+    pts: TokenHandle,
     target: THREE.Vector3,
     context = "",
   ) => {
@@ -172,14 +232,24 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
   useEffect(() => {
     projectionTypeRef.current = projectionType;
-    // When projection type changes, we trigger position recalculation
-    filterNodesPrivate();
   }, [projectionType]);
 
   useEffect(() => {
-    if (!sceneRef.current || tokenPointsRef.current.length === 0) return;
+    if (!sceneRef.current) return;
     syncProjectionDataPrivate();
   }, [data]);
+
+  useEffect(() => {
+    colorLayerRef.current = colorLayer;
+    heatKRef.current = heatK;
+    probeEnabledRef.current = probeEnabled;
+    probeKRef.current = probeK;
+    colorsDirtyRef.current = true;
+  }, [colorLayer, heatK, probeEnabled, probeK]);
+
+  useEffect(() => {
+    onPerfUpdateRef.current = onPerfUpdate;
+  }, [onPerfUpdate]);
 
   useEffect(() => {
     currentModeRef.current = cameraMode;
@@ -564,26 +634,31 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         // Monitor camera focal distance for interval tick calibration (GeoGebra Zoom)
         checkZoomResolutionPrivate(activeCamera.position.length());
 
-        // Smoothly interpolate token positions dynamically for dimensionality reduction comparison
-        tokenPointsRef.current.forEach((pts) => {
+        // Smoothly interpolate token positions (animation only; endpoints are the exact projection)
+        const cloud = cloudRef.current;
+        const posAttr = cloud?.geometry.getAttribute("position") as THREE.BufferAttribute | undefined;
+        tokenPointsRef.current.forEach((pts, idx) => {
           if (pts.userData && pts.userData.targetPosition) {
             pts.position.lerp(pts.userData.targetPosition, 0.04);
-            const nodeData = pts.userData as SemanticNode;
-            const matchingLabel = labelElementsRef.current.find(
-              (l) => {
-                const labelKey = l.userData?.id ?? l.userData?.token_id;
-                const nodeKey = nodeData.id ?? nodeData.token_id;
-                return labelKey === nodeKey;
-              },
-            );
-            if (matchingLabel) {
-              matchingLabel.position.copy(pts.position);
-            }
+            const label = tokenLabelByIdRef.current.get(pts.userData.id);
+            if (label) label.position.copy(pts.position);
+            if (posAttr) posAttr.setXYZ(idx, pts.position.x, pts.position.y, pts.position.z);
           }
         });
+        if (posAttr) {
+          posAttr.needsUpdate = true;
+          cloud!.geometry.computeBoundingSphere();
+        }
 
         // Target nearest nodes inside screen coordinate projections (Crosshair UX)
+        const selT0 = performance.now();
         runNodeSelectionInspector();
+        perfRef.current.selection += performance.now() - selT0;
+
+        if (colorsDirtyRef.current) {
+          applyColorLayersPrivate();
+          colorsDirtyRef.current = false;
+        }
 
         // Project positions to HTML floating layer
         updateOverlayLabels();
@@ -600,16 +675,29 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
         drawMinimapPrivate(activeCamera, dt);
 
-        // Speed check FPS counter
+        renderer.render(scene, activeCamera);
+
+        // Profiling (plan 8.4): engineering telemetry, not a scientific result
         frameCount++;
         const currTime = performance.now();
+        perfRef.current.frameTime += currTime - now;
         if (currTime - lastTime >= 1000) {
-          onFPSUpdate(Math.round((frameCount * 1000) / (currTime - lastTime)));
+          const fpsNow = (frameCount * 1000) / (currTime - lastTime);
+          onFPSUpdate(Math.round(fpsNow));
+          onPerfUpdateRef.current?.({
+            fps: fpsNow,
+            frameTimeMs: perfRef.current.frameTime / frameCount,
+            selectionLoopMs: perfRef.current.selection / frameCount,
+            drawCalls: renderer.info.render.calls,
+            geometries: renderer.info.memory.geometries,
+            textures: renderer.info.memory.textures,
+            visibleLabels: perfRef.current.visibleLabels,
+          });
+          perfRef.current.frameTime = 0;
+          perfRef.current.selection = 0;
           frameCount = 0;
           lastTime = currTime;
         }
-
-        renderer.render(scene, activeCamera);
       }
     };
 
@@ -815,127 +903,179 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     return;
   };
 
-  const getNodeDisplayColor = (color?: string) => {
-    if (color === "#378ADD") {
-      return "#1e40af";
-    }
+  const getNodeDisplayColor = (color?: string) => color ?? "#52525b";
 
-    if (color === "#1D9E75") {
-      return "#065f46";
-    }
+  const currentNodes = () => latestDataRef.current?.nodes ?? EMPTY_NODES;
 
-    if (color === "#D85A30") {
-      return "#b91c1c";
-    }
+  const tokenSetKey = (nodes: SemanticNode[]) =>
+    `${latestDataRef.current?.meta?.dataset_hash ?? ""}:${nodes.length}:${nodes
+      .map((n) => n.id)
+      .join(",")}`;
 
-    return "#86198f";
+  /** Remove the token cloud and token labels (axis labels are kept). */
+  const disposeTokenSystemsPrivate = () => {
+    if (cloudRef.current) {
+      sceneRef.current?.remove(cloudRef.current);
+      cloudRef.current.geometry.dispose();
+      (cloudRef.current.material as THREE.PointsMaterial).map?.dispose();
+      (cloudRef.current.material as THREE.Material).dispose();
+      cloudRef.current = null;
+    }
+    labelElementsRef.current = labelElementsRef.current.filter((l) => {
+      if (l.type !== "token") return true;
+      l.dom.remove();
+      return false;
+    });
+    tokenLabelByIdRef.current.clear();
+    tokenPointsRef.current = [];
   };
 
   const createTokenSystems = () => {
     const container = labelsContainerRef.current;
     if (!container || !sceneRef.current) return;
+    disposeTokenSystemsPrivate();
 
-    let mn = [1e9, 1e9, 1e9];
-    let mx = [-1e9, -1e9, -1e9];
+    const nodes = currentNodes();
+    tokenSetKeyRef.current = tokenSetKey(nodes);
+    if (nodes.length === 0) return;
 
-    const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
-
-    nodes.forEach((n) => {
-      mn[0] = Math.min(mn[0], n.coords.x3d);
-      mx[0] = Math.max(mx[0], n.coords.x3d);
-      mn[1] = Math.min(mn[1], n.coords.y3d);
-      mx[1] = Math.max(mx[1], n.coords.y3d);
-      mn[2] = Math.min(mn[2], n.coords.z3d);
-      mx[2] = Math.max(mx[2], n.coords.z3d);
+    // One BufferGeometry for the whole cloud: one draw call regardless of N (plan 8.1)
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(new Float32Array(nodes.length * 3), 3),
+    );
+    geometry.setAttribute(
+      "color",
+      new THREE.BufferAttribute(new Float32Array(nodes.length * 4).fill(1), 4),
+    );
+    // Round sprite (PointsMaterial draws squares by default). The word label is the
+    // marker, as in the original design; a dot is drawn only for tokens whose label
+    // is culled (see applyColorLayersPrivate), so every one of the N points stays visible.
+    const disc = document.createElement("canvas");
+    disc.width = disc.height = 64;
+    const dctx = disc.getContext("2d")!;
+    dctx.fillStyle = "#ffffff";
+    dctx.beginPath();
+    dctx.arc(32, 32, 30, 0, Math.PI * 2);
+    dctx.fill();
+    const material = new THREE.PointsMaterial({
+      size: 0.4,
+      sizeAttenuation: true,
+      vertexColors: true,
+      transparent: true,
+      depthWrite: false,
+      map: new THREE.CanvasTexture(disc),
+      alphaTest: 0.05,
     });
-
-    const range = Math.max(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2], 0.001);
-    const S = 26; // Node projection scale factor
-
-    tokenPointsRef.current = [];
+    const cloud = new THREE.Points(geometry, material);
+    cloud.frustumCulled = false;
+    sceneRef.current.add(cloud);
+    cloudRef.current = cloud;
 
     nodes.forEach((node) => {
-      const pos = new THREE.Vector3(
-        ((node.coords.x3d - (mn[0] + mx[0]) / 2) / range) * S,
-        ((node.coords.y3d - (mn[1] + mx[1]) / 2) / range) * S,
-        ((node.coords.z3d - (mn[2] + mx[2]) / 2) / range) * S,
-      );
+      const handle: TokenHandle = {
+        position: new THREE.Vector3(),
+        visible: true,
+        userData: node,
+      };
+      tokenPointsRef.current.push(handle);
 
-      // Create a invisible helper vector point for ThreeJS raycasting
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute([0, 0, 0], 3),
-      );
-      const pts = new THREE.Points(
-        geo,
-        new THREE.PointsMaterial({ size: 2.5, transparent: true, opacity: 0 }),
-      );
-      safeApplyPosition(pts, pos, "create");
-      pts.userData = node;
-      sceneRef.current?.add(pts);
-      tokenPointsRef.current.push(pts);
-
-      // Generate HTML label elements overlaid on WebGL Canvas (EB Garamond)
       const dom = document.createElement("div");
       dom.className =
         "spatial-label absolute select-none pointer-events-auto cursor-pointer transition-opacity duration-75 text-xs font-serif font-normal italic tracking-wide hover:underline";
       dom.setAttribute("data-token-label", node.label);
-
-      // Keep the DOM label palette aligned with the minimap and token metadata.
       dom.style.color = getNodeDisplayColor(node.color);
       dom.textContent = node.label;
       dom.onclick = (e) => {
         e.stopPropagation();
-        const pc = getProjectedCoords(node, projectionTypeRef.current);
-        const projectedNode: SemanticNode = {
-          id: node.id,
-          token_id: node.token_id,
-          label: node.label,
-          cluster: node.cluster,
-          color: node.color,
-          coords: { ...node.coords, ...pc },
-          top5_neighbors: node.top5_neighbors,
-        };
-        onNodeHovered(projectedNode);
+        pinnedIdRef.current = node.id ?? null;
       };
       container.appendChild(dom);
 
-      labelElementsRef.current.push({
+      const entry: LabelEntry = {
         dom,
-        position: pos,
+        position: handle.position.clone(),
         userData: node,
         type: "token",
-      });
+      };
+      labelElementsRef.current.push(entry);
+      tokenLabelByIdRef.current.set(node.id!, entry);
     });
 
-    // Expose selectToken helper on window
+    filterNodesPrivate();
+    // First placement is immediate; later projection switches animate.
+    tokenPointsRef.current.forEach((h) => {
+      if (h.userData.targetPosition) safeApplyPosition(h, h.userData.targetPosition, "create");
+    });
+    colorsDirtyRef.current = true;
+
+    // Expose selectToken helper on window (used by screenshot tests)
     (window as any).__selectToken = (target: string | number) => {
-      const nodesList = latestDataRef.current?.nodes || semanticSpaceData.nodes;
-      const targetNode = nodesList.find(
-        (n) => n.label === target || n.token_id === target || n.id === target,
-      ) || nodesList[0];
+      const nodesList = currentNodes();
+      const targetNode =
+        nodesList.find(
+          (n) => n.label === target || n.token_id === target || n.id === target,
+        ) || nodesList[0];
       if (targetNode) {
-        const pc = getProjectedCoords(targetNode, projectionTypeRef.current);
-        const projectedNode: SemanticNode = {
-          id: targetNode.id,
-          token_id: targetNode.token_id,
-          label: targetNode.label,
-          cluster: targetNode.cluster,
-          color: targetNode.color,
-          coords: { ...targetNode.coords, ...pc },
-          top5_neighbors: targetNode.top5_neighbors,
-        };
-        onNodeHovered(projectedNode);
+        pinnedIdRef.current = targetNode.id ?? null;
         return true;
       }
       return false;
     };
+  };
 
+  /** Rewrite the cloud's RGBA attribute and label colours. Precedence: probe > heat > category. */
+  const applyColorLayersPrivate = () => {
+    const cloud = cloudRef.current;
+    if (!cloud) return;
+    const colorAttr = cloud.geometry.getAttribute("color") as THREE.BufferAttribute;
+    const layer = colorLayerRef.current;
+    const kKey = String(heatKRef.current);
+
+    let probe = null as ReturnType<typeof probeSets>;
+    if (probeEnabledRef.current && hoveredIdRef.current !== null) {
+      const sel = tokenPointsRef.current.find((h) => h.userData.id === hoveredIdRef.current);
+      if (sel) probe = probeSets(sel.userData as SemanticNode, probeKRef.current);
+    }
+
+    const tmp = new THREE.Color();
+    tokenPointsRef.current.forEach((h, idx) => {
+      const node = h.userData as SemanticNode;
+      let alpha = h.visible ? 1 : 0;
+      if (layer === "heat" && node.b_nx_local && kKey in node.b_nx_local) {
+        tmp.copy(heatColor(node.b_nx_local[kKey]));
+      } else {
+        tmp.set(getNodeDisplayColor(node.color));
+      }
+      if (probe) {
+        const id = node.id!;
+        if (id === probe.selected) tmp.copy(PROBE_SELECTED);
+        else if (probe.true.has(id)) tmp.copy(PROBE_TRUE);
+        else if (probe.false.has(id)) tmp.copy(PROBE_FALSE);
+        else if (probe.missing.has(id)) {
+          tmp.copy(PROBE_MISSING);
+          alpha *= 0.45;
+        } else alpha *= 0.25;
+      }
+      const dotAlpha = shownLabelIdsRef.current.has(node.id!) ? 0 : alpha;
+      colorAttr.setXYZW(idx, tmp.r, tmp.g, tmp.b, dotAlpha);
+      const label = tokenLabelByIdRef.current.get(node.id!);
+      if (label) {
+        label.dom.style.color = `#${tmp.getHexString()}`;
+        label.dom.dataset.dim = alpha < 0.5 && h.visible ? "1" : "0";
+      }
+    });
+    colorAttr.needsUpdate = true;
   };
 
   const syncProjectionDataPrivate = () => {
-    const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
+    const nodes = currentNodes();
+    // A different dataset (or model with a different item set) needs a fresh cloud
+    if (tokenSetKey(nodes) !== tokenSetKeyRef.current || tokenPointsRef.current.length === 0) {
+      createTokenSystems();
+      return;
+    }
     const byNodeKey = new Map<number, SemanticNode>();
 
     const COORD_WARN = 200; // warn when incoming coords exceed this magnitude
@@ -978,111 +1118,57 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       };
       pts.userData = syncedNode;
 
-      const matchingLabel = labelElementsRef.current.find(
-        (l) => {
-          const labelKey = l.userData?.id ?? l.userData?.token_id;
-          const nodeKey = nextNode.id ?? nextNode.token_id;
-          return labelKey === nodeKey;
-        },
-      );
-
+      const matchingLabel = tokenLabelByIdRef.current.get(nextNode.id!);
       if (matchingLabel) {
         matchingLabel.userData = syncedNode;
         matchingLabel.dom.textContent = nextNode.label;
-
-        if (nextNode.color === "#378ADD") {
-          matchingLabel.dom.style.color = "#1e40af";
-        } else if (nextNode.color === "#1D9E75") {
-          matchingLabel.dom.style.color = "#065f46";
-        } else if (nextNode.color === "#D85A30") {
-          matchingLabel.dom.style.color = "#b91c1c";
-        } else {
-          matchingLabel.dom.style.color = "#86198f";
-        }
       }
     });
 
     filterNodesPrivate();
     applyFilterVisibilityPrivate();
+    colorsDirtyRef.current = true;
   };
 
-  // Node filtering logic matching target quadrants
-  const getProjectedCoords = (n: SemanticNode, type: string) => {
-    // Primary 3D coordinates (most projections will populate these).
-    let x = n.coords.x3d;
-    let y = n.coords.y3d;
-    let z = n.coords.z3d;
-
-    // Some projection payloads only populate 2D coordinates (x2d/y2d).
-    // If the 3D coords are essentially empty (all near-zero), prefer the 2D
-    // coordinates as the projection source to avoid collapsing many points
-    // to the origin when switching projection types (e.g. isomap from server).
-    const smallThreshold = 1e-6;
-    if (Math.abs(x) + Math.abs(y) < smallThreshold &&
-      typeof n.coords.x2d === 'number' && typeof n.coords.y2d === 'number') {
-      x = n.coords.x2d;
-      y = n.coords.y2d;
-      // Keep z as-is if provided; otherwise leave it at 0.
-      z = typeof n.coords.z3d === 'number' ? n.coords.z3d : 0;
-    }
-    if (type === "pca") {
-      return { x3d: x * 0.8 + y * 0.6, y3d: -x * 0.6 + y * 0.8, z3d: z * 1.2 };
-    }
-    if (type === "tsne") {
-      return {
-        x3d: Math.sign(x) * Math.abs(x) ** 0.8 * 1.5,
-        y3d: Math.sign(y) * Math.abs(y) ** 0.8 * 1.5,
-        z3d: Math.sign(z) * Math.abs(z) ** 0.8 * 1.5,
-      };
-    }
-    if (type === "isomap") {
-      const r = Math.sqrt(x * x + y * y);
-      const theta = Math.atan2(y, x);
-      return {
-        x3d: r * Math.cos(theta + r * 0.1),
-        y3d: r * Math.sin(theta + r * 0.1),
-        z3d: z,
-      };
-    }
-    return { x3d: x, y3d: y, z3d: z };
-  };
-
+  // Scene placement: one isotropic similarity map (common centre, one scale for
+  // all three axes), which preserves every ratio of Euclidean distances, so the
+  // rendered geometry is the projection itself -- no per-algorithm warps.
+  // Centre = coordinate-wise median and scale = 99th-percentile radius, so a few
+  // ejected points (e.g. t-SNE at low perplexity) do not squeeze the bulk; such
+  // points are drawn outside the box at their true relative position.
   const filterNodesPrivate = () => {
     const filter = currentFilterRef.current;
-    const projType = projectionTypeRef.current;
+    colorsDirtyRef.current = true;
 
-    let mn = [1e9, 1e9, 1e9];
-    let mx = [-1e9, -1e9, -1e9];
-    const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
+    const nodes = currentNodes();
     const activeNodeKeys = new Set(nodes.map((n) => n.id ?? n.token_id));
 
-    // First pass to get bounds based on projected coordinates
-    nodes.forEach((n) => {
-      const pc = getProjectedCoords(n, projType);
-      mn[0] = Math.min(mn[0], pc.x3d);
-      mx[0] = Math.max(mx[0], pc.x3d);
-      mn[1] = Math.min(mn[1], pc.y3d);
-      mx[1] = Math.max(mx[1], pc.y3d);
-      mn[2] = Math.min(mn[2], pc.z3d);
-      mx[2] = Math.max(mx[2], pc.z3d);
-    });
-    const range = Math.max(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2], 0.001);
+    const median = (v: number[]) => {
+      const s = [...v].sort((a, b) => a - b);
+      const m = s.length >> 1;
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    };
+    const centre = [
+      median(nodes.map((n) => n.coords.x3d)),
+      median(nodes.map((n) => n.coords.y3d)),
+      median(nodes.map((n) => n.coords.z3d)),
+    ];
+    const radii = nodes
+      .map((n) => Math.hypot(n.coords.x3d - centre[0], n.coords.y3d - centre[1], n.coords.z3d - centre[2]))
+      .sort((a, b) => a - b);
+    const r99 = Math.max(radii[Math.min(radii.length - 1, Math.floor(0.99 * radii.length))] ?? 0, 1e-6);
+    const mn = centre.map((c) => c - r99);
+    const mx = centre.map((c) => c + r99);
+    const range = 2 * r99;
     const S = 26;
 
     tokenPointsRef.current.forEach((pts) => {
       const node = pts.userData as SemanticNode;
-      const matchingLabel = labelElementsRef.current.find(
-        (l) => {
-          const labelKey = l.userData?.id ?? l.userData?.token_id;
-          const nodeKey = node.id ?? node.token_id;
-          return labelKey === nodeKey;
-        },
-      );
+      const matchingLabel = tokenLabelByIdRef.current.get(node.id!);
 
-      const pc = getProjectedCoords(node, projType);
-      const x = pc.x3d;
-      const y = pc.y3d;
-      const z = pc.z3d;
+      const x = node.coords.x3d;
+      const y = node.coords.y3d;
+      const z = node.coords.z3d;
 
       const vx = ((x - (mn[0] + mx[0]) / 2) / range) * S;
       const vy = ((y - (mn[1] + mx[1]) / 2) / range) * S;
@@ -1123,18 +1209,13 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
   const applyFilterVisibilityPrivate = () => {
     const filter = currentFilterRef.current;
-    const nodes = latestDataRef.current?.nodes || semanticSpaceData.nodes;
+    const nodes = currentNodes();
     const activeNodeKeys = new Set(nodes.map((n) => n.id ?? n.token_id));
+    colorsDirtyRef.current = true;
 
     tokenPointsRef.current.forEach((pts) => {
       const node = pts.userData as SemanticNode;
-      const matchingLabel = labelElementsRef.current.find(
-        (l) => {
-          const labelKey = l.userData?.id ?? l.userData?.token_id;
-          const nodeKey = node.id ?? node.token_id;
-          return labelKey === nodeKey;
-        },
-      );
+      const matchingLabel = tokenLabelByIdRef.current.get(node.id!);
 
       const targetPos = pts.userData.targetPosition || pts.position;
       let shouldShow = activeNodeKeys.has(node.id ?? node.token_id);
@@ -1759,35 +1840,23 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       }
     });
 
-    if (bestNode) {
-      const bn = bestNode as SemanticNode;
-      const pc = getProjectedCoords(bn, projectionTypeRef.current);
-      const projectedNode: SemanticNode = {
-        id: bn.id,
-        token_id: bn.token_id,
-        label: bn.label,
-        cluster: bn.cluster,
-        color: bn.color,
-        coords: { ...bn.coords, ...pc },
-        top5_neighbors: bn.top5_neighbors,
-      };
-      onNodeHovered(projectedNode);
-    } else {
-      onNodeHovered(null);
+    // A token chosen by label click / __selectToken stays selected until the reticle acquires another.
+    if (bestNode) pinnedIdRef.current = null;
+    else if (pinnedIdRef.current !== null) {
+      bestNode = (tokenPointsRef.current.find((h) => h.userData.id === pinnedIdRef.current)
+        ?.userData as SemanticNode) ?? null;
     }
-
-    // Apply underlines and visual highlights to active DOM target texts
-    labelElementsRef.current.forEach((tbl) => {
-      if (tbl.userData) {
-        const labelKey = tbl.userData.id ?? tbl.userData.token_id;
-        const bestKey = bestNode?.id ?? bestNode?.token_id;
-        if (bestNode && labelKey === bestKey) {
-          tbl.dom.classList.add("highlighted-acad");
-        } else {
-          tbl.dom.classList.remove("highlighted-acad");
-        }
-      }
-    });
+    const bestId = (bestNode as SemanticNode | null)?.id ?? null;
+    if (bestId !== hoveredIdRef.current) {
+      const prev = hoveredIdRef.current !== null
+        ? tokenLabelByIdRef.current.get(hoveredIdRef.current)
+        : undefined;
+      prev?.dom.classList.remove("highlighted-acad");
+      if (bestId !== null) tokenLabelByIdRef.current.get(bestId)?.dom.classList.add("highlighted-acad");
+      hoveredIdRef.current = bestId;
+      if (probeEnabledRef.current) colorsDirtyRef.current = true;
+    }
+    onNodeHovered(bestNode);
   };
 
   const updateOverlayLabels = () => {
@@ -1824,7 +1893,25 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       isOrigin?: boolean;
     }> = [];
 
-    labelElementsRef.current.forEach(({ dom, position, type, axisId }) => {
+    // Label culling (plan 8.2): only the nearest visible tokens get a DOM label
+    // update and occlusion raycast this frame; the point cloud still shows all N.
+    const camPos = activeCamera.position;
+    const ranked: Array<{ id: number; d: number }> = [];
+    tokenPointsRef.current.forEach((h) => {
+      if (!h.visible) return;
+      const d = h.position.distanceToSquared(camPos);
+      ranked.push({ id: h.userData.id, d });
+    });
+    ranked.sort((a, b) => a.d - b.d);
+    const labelled = new Set(ranked.slice(0, MAX_TOKEN_LABELS).map((r) => r.id));
+    if (hoveredIdRef.current !== null) labelled.add(hoveredIdRef.current);
+    perfRef.current.visibleLabels = labelled.size;
+
+    labelElementsRef.current.forEach(({ dom, position, type, axisId, userData }) => {
+      if (type === "token" && !labelled.has(userData?.id ?? -1)) {
+        if (dom.style.opacity !== "0") dom.style.opacity = "0";
+        return;
+      }
       // Check axis visibility
       if (axisId === "x" && !showXAxisRef.current) {
         dom.style.opacity = "0";
@@ -1874,6 +1961,9 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
       if (type === "token" && (dom as HTMLElement).dataset.filterVisible === "0") {
         fade = 0;
+      }
+      if (type === "token" && (dom as HTMLElement).dataset.dim === "1") {
+        fade *= 0.3; // tokens outside the probed neighbourhood recede
       }
 
       const isOrigin = dom.textContent === "O";
@@ -1925,6 +2015,17 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       p.dom.style.opacity = p.fade.toFixed(2);
       p.dom.style.zIndex = Math.max(1, Math.floor(1000 - p.dist)).toString();
     });
+
+    // Tokens whose word is legible need no dot; refresh dot alphas when that set changes
+    const shown = new Set<number>();
+    tokenLabelByIdRef.current.forEach((label, id) => {
+      if (parseFloat(label.dom.style.opacity || "0") > 0.35) shown.add(id);
+    });
+    const prevShown = shownLabelIdsRef.current;
+    if (shown.size !== prevShown.size || [...shown].some((id) => !prevShown.has(id))) {
+      shownLabelIdsRef.current = shown;
+      colorsDirtyRef.current = true;
+    }
 
     // Dynamic grid numbers
     gridNumberElementsRef.current.forEach(({ dom, position }) => {
@@ -2190,7 +2291,10 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       if (!point.visible) return;
 
       ctx.beginPath();
-      ctx.fillStyle = getNodeDisplayColor(point.node.color);
+      // Same colour as the active layer (category / thermal / probe) in the 3D view
+      ctx.fillStyle =
+        tokenLabelByIdRef.current.get(point.node.id!)?.dom.style.color ||
+        getNodeDisplayColor(point.node.color);
       ctx.arc(point.x, point.y, pointRadiusPx, 0, Math.PI * 2);
       ctx.fill();
 

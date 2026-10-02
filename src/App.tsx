@@ -1,17 +1,23 @@
 import { useState, useCallback, useEffect } from 'react';
 import { SidebarLeft } from './components/SidebarLeft';
 import { SidebarRight } from './components/SidebarRight';
-import { SpaceVisualizer } from './components/SpaceVisualizer';
+import { PerfSample, SpaceVisualizer } from './components/SpaceVisualizer';
 import { BottomHUD } from './components/BottomHUD';
-import { semanticSpaceData } from './data/semanticSpace';
-import { SemanticNode, SemanticSpace } from './types';
+import { MetricsPanel } from './components/MetricsPanel';
+import { Algorithm, ColorLayer, ModelKey, SemanticNode, SemanticSpace } from './types';
 
 export default function App() {
   const [activeNode, setActiveNode] = useState<SemanticNode | null>(null);
   const [cameraCoords, setCameraCoords] = useState({ x: 22, y: 16, z: 32 });
   const [initialCameraState, setInitialCameraState] = useState<{ x: number; y: number; z: number; rx: number; ry: number; rz: number } | undefined>(undefined);
   const [fps, setFps] = useState(0);
-  const [projectionType, setProjectionType] = useState<'umap' | 'tsne' | 'pca' | 'isomap'>('umap');
+  const [projectionType, setProjectionType] = useState<Algorithm>('umap');
+  const [modelKey, setModelKey] = useState<ModelKey>('qwen');
+  const [colorLayer, setColorLayer] = useState<ColorLayer>('category');
+  const [metricK, setMetricK] = useState(10);
+  const [probeEnabled, setProbeEnabled] = useState(true);
+  const [perf, setPerf] = useState<PerfSample | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentFilter, setCurrentFilter] = useState<'all' | 'positive' | 'negative'>('all');
   const [cameraMode, setCameraMode] = useState<'perspective' | 'parallel' | 'twopoint'>('perspective');
   const [fov, setFov] = useState(30);
@@ -32,21 +38,24 @@ export default function App() {
     const fetchProjection = async () => {
       setStatus('LOADING');
       try {
-        const res = await fetch(`/api/projection/${projectionType}`);
+        const res = await fetch(`/api/projection/${modelKey}/${projectionType}`);
         if (!res.ok) {
-          throw new Error(`Failed: ${res.statusText}`);
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.detail ?? res.statusText);
         }
         const json = await res.json();
         if (active) {
           setSemanticSpace(json);
+          setLoadError(null);
           setStatus('STABLE');
         }
       } catch (err) {
-        console.error("Failed to load real projection coordinates, falling back to static:", err);
+        // No placeholder data: an unavailable backend must not look like a result.
+        console.error('Failed to load projection:', err);
         if (active) {
           setStatus('OFFLINE');
-          // Fallback to static so the app never breaks
-          setSemanticSpace(semanticSpaceData);
+          setSemanticSpace(null);
+          setLoadError(err instanceof Error ? err.message : String(err));
         }
       }
     };
@@ -55,7 +64,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [projectionType]);
+  }, [projectionType, modelKey]);
 
   useEffect(() => {
     try {
@@ -64,6 +73,10 @@ export default function App() {
         const p = JSON.parse(stored);
         if (p.currentFilter) setCurrentFilter(p.currentFilter);
         if (p.projectionType) setProjectionType(p.projectionType);
+        if (p.modelKey) setModelKey(p.modelKey);
+        if (p.colorLayer) setColorLayer(p.colorLayer);
+        if (p.metricK) setMetricK(p.metricK);
+        if (p.probeEnabled !== undefined) setProbeEnabled(p.probeEnabled);
         if (p.cameraMode) setCameraMode(p.cameraMode);
         if (p.fov) setFov(p.fov);
         if (p.showXAxis !== undefined) setShowXAxis(p.showXAxis);
@@ -91,6 +104,10 @@ export default function App() {
     // Save settings
     const saveState = {
       projectionType,
+      modelKey,
+      colorLayer,
+      metricK,
+      probeEnabled,
       currentFilter,
       cameraMode,
       fov,
@@ -107,8 +124,9 @@ export default function App() {
     
     localStorage.setItem('visualizerSettings', JSON.stringify(saveState));
   }, [
-    isReady, currentFilter, cameraMode, fov, showXAxis, showYAxis, showZAxis, 
-    showGridPlanes, showPlaneBackground, mouseSensitivity, showBottomHud
+    isReady, currentFilter, cameraMode, fov, showXAxis, showYAxis, showZAxis,
+    showGridPlanes, showPlaneBackground, mouseSensitivity, showBottomHud,
+    projectionType, modelKey, colorLayer, metricK, probeEnabled
   ]);
 
   // Automatic interval-based typesetting triggers to ensure newly rendered LaTeX elements are processed
@@ -161,6 +179,10 @@ export default function App() {
     const interval = setInterval(() => {
       const saveState = {
         projectionType,
+        modelKey,
+        colorLayer,
+        metricK,
+        probeEnabled,
         currentFilter,
         cameraMode,
         fov,
@@ -178,8 +200,9 @@ export default function App() {
     
     return () => clearInterval(interval);
   }, [
-    isReady, currentFilter, cameraMode, fov, showXAxis, showYAxis, showZAxis, 
-    showGridPlanes, showPlaneBackground, mouseSensitivity, showBottomHud, cameraCoords
+    isReady, currentFilter, cameraMode, fov, showXAxis, showYAxis, showZAxis,
+    showGridPlanes, showPlaneBackground, mouseSensitivity, showBottomHud, cameraCoords,
+    projectionType, modelKey, colorLayer, metricK, probeEnabled
   ]);
 
   const handleFPSUpdate = useCallback((newFps: number) => {
@@ -195,11 +218,20 @@ export default function App() {
       
       {/* Left Sidebar Layout (Optics and general dashboard properties) */}
       <SidebarLeft
-        modelName={semanticSpace?.meta?.model || semanticSpaceData.meta.model}
+        modelName={semanticSpace?.meta?.model ?? '—'}
+        modelKey={modelKey}
+        onModelKeyChange={setModelKey}
         projectionType={projectionType}
         onProjectionTypeChange={setProjectionType}
-        embeddingDim={semanticSpace?.meta?.embedding_dim || semanticSpaceData.meta.embedding_dim}
-        totalTokens={semanticSpace?.meta?.total_tokens || semanticSpaceData.meta.total_tokens}
+        colorLayer={colorLayer}
+        onColorLayerChange={setColorLayer}
+        metricK={metricK}
+        onMetricKChange={setMetricK}
+        probeEnabled={probeEnabled}
+        onProbeEnabledChange={setProbeEnabled}
+        perf={perf}
+        embeddingDim={semanticSpace?.meta?.embedding_dim ?? 0}
+        totalTokens={semanticSpace?.meta?.total_tokens ?? 0}
         fps={fps}
         coords={cameraCoords}
         currentFilter={currentFilter}
@@ -231,6 +263,11 @@ export default function App() {
         {/* Three.js interactive canvas visualizer */}
         {isReady && (
           <SpaceVisualizer
+            colorLayer={colorLayer}
+            heatK={metricK}
+            probeEnabled={probeEnabled}
+            probeK={metricK}
+            onPerfUpdate={setPerf}
             projectionType={projectionType}
             currentFilter={currentFilter}
             cameraMode={cameraMode}
@@ -251,12 +288,26 @@ export default function App() {
           />
         )}
 
+        <MetricsPanel
+          meta={semanticSpace?.meta ?? null}
+          metricK={metricK}
+          colorLayer={colorLayer}
+          probeEnabled={probeEnabled}
+          error={loadError}
+          loading={status === 'LOADING'}
+        />
+
         {/* Floating keys HUD indicators */}
         {showBottomHud && <BottomHUD />}
       </div>
 
       {/* Right Sidebar Layout (Semantic nearest neighbors calculations inspector) */}
-      <SidebarRight activeNode={activeNode} />
+      <SidebarRight
+        activeNode={activeNode}
+        nodes={semanticSpace?.nodes ?? null}
+        metricK={metricK}
+        probeEnabled={probeEnabled}
+      />
       
     </div>
   );

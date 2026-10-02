@@ -14,7 +14,7 @@ from playwright.sync_api import Page
 
 
 DOCS_DIR = os.path.join(os.path.dirname(__file__), "..", "docs")
-SCREENSHOTS_DIR = os.path.join(DOCS_DIR, "screenshots")
+SCREENSHOTS_DIR = os.environ.get("ENSY_SCREENSHOTS_DIR", os.path.join(DOCS_DIR, "screenshots"))
 
 
 def save_screenshot(page: Page, name: str) -> str:
@@ -37,8 +37,9 @@ def setup_isometric_with_selected_token(page: Page, base_url: str, projection: s
     page.wait_for_selector("aside", timeout=10_000)
 
     # Set projection engine
-    page.locator("select").first.select_option(projection)
-    page.wait_for_timeout(1000)
+    page.click("button[aria-label='Projection']")
+    page.click(f"[role='listbox'] [data-value='{projection}']")
+    page.wait_for_selector("text=Co-ranking", timeout=120_000)
 
     # Apply Isometric preset
     page.locator("button:has-text('Isometric')").first.click()
@@ -48,7 +49,7 @@ def setup_isometric_with_selected_token(page: Page, base_url: str, projection: s
     page.evaluate("""
         () => {
             if (typeof window.__selectToken === 'function') {
-                window.__selectToken('document');
+                window.__selectToken('market');
             }
             if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
                 window.MathJax.typesetPromise();
