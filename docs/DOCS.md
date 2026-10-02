@@ -1,3 +1,5 @@
+<!-- md_to_pdf: style=ieee -->
+
 # ENSy: An Interactive Instrument for Measuring How Dimensionality Reduction Distorts the Input-Embedding Geometry of Language Models
 
 **Author:** Alexandre da Silva Santos  
@@ -121,6 +123,8 @@ For the reference partition (Section 3.3), the Silhouette $s(i) = \frac{b(i)-a(i
 
 Four pre-trained checkpoints are used — Qwen 2.5 [15], Gemma 2 [16], GPT-2 [17] and BERT [18] — pinned to the Hugging Face revisions recorded in the dataset file; tokenizers are loaded with the Transformers library [19]:
 
+Table: Model Checkpoints
+
 :::booktabs[wide]
 | Model | Repository | Type | $d$ | Vocabulary |
 |---|---|---|---|---|
@@ -141,6 +145,8 @@ The selected rows are read directly from the checkpoint's safetensors file with 
 ### 3.3 Lexical dataset derived from the Penn Treebank
 
 The dataset is built from the freely distributed sample of the Penn Treebank [20] in NLTK [21] (the full treebank is licensed by the LDC). Tokens are lower-cased; non-alphabetic tokens and proper nouns (`NNP/NNPS`) are discarded. Tags map to a *reference linguistic partition*: `NN, NNS` → `content_noun`; `VB*` → `content_verb`, except the auxiliary forms of *be*, *have* and *do*, which count as `function_word`; `DT, PDT, IN, CC, TO, MD, PRP, PRP$, WDT, WP, WP$, WRB, EX, RP` → `function_word`. Two fixed rules remove tokenisation artefacts: clitic stems (`ca`, `wo`, `ai` from `ca n't`) and function-word forms internal to foreign names (`de`, `la`, `le`, `del`). Each form receives its majority category over all its occurrences; ties and forms whose majority lies outside the partition are excluded. After the single-token filter, each category is cut to the size of the smallest one, keeping its most frequent forms.
+
+Table: Construction of the Lexical Dataset
 
 <!-- BEGIN:dataset -->
 :::booktabs[wide]
@@ -165,6 +171,8 @@ The function words are the binding category; the final $N$ is reported as obtain
 ### 3.4 Projection parameters
 
 PCA, t-SNE and Isomap use scikit-learn [22] and UMAP its reference implementation [9]. All parameters were fixed before collection; library defaults are written out so that results do not depend on the installed version's defaults.
+
+Table: Projection Parameters
 
 :::booktabs[wide]
 | Algorithm | Parameters |
@@ -237,6 +245,8 @@ The pipeline yields $N = 438$ word types (146 per category); the function words 
 
 ### 5.2 Neighbourhood preservation
 
+Table: Co-Ranking Metrics at $K = 10$ for Every Model and Projection
+
 <!-- BEGIN:main -->
 :::booktabs[wide]
 | Model | Algorithm | $M_T$ | $M_C$ | $Q_{NX}$ | $B_{NX}$ | $B_{TC}$ | $s$ |
@@ -268,6 +278,8 @@ The pipeline yields $N = 438$ word types (146 per category); the function words 
 <!-- END:main -->
 
 $s$: Silhouette of the reference partition in the 3D projection. For reference, the Silhouette in the original space and the variance captured by three principal components:
+
+Table: Original-Space Silhouette and PCA Variance
 
 <!-- BEGIN:highdim -->
 :::booktabs[wide]
@@ -346,6 +358,8 @@ Figures 7–11 show the five projection configurations of the same model, and Fi
 
 ### 5.4 Sensitivity to seed and perplexity
 
+Table: Sensitivity to Seed and Perplexity at $K = 10$
+
 <!-- BEGIN:sensitivity -->
 :::booktabs[wide]
 | Model | Configuration | $M_T(10)$ | $B_{NX}(10)$ | $s$ |
@@ -369,6 +383,8 @@ Figures 7–11 show the five projection configurations of the same model, and Fi
 <!-- END:sensitivity -->
 
 ### 5.5 Ablation: PCA without centring
+
+Table: PCA With and Without Centring
 
 <!-- BEGIN:ablation -->
 :::booktabs[wide]
@@ -442,6 +458,8 @@ _Figure 18: Top (XZ) camera preset with the parallel (orthographic) camera on th
 
 ## Appendix C: API
 
+Table: REST Endpoints
+
 :::booktabs
 | Endpoint | Description |
 |---|---|
@@ -456,6 +474,8 @@ _Figure 18: Top (XZ) camera preset with the parallel (orthographic) camera on th
 `model` ∈ {`qwen`, `gemma2`, `gpt2`, `bert`}; `algorithm` ∈ {`pca`, `pca_nc`, `tsne`, `tsne_p30`, `umap`, `isomap`}.
 
 ## Appendix D: Keyboard controls
+
+Table: Keyboard Controls
 
 :::booktabs
 | Input | Action |

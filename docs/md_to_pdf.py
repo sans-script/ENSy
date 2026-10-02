@@ -706,14 +706,323 @@ def postprocess_heading_hyphens(html: str) -> str:
 # HTML builder
 # ---------------------------------------------------------------------------
 
+# ── Document styles ─────────────────────────────────────────────────────────
+# "default": the ENSy look (EB Garamond, running header, automatic columns).
+# "ieee":    the IEEE conference template for A4 — Times (Tinos), margins
+#            19/43/14.32 mm, the whole body in two columns 4.22 mm apart, Roman
+#            level-1 and lettered level-2 headings, "Abstract—" / "Keywords—",
+#            TABLE I captions above tables, numbered equations, 8 pt captions
+#            and references, and no headers, footers or page numbers.
+# A document picks its style with a line <!-- md_to_pdf: style=ieee -->;
+# --style on the command line overrides it.
+STYLES = ("default", "ieee")
+_STYLE_DIRECTIVE = re.compile(r'<!--\s*md_to_pdf:\s*style\s*=\s*(\w+)\s*-->')
+CURRENT_STYLE = "default"   # set by build_html(), read by convert_to_pdf()
+
+_ROMAN_NUMERALS = [(1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"), (90, "XC"),
+                   (50, "L"), (40, "XL"), (10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I")]
+
+
+def _roman(n: int) -> str:
+    out = ""
+    for value, numeral in _ROMAN_NUMERALS:
+        while n >= value:
+            out += numeral
+            n -= value
+    return out
+
+
+def _letter(n: int) -> str:
+    return chr(ord("A") + n - 1)
+
+
+def ieee_preprocess(md_content: str) -> str:
+    """IEEE flows the whole body in two columns: drop column markers and page breaks."""
+    md_content = re.sub(r'---columns\{[^}]*\}---|---/columns---', '', md_content)
+    md_content = re.sub(
+        r'(?im)^[ \t]*(?::::+page-?break|---page-?break---|<!--\s*page-?break\s*-->)[ \t]*$',
+        '', md_content)
+    return md_content
+
+
+def _outside_markup(html: str, func) -> str:
+    """Apply func to the text of html outside tags, code, pre and math."""
+    protected = re.compile(
+        r'(<pre\b.*?</pre>|<code\b.*?</code>|<span class="arithmatex">.*?</span>'
+        r'|<div class="arithmatex">.*?</div>|<[^>]+>)', re.S)
+    parts = protected.split(html)
+    for i in range(0, len(parts), 2):
+        parts[i] = func(parts[i])
+    return "".join(parts)
+
+
+def ieee_postprocess(html: str) -> str:
+    """Rewrite the generated body into the IEEE conference layout."""
+    # Author block: "**Label:** value" lines under the title
+    def authors(m: re.Match) -> str:
+        pairs = re.findall(r'<strong>([^<:]+):</strong>\s*(.*?)\s*(?:<br\s*/?>|$)', m.group(1), re.S)
+        fields = {k.strip().lower(): v.strip() for k, v in pairs}
+        name = fields.pop("author", fields.pop("authors", ""))
+        affil = [fields.pop(k) for k in ("program", "department", "institution", "affiliation") if k in fields]
+        email = fields.pop("email", None)
+        meta = " · ".join((v if k == "date" else f"{k.title()} {v}") for k, v in fields.items() if v)
+        out = ['<div class="ieee-authors">']
+        if name:
+            out.append(f'<div class="ieee-author-name">{name}</div>')
+        if affil:
+            out.append(f'<div class="ieee-affil">{"<br>".join(affil)}</div>')
+        if email:
+            out.append(f'<div class="ieee-email">{email}</div>')
+        if meta:
+            out.append(f'<div class="ieee-meta">{meta}</div>')
+        out.append('</div>')
+        return "".join(out)
+
+    html = re.sub(r'<p>(\s*<strong>(?:Author|Authors):</strong>.*?)</p>', authors, html, count=1, flags=re.S)
+
+    # Abstract and keywords: run-in bold-italic heads with an em dash
+    html = re.sub(r'<h2[^>]*>\s*Abstract\s*</h2>\s*<p>(.*?)</p>',
+                  r'<p class="ieee-abstract"><span class="ieee-abs-head">Abstract</span>—\1</p>',
+                  html, count=1, flags=re.S | re.I)
+    html = re.sub(r'<p>\s*<strong>(?:Keywords|Index Terms):?</strong>:?\s*(.*?)</p>(\s*<hr\s*/?>)?',
+                  r'<p class="ieee-abstract"><span class="ieee-abs-head">Keywords</span>—\1</p>',
+                  html, count=1, flags=re.S | re.I)
+
+    # Headings: "1. Title" -> "I. Title"; "2.1 Title" -> "A. Title"; "2.1.3 Title" -> "3) Title:"
+    sections: dict[str, str] = {}
+
+    def h2(m: re.Match) -> str:
+        sections[m.group(2)] = _roman(int(m.group(2)))
+        return f'<h2{m.group(1)}>{_roman(int(m.group(2)))}. {m.group(3)}</h2>'
+
+    def h3(m: re.Match) -> str:
+        sections[f"{m.group(2)}.{m.group(3)}"] = f"{_roman(int(m.group(2)))}-{_letter(int(m.group(3)))}"
+        return f'<h3{m.group(1)}>{_letter(int(m.group(3)))}. {m.group(4)}</h3>'
+
+    html = re.sub(r'<h2([^>]*)>\s*(\d+)\.\s+(.*?)</h2>', h2, html, flags=re.S)
+    html = re.sub(r'<h3([^>]*)>\s*(\d+)\.(\d+)\.?\s+(.*?)</h3>', h3, html, flags=re.S)
+    html = re.sub(r'<h4([^>]*)>\s*\d+\.\d+\.(\d+)\.?\s+(.*?)</h4>', r'<h4\1>\2) \3:</h4>', html, flags=re.S)
+
+    # Cross-references follow the new numbering: "Section 5.4" -> "Section V-D"
+    def xref(text: str) -> str:
+        def one(m: re.Match) -> str:
+            key = m.group(2) + (f".{m.group(3)}" if m.group(3) else "")
+            return f"Section{m.group(1)} {sections.get(key, key)}"
+        return re.sub(r'\bSection(s?) (\d+)(?:\.(\d+))?\b', one, text)
+
+    html = _outside_markup(html, xref)
+
+    # Figure captions: centred when they fit on one line, justified otherwise
+    html = re.sub(r'<figcaption>(.*?)</figcaption>',
+                  r'<figcaption><span class="cap-inner">\1</span></figcaption>', html, flags=re.S)
+
+    # The whole body, from the abstract on, flows in two columns
+    start = html.find('<p class="ieee-abstract">')
+    if start == -1:
+        end_authors = html.find('</div>', html.find('<div class="ieee-authors">'))
+        start = end_authors + len('</div>') if end_authors != -1 else html.find('</h1>') + len('</h1>')
+    html = (html[:start] + '<div class="columns-layout ieee-body" style="column-count:2; column-gap:4.22mm;">'
+            + _ieee_place_spanners(html[start:]) + '</div>')
+    return html
+
+
+_IEEE_FLOAT = re.compile(r'^\s*<(?:figure\b|div class="(?:academic-figure|plot-figure|booktabs-wrapper booktabs-wide)\b)')
+_IEEE_CODE = re.compile(r'^\s*<(?:pre\b|div class="codehilite\b)')
+_IEEE_HEADING = re.compile(r'^\s*<h[23]\b')
+IEEE_SHORT_INTRO_WORDS = 80
+
+
+def _ieee_place_spanners(body: str) -> str:
+    """
+    Chromium has no floats: a block spanning both columns stays where it is in the
+    flow and the text before it is balanced in two columns above it. That strands
+    headings and splits short intros, so:
+      - a heading directly followed by a spanning block (figure, wide table, code)
+        joins it in one full-width unit that is never split across pages;
+      - a heading plus a short intro (< 80 words) right before a spanning block
+        is set full width instead of being split across the columns.
+    """
+    blocks = [b for b in _top_level_blocks(body) if b.strip()]
+    spans = [bool(_IEEE_FLOAT.match(b) or _IEEE_CODE.match(b)) for b in blocks]
+
+    merged, merged_spans = [], []
+    i = 0
+    while i < len(blocks):
+        if _IEEE_HEADING.match(blocks[i]):
+            j = i
+            while j < len(blocks) and _IEEE_HEADING.match(blocks[j]):
+                j += 1
+            if j < len(blocks) and spans[j]:
+                merged.append('<div class="ieee-span ieee-keep">' + "".join(blocks[i:j + 1]) + '</div>')
+                merged_spans.append(True)
+                i = j + 1
+                continue
+        merged.append(blocks[i])
+        merged_spans.append(spans[i])
+        i += 1
+
+    result, segment = [], []
+
+    def flush(before_spanner: bool):
+        words = sum(_words(b) for b in segment)
+        has_heading = any(_IEEE_HEADING.match(b) for b in segment)
+        if segment and before_spanner and has_heading and words < IEEE_SHORT_INTRO_WORDS:
+            result.append('<div class="ieee-span ieee-keep">' + "".join(segment) + '</div>')
+        else:
+            result.extend(segment)
+        segment.clear()
+
+    for b, is_span in zip(merged, merged_spans):
+        if is_span:
+            flush(before_spanner=True)
+            result.append(b)
+        else:
+            segment.append(b)
+    flush(before_spanner=False)
+    return "".join(result)
+
+
+def postprocess_table_captions(html: str, style: str) -> str:
+    """
+    A paragraph "Table: Caption" right before a table becomes its numbered caption,
+    placed above the table (IEEE: "TABLE I" in small caps; default: "Table 1.").
+    Region comments such as <!-- BEGIN:main --> may sit between the two.
+    """
+    count = 0
+
+    def caption(m: re.Match) -> str:
+        nonlocal count
+        count += 1
+        if style == "ieee":
+            label = f'<span class="table-label">Table {_roman(count)}</span>'
+        else:
+            label = f'<strong class="table-label">Table {count}.</strong> '
+        return (f'{m.group("between")}<div class="{m.group("cls")}">'
+                f'<div class="table-caption">{label}{m.group("cap").strip()}</div>')
+
+    return re.sub(
+        r'<p>\s*Table:\s*(?P<cap>(?:(?!</p>).)*?)</p>\s*(?P<between>(?:<!--.*?-->\s*)*)'
+        r'<div class="(?P<cls>booktabs-wrapper[^"]*)">',
+        caption, html, flags=re.S)
+
+
+IEEE_CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&family=Cousine&display=swap');
+@page {{ size: 210mm 297mm; margin: 19mm 14.32mm 43mm 14.32mm; }}
+body.ieee {{
+  font-family: 'Tinos', 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  line-height: 11.5pt;
+  color: #000000;
+}}
+body.ieee a {{ color: inherit; text-decoration: none; }}
+body.ieee h1 {{
+  font-family: 'Tinos', 'Times New Roman', Times, serif;
+  font-size: 24pt; font-weight: 400; line-height: 1.15;
+  font-variant: normal; text-transform: none; letter-spacing: 0;
+  text-align: center; border: none; padding: 0; margin: 0 0 10pt;
+}}
+.ieee-authors {{ text-align: center; margin: 0 0 16pt; line-height: 1.3; }}
+.ieee-author-name {{ font-size: 11pt; }}
+.ieee-affil {{ font-size: 10pt; font-style: italic; }}
+.ieee-email {{ font-family: 'Cousine', 'Courier New', monospace; font-size: 9pt; }}
+.ieee-meta {{ font-size: 9pt; margin-top: 2pt; }}
+
+body.ieee .columns-layout {{ column-gap: 4.22mm; }}
+body.ieee .columns-layout p,
+body.ieee .columns-layout li {{
+  line-height: 11.5pt !important;
+  word-spacing: 0 !important;
+}}
+body.ieee .columns-layout > p {{
+  text-indent: 3.6mm;
+  margin-bottom: 0 !important;
+}}
+body.ieee .columns-layout > p.ieee-abstract {{
+  font-size: 9pt; font-weight: 700; line-height: 10.5pt !important;
+  text-indent: 3.6mm; margin-bottom: 5pt !important;
+}}
+.ieee-abs-head {{ font-style: italic; }}
+
+body.ieee .columns-layout h2,
+body.ieee h2 {{
+  font-family: 'Tinos', 'Times New Roman', Times, serif !important;
+  font-size: 10pt !important; font-weight: 400 !important;
+  font-variant: small-caps; letter-spacing: 0.03em; text-transform: none;
+  text-align: center !important;
+  margin: 10pt 0 5pt !important; line-height: 1.2 !important;
+}}
+body.ieee .columns-layout h3,
+body.ieee h3 {{
+  font-family: 'Tinos', 'Times New Roman', Times, serif !important;
+  font-size: 10pt !important; font-weight: 400 !important; font-style: italic;
+  text-align: left !important;
+  margin: 7pt 0 3pt !important; line-height: 1.2 !important;
+}}
+body.ieee .columns-layout h4,
+body.ieee h4 {{
+  font-size: 10pt !important; font-weight: 400 !important; font-style: italic;
+  margin: 5pt 0 2pt 3.6mm !important;
+}}
+
+body.ieee figure figcaption,
+body.ieee .academic-figure figcaption {{
+  font-size: 8pt !important; line-height: 9.5pt !important;
+  text-align: center !important; font-style: normal !important;
+}}
+body.ieee .cap-inner {{ display: inline-block; text-align: justify; }}
+body.ieee .caption-label {{ font-weight: 400 !important; }}
+
+.table-caption {{ margin: 0 0 4pt; font-size: 9pt; }}
+body.ieee .table-caption {{
+  font-size: 8pt; font-variant: small-caps; text-align: center; letter-spacing: 0.02em;
+}}
+body.ieee .table-caption .table-label {{ display: block; }}
+body.ieee table, body.ieee .booktabs-wrapper table {{ font-size: 8pt !important; }}
+
+body.ieee .columns-layout pre {{ column-span: all !important; }}
+body.ieee .columns-layout > .ieee-span {{ column-span: all !important; }}
+body.ieee .ieee-keep {{ break-inside: avoid; page-break-inside: avoid; }}
+body.ieee .ieee-span > h2, body.ieee .ieee-span > h3 {{ break-after: avoid; }}
+body.ieee .columns-layout > .ieee-span > p {{ text-indent: 3.6mm; margin-bottom: 0 !important; }}
+/* a paragraph that continues a sentence after a display equation is not indented */
+body.ieee .columns-layout > div.arithmatex + p,
+body.ieee .columns-layout > .arithmatex + p {{ text-indent: 0 !important; }}
+
+body.ieee .references-section {{
+  column-count: auto !important; column-span: none !important;
+  break-before: auto !important; page-break-before: auto !important;
+}}
+body.ieee .references-section h2 {{ column-span: none !important; margin-top: 10pt !important; }}
+body.ieee .references-section p,
+body.ieee .references-section li {{
+  font-size: 8pt !important; line-height: 9.5pt !important;
+  margin-bottom: 2.5pt !important; text-indent: 0 !important;
+}}
+"""
+
+
 def build_html(input_path: str = DOCS_MD_PATH,
-               output_path: str = TEMP_HTML_PATH) -> None:
+               output_path: str = TEMP_HTML_PATH,
+               style: str | None = None) -> str:
+    """Write the HTML for input_path and return the style used."""
+    global CURRENT_STYLE
 
     with open(input_path, "r", encoding="utf-8") as f:
         md_content = f.read()
 
     docs_dir = os.path.dirname(os.path.abspath(input_path))
     base_dir = os.path.dirname(docs_dir)
+
+    if style is None:
+        directive = _STYLE_DIRECTIVE.search(md_content)
+        style = directive.group(1).lower() if directive else "default"
+    if style not in STYLES:
+        raise ValueError(f"unknown style '{style}' (choose from {', '.join(STYLES)})")
+    CURRENT_STYLE = style
+    print(f"[OK] Style: {style}")
+    if style == "ieee":
+        md_content = ieee_preprocess(md_content)
 
     # --- Pre-processing pipeline (order matters) ---
     if _PLOTS_AVAILABLE:
@@ -764,6 +1073,11 @@ def build_html(input_path: str = DOCS_MD_PATH,
         html_body,
     )
 
+    # Post-process: numbered captions above tables ("Table: ..." paragraphs)
+    html_body = postprocess_table_captions(html_body, style)
+    if style == "ieee":
+        html_body = ieee_postprocess(html_body)
+
     html_template = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -774,7 +1088,7 @@ def build_html(input_path: str = DOCS_MD_PATH,
 <script>
 window.MathJax = {{
   tex: {{
-    tags: 'ams',
+    tags: '{"all" if style == "ieee" else "ams"}',
     tagSide: 'right',
     tagIndent: '0.8em',
     inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
@@ -1500,9 +1814,10 @@ p.reference {{
   break-inside: avoid;
   page-break-inside: avoid;
 }}
+{IEEE_CSS.format() if style == "ieee" else ""}
 </style>
 </head>
-<body>
+<body{' class="ieee"' if style == "ieee" else ''}>
 {html_body}
 </body>
 </html>
@@ -1512,6 +1827,7 @@ p.reference {{
         f.write(html_template)
 
     print(f"[OK] HTML generated: {output_path}")
+    return style
 
 
 # ---------------------------------------------------------------------------
@@ -1669,13 +1985,13 @@ def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
             landscape=False,
             prefer_css_page_size=False,
             print_background=True,
-            margin={
-                "top":    "22mm",
-                "bottom": "22mm",
-                "left":   "20mm",
-                "right":  "20mm",
-            },
-            display_header_footer=True,
+            # IEEE: A4 conference margins; page numbers, headers and footers are not used
+            margin=(
+                {"top": "19mm", "bottom": "43mm", "left": "14.32mm", "right": "14.32mm"}
+                if CURRENT_STYLE == "ieee" else
+                {"top": "22mm", "bottom": "22mm", "left": "20mm", "right": "20mm"}
+            ),
+            display_header_footer=CURRENT_STYLE != "ieee",
             header_template=f"""
             {header_font_style}
             <div style="width:100%; font-family:'EB Garamond',Georgia,serif;
@@ -1869,6 +2185,12 @@ def main() -> None:
         help="Keep the intermediate HTML file for debugging",
     )
     parser.add_argument(
+        "--style",
+        choices=STYLES,
+        default=None,
+        help="Document style; overrides a <!-- md_to_pdf: style=... --> line in the input",
+    )
+    parser.add_argument(
         "--watch", "-w",
         action="store_true",
         help="Watch input file and assets for changes and auto-regenerate PDF",
@@ -1886,7 +2208,7 @@ def main() -> None:
         input_dir  = os.path.dirname(os.path.abspath(args.input))
         temp_html  = os.path.join(input_dir, "temp_docs.html")
 
-        build_html(input_path=args.input, output_path=temp_html)
+        build_html(input_path=args.input, output_path=temp_html, style=args.style)
         render_pdf(
             html_path=temp_html,
             pdf_path=args.output,
