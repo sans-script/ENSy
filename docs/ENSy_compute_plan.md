@@ -58,7 +58,7 @@ Safetensors files start with a byte-offset header, so HTTP `Range` requests can 
 ## 4. Safety and licensing notes
 
 - Never commit the token; GitHub and Colab secrets only. The workflow must not echo it.
-- Only derived artefacts are committed: the token-id list, the L2-normalised rows are **not** stored — only metrics and projections. Check that the Gemma terms of use allow publishing derived metrics (they generally do for research), and cite the model and revision.
+- Only derived artefacts are committed (words, token ids, metrics, projections); the embedding vectors themselves are **not** stored. Check that the Gemma terms of use allow publishing derived metrics (they generally do for research), and cite the model and revision.
 - The full PTB is LDC-licensed; the pipeline uses the NLTK sample. Do not upload LDC data to Colab or Actions without checking the licence.
 
 ## 5. Decisions needed from the author
