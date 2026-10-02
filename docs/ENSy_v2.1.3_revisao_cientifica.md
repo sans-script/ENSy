@@ -105,7 +105,7 @@ Além das $N$ chamadas de desenho, o laço de animação fazia `labelElementsRef
 
 Dataset congelado com os quatro tokenizers (Qwen 2.5 0.5B-Instruct, Gemma 2B v1, Gemma 2 2B, BERT base uncased): $N=438$ (146 por categoria), hash `40863cdefcb4`, revisões fixadas no JSON. Extração por HTTP Range (só as 438 linhas de cada matriz). Seed 42. Arquivos: `results/main_40863cdefcb4.json`, `results/ablation_40863cdefcb4.json`, `results/sensitivity_40863cdefcb4.json`.
 
-**Proveniência:** estes arquivos foram gerados localmente com a árvore de trabalho modificada (`working_tree_dirty: true`), com o mesmo código do commit `43f478a`. Os números canônicos do TCC são os da execução no GitHub Actions (árvore limpa); o passo de comparação do workflow mede a diferença em relação a estes.
+**Atualização (2026-10-02):** a tabela abaixo é da execução local (Windows) com quatro algoritmos. Os números canônicos — cinco configurações por modelo (t-SNE com perplexidade 5 e 30), Silhouette 2D e 3D, gerados no GitHub Actions a partir de uma árvore limpa (commit `35fffe0`) — estão em `results/` e na Seção 5 de `docs/DOCS.md`. PCA, PCA-NC e Isomap são idênticos entre as plataformas; t-SNE e UMAP diferem entre Windows e Linux mesmo com seed fixo (diferenças da ordem da variação entre seeds), por isso os resultados estocásticos devem ser lidos pela análise de sensibilidade.
 
 ### 4.1 Matriz principal, $K=10$
 

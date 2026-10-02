@@ -1,7 +1,7 @@
 {
  "kind": "ablation",
  "provisional": false,
- "created_utc": "2026-10-02T14:57:11+00:00",
+ "created_utc": "2026-10-02T16:04:10+00:00",
  "dataset_hash": "40863cdefcb4afec7d5331da3e30834976d6efcbf594ad8e011fc9dfae215715",
  "N": 438,
  "K_main": 10,
@@ -24,11 +24,11 @@
   "bert": "86b5e0934494bd15c9632b12f734a8a67f723594"
  },
  "environment": {
-  "commit_sha": "b8ed448f264c6dbc2527f18a40d47d5f3bc21dfb",
-  "working_tree_dirty": true,
-  "python": "3.12.10",
-  "platform": "Windows-11-10.0.26200-SP0",
-  "processor": "AMD64 Family 23 Model 104 Stepping 1, AuthenticAMD",
+  "commit_sha": "35fffe06e8340f0618ed7550f30c885e82df6cac",
+  "working_tree_dirty": false,
+  "python": "3.12.14",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "processor": "x86_64",
   "numpy": "2.1.3",
   "scipy": "1.15.2",
   "scikit_learn": "1.6.1",
@@ -51,9 +51,9 @@
    },
    "diagnostics": {
     "explained_variance_ratio": [
-     0.050762788574876885,
-     0.04113652351785269,
-     0.01669831944345457
+     0.05076278857487686,
+     0.04113652351785272,
+     0.016698319443454575
     ]
    },
    "N_evaluated": 438,
@@ -123,14 +123,14 @@
      "hard_extrusions": 6680
     }
    ],
-   "silhouette_projected": 0.10467576586477231,
-   "silhouette_projected_2d": 0.0591389008604882
+   "silhouette_projected": 0.10467576586477205,
+   "silhouette_projected_2d": 0.05913890086048808
   },
   {
    "model": "gemma",
    "hf_id": "google/gemma-2b",
    "embedding_dim": 2048,
-   "silhouette_high_dim_cosine": 0.055266641080379486,
+   "silhouette_high_dim_cosine": 0.055266644805669785,
    "algorithm": "pca_nc",
    "params": {
     "n_components": 3,
@@ -140,8 +140,8 @@
    },
    "diagnostics": {
     "explained_variance_ratio": [
-     0.7688869722765616,
-     0.013820919485055051,
+     0.7688869722765614,
+     0.013820919485055039,
      0.0080299035148689
     ]
    },
@@ -212,8 +212,8 @@
      "hard_extrusions": 6808
     }
    ],
-   "silhouette_projected": 0.36109779923095003,
-   "silhouette_projected_2d": 0.10772677220302201
+   "silhouette_projected": 0.36109779923094987,
+   "silhouette_projected_2d": 0.10772677220302171
   },
   {
    "model": "gemma2",
@@ -230,8 +230,8 @@
    "diagnostics": {
     "explained_variance_ratio": [
      0.10347782123364335,
-     0.03521115194284547,
-     0.01855574312632463
+     0.03521115194284551,
+     0.01855574312632465
     ]
    },
    "N_evaluated": 438,
@@ -302,13 +302,13 @@
     }
    ],
    "silhouette_projected": 0.18921491336094473,
-   "silhouette_projected_2d": 0.10076839091101705
+   "silhouette_projected_2d": 0.10076839091101694
   },
   {
    "model": "bert",
    "hf_id": "bert-base-uncased",
    "embedding_dim": 768,
-   "silhouette_high_dim_cosine": 0.02522098459303379,
+   "silhouette_high_dim_cosine": 0.02522098273038864,
    "algorithm": "pca_nc",
    "params": {
     "n_components": 3,
@@ -318,9 +318,9 @@
    },
    "diagnostics": {
     "explained_variance_ratio": [
-     0.2379426663692593,
-     0.04644119547866305,
-     0.019079099447304498
+     0.23794266636925923,
+     0.04644119547866298,
+     0.01907909944730448
     ]
    },
    "N_evaluated": 438,
@@ -390,8 +390,8 @@
      "hard_extrusions": 7060
     }
    ],
-   "silhouette_projected": 0.09605996640194353,
-   "silhouette_projected_2d": 0.0008090718811167522
+   "silhouette_projected": 0.09605996640194343,
+   "silhouette_projected_2d": 0.0008090718811167604
   }
  ]
 }

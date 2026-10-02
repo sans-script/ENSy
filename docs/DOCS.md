@@ -192,7 +192,7 @@ Before any result was produced, the metric code was validated by an automated su
 
 ### 4.1 Architecture
 
-A FastAPI server loads the frozen dataset, extracts and caches the normalised rows per model, and serves, for each (model, algorithm) pair, the projected coordinates, the metric curves, $B_{NX,i}(K)$ for every token and $K$, the 20 nearest neighbours of every token in both spaces, and both Silhouette scores. A React/TypeScript client renders the projection with Three.js. No placeholder data is ever displayed: when a projection is being computed the viewer says so, and when data are unavailable it shows the reason.
+A FastAPI server loads the frozen dataset, extracts and caches the normalised rows per model, and serves, for each (model, algorithm) pair, the projected coordinates, the metric curves, $B_{NX,i}(K)$ for every token and $K$, the 20 nearest neighbours of every token in both spaces, and both Silhouette scores. A React/TypeScript client renders the projection with Three.js. No placeholder data is ever displayed: when a projection is being computed the viewer says so, and when data are unavailable it shows the reason. The screenshots in this manuscript were captured from a local (Windows) server; the t-SNE and UMAP values visible in their panels can therefore differ slightly from the canonical values of Section 5 (see Section 6.1).
 
 ![The ENSy workspace](screenshots/fig01_workspace.png)
 
@@ -243,28 +243,28 @@ The pipeline yields $N = 438$ word types (146 per category); the function words 
 | Model | Algorithm | $M_T$ | $M_C$ | $Q_{NX}$ | $B_{NX}$ | $B_{TC}$ | $s_{3D}$ | $s_{2D}$ |
 |---|---|---|---|---|---|---|---|---|
 | Qwen 2.5 0.5B | PCA | 0.830 | 0.828 | 0.205 | −0.007 | −0.001 | +0.161 | +0.081 |
-| Qwen 2.5 0.5B | t-SNE ($p=5$) | 0.878 | 0.896 | 0.483 | +0.017 | +0.018 | +0.257 | +0.296 |
-| Qwen 2.5 0.5B | t-SNE ($p=30$) | 0.887 | 0.901 | 0.481 | −0.032 | +0.014 | +0.208 | +0.307 |
-| Qwen 2.5 0.5B | UMAP | 0.906 | 0.922 | 0.491 | +0.019 | +0.016 | +0.362 | +0.379 |
+| Qwen 2.5 0.5B | t-SNE ($p=5$) | 0.875 | 0.891 | 0.477 | +0.016 | +0.016 | +0.243 | +0.296 |
+| Qwen 2.5 0.5B | t-SNE ($p=30$) | 0.890 | 0.883 | 0.479 | −0.041 | −0.008 | +0.153 | +0.330 |
+| Qwen 2.5 0.5B | UMAP | 0.899 | 0.923 | 0.486 | +0.032 | +0.025 | +0.370 | +0.387 |
 | Qwen 2.5 0.5B | Isomap | 0.792 | 0.910 | 0.248 | +0.028 | +0.117 | +0.281 | +0.341 |
 | Gemma 2B (v1) | PCA | 0.847 | 0.875 | 0.222 | +0.002 | +0.028 | +0.307 | +0.369 |
-| Gemma 2B (v1) | t-SNE ($p=5$) | 0.840 | 0.821 | 0.376 | +0.005 | −0.019 | +0.246 | +0.320 |
-| Gemma 2B (v1) | t-SNE ($p=30$) | 0.854 | 0.874 | 0.386 | −0.042 | +0.021 | +0.212 | +0.358 |
-| Gemma 2B (v1) | UMAP | 0.875 | 0.921 | 0.397 | +0.017 | +0.046 | +0.399 | +0.384 |
+| Gemma 2B (v1) | t-SNE ($p=5$) | 0.849 | 0.899 | 0.386 | +0.020 | +0.050 | +0.287 | +0.318 |
+| Gemma 2B (v1) | t-SNE ($p=30$) | 0.848 | 0.799 | 0.373 | −0.027 | −0.049 | +0.183 | +0.357 |
+| Gemma 2B (v1) | UMAP | 0.875 | 0.920 | 0.393 | +0.017 | +0.045 | +0.392 | +0.411 |
 | Gemma 2B (v1) | Isomap | 0.816 | 0.885 | 0.207 | −0.001 | +0.069 | +0.279 | +0.295 |
 | Gemma 2 2B | PCA | 0.867 | 0.802 | 0.189 | −0.010 | −0.065 | +0.240 | +0.157 |
-| Gemma 2 2B | t-SNE ($p=5$) | 0.880 | 0.906 | 0.434 | +0.022 | +0.026 | +0.247 | +0.282 |
-| Gemma 2 2B | t-SNE ($p=30$) | 0.891 | 0.879 | 0.415 | −0.054 | −0.011 | +0.233 | +0.270 |
-| Gemma 2 2B | UMAP | 0.911 | 0.934 | 0.431 | +0.009 | +0.022 | +0.353 | +0.385 |
+| Gemma 2 2B | t-SNE ($p=5$) | 0.884 | 0.879 | 0.438 | +0.013 | −0.005 | +0.234 | +0.292 |
+| Gemma 2 2B | t-SNE ($p=30$) | 0.901 | 0.909 | 0.432 | −0.027 | +0.008 | +0.238 | +0.283 |
+| Gemma 2 2B | UMAP | 0.911 | 0.934 | 0.428 | +0.005 | +0.022 | +0.345 | +0.363 |
 | Gemma 2 2B | Isomap | 0.864 | 0.920 | 0.238 | +0.012 | +0.057 | +0.298 | +0.336 |
 | BERT base | PCA | 0.819 | 0.810 | 0.182 | −0.005 | −0.008 | +0.159 | +0.089 |
-| BERT base | t-SNE ($p=5$) | 0.877 | 0.856 | 0.427 | −0.002 | −0.022 | +0.199 | +0.262 |
-| BERT base | t-SNE ($p=30$) | 0.873 | 0.845 | 0.411 | −0.034 | −0.028 | +0.196 | +0.231 |
-| BERT base | UMAP | 0.895 | 0.904 | 0.427 | +0.011 | +0.009 | +0.256 | +0.308 |
+| BERT base | t-SNE ($p=5$) | 0.876 | 0.853 | 0.429 | +0.001 | −0.023 | +0.201 | +0.262 |
+| BERT base | t-SNE ($p=30$) | 0.874 | 0.847 | 0.405 | −0.039 | −0.027 | +0.181 | +0.222 |
+| BERT base | UMAP | 0.895 | 0.903 | 0.425 | +0.014 | +0.008 | +0.261 | +0.321 |
 | BERT base | Isomap | 0.794 | 0.860 | 0.201 | +0.012 | +0.066 | +0.166 | +0.056 |
 :::
 
-*Source: `results/main_40863cdefcb4.json` — commit `b8ed448f` (clean working tree), Python 3.12.10, scikit-learn 1.6.1, umap-learn 0.5.7, seed 42, extraction: HTTP Range rows.*
+*Source: `results/main_40863cdefcb4.json` — commit `35fffe06` (clean working tree), Python 3.12.14, scikit-learn 1.6.1, umap-learn 0.5.7, seed 42, extraction: HTTP Range rows.*
 
 <!-- END:main -->
 
@@ -292,9 +292,9 @@ _Figure 6: Trustworthiness $M_T(K)$ over $K$ for every model and projection conf
 
 
 <!-- BEGIN:curves_bnx -->
-![Behaviour indicator $B_{NX}(K)$ over $K$ (positive: intrusive; negative: extrusive). With perplexity 30, t-SNE is below zero at every $K$ in all four models; with perplexity 5 it is positive for Qwen and Gemma 2, positive for Gemma 1 except at $K=5$, and close to zero for BERT.](figures/curves_bnx.png)
+![Behaviour indicator $B_{NX}(K)$ over $K$ (positive: intrusive; negative: extrusive). With perplexity 30, t-SNE is below zero at every $K$ in all four models; with perplexity 5 it is above zero for Qwen and the two Gemma models and close to zero for BERT.](figures/curves_bnx.png)
 
-_Figure 7: Behaviour indicator $B_{NX}(K)$ over $K$ (positive: intrusive; negative: extrusive). With perplexity 30, t-SNE is below zero at every $K$ in all four models; with perplexity 5 it is positive for Qwen and Gemma 2, positive for Gemma 1 except at $K=5$, and close to zero for BERT._
+_Figure 7: Behaviour indicator $B_{NX}(K)$ over $K$ (positive: intrusive; negative: extrusive). With perplexity 30, t-SNE is below zero at every $K$ in all four models; with perplexity 5 it is above zero for Qwen and the two Gemma models and close to zero for BERT._
 
 <!-- END:curves_bnx -->
 
@@ -314,21 +314,21 @@ _Figure 9: UMAP projections of the four models from the same camera and paramete
 :::booktabs[wide]
 | Model | Configuration | $M_T(10)$ | $B_{NX}(10)$ | $s_{3D}$ | $s_{2D}$ |
 |---|---|---|---|---|---|
-| Qwen 2.5 0.5B | t-SNE $p=5$ | 0.880 ± 0.003 | +0.014 ± 0.002 | +0.250 ± 0.006 | +0.293 ± 0.005 |
-| Qwen 2.5 0.5B | t-SNE $p=30$ | 0.892 ± 0.006 | −0.036 ± 0.005 | +0.189 ± 0.017 | +0.297 ± 0.014 |
-| Qwen 2.5 0.5B | UMAP | 0.903 ± 0.003 | +0.019 ± 0.006 | +0.363 ± 0.008 | +0.378 ± 0.005 |
-| Gemma 2B (v1) | t-SNE $p=5$ | 0.845 ± 0.004 | +0.012 ± 0.005 | +0.260 ± 0.017 | +0.320 ± 0.004 |
-| Gemma 2B (v1) | t-SNE $p=30$ | 0.849 ± 0.007 | −0.036 ± 0.005 | +0.194 ± 0.018 | +0.348 ± 0.018 |
-| Gemma 2B (v1) | UMAP | 0.874 ± 0.002 | +0.014 ± 0.003 | +0.393 ± 0.010 | +0.394 ± 0.014 |
-| Gemma 2 2B | t-SNE $p=5$ | 0.882 ± 0.002 | +0.020 ± 0.006 | +0.235 ± 0.033 | +0.289 ± 0.006 |
-| Gemma 2 2B | t-SNE $p=30$ | 0.893 ± 0.002 | −0.047 ± 0.007 | +0.224 ± 0.007 | +0.312 ± 0.027 |
-| Gemma 2 2B | UMAP | 0.914 ± 0.002 | +0.009 ± 0.009 | +0.356 ± 0.002 | +0.376 ± 0.011 |
-| BERT base | t-SNE $p=5$ | 0.877 ± 0.002 | −0.001 ± 0.002 | +0.204 ± 0.005 | +0.260 ± 0.009 |
-| BERT base | t-SNE $p=30$ | 0.872 ± 0.002 | −0.039 ± 0.004 | +0.173 ± 0.016 | +0.174 ± 0.068 |
-| BERT base | UMAP | 0.892 ± 0.003 | +0.018 ± 0.007 | +0.254 ± 0.007 | +0.301 ± 0.014 |
+| Qwen 2.5 0.5B | t-SNE $p=5$ | 0.878 ± 0.002 | +0.012 ± 0.003 | +0.249 ± 0.004 | +0.297 ± 0.004 |
+| Qwen 2.5 0.5B | t-SNE $p=30$ | 0.889 ± 0.005 | −0.031 ± 0.007 | +0.185 ± 0.028 | +0.315 ± 0.025 |
+| Qwen 2.5 0.5B | UMAP | 0.904 ± 0.004 | +0.028 ± 0.005 | +0.366 ± 0.008 | +0.378 ± 0.006 |
+| Gemma 2B (v1) | t-SNE $p=5$ | 0.846 ± 0.003 | +0.012 ± 0.010 | +0.262 ± 0.019 | +0.321 ± 0.004 |
+| Gemma 2B (v1) | t-SNE $p=30$ | 0.852 ± 0.010 | −0.031 ± 0.006 | +0.218 ± 0.026 | +0.339 ± 0.032 |
+| Gemma 2B (v1) | UMAP | 0.874 ± 0.002 | +0.016 ± 0.005 | +0.386 ± 0.009 | +0.401 ± 0.016 |
+| Gemma 2 2B | t-SNE $p=5$ | 0.883 ± 0.004 | +0.018 ± 0.006 | +0.228 ± 0.019 | +0.289 ± 0.006 |
+| Gemma 2 2B | t-SNE $p=30$ | 0.897 ± 0.003 | −0.037 ± 0.006 | +0.221 ± 0.015 | +0.315 ± 0.027 |
+| Gemma 2 2B | UMAP | 0.914 ± 0.002 | +0.004 ± 0.011 | +0.356 ± 0.007 | +0.365 ± 0.011 |
+| BERT base | t-SNE $p=5$ | 0.879 ± 0.001 | −0.002 ± 0.003 | +0.203 ± 0.009 | +0.261 ± 0.008 |
+| BERT base | t-SNE $p=30$ | 0.874 ± 0.004 | −0.039 ± 0.005 | +0.181 ± 0.019 | +0.205 ± 0.036 |
+| BERT base | UMAP | 0.891 ± 0.004 | +0.017 ± 0.006 | +0.255 ± 0.011 | +0.295 ± 0.021 |
 :::
 
-*Mean ± sample standard deviation over seeds {0, 1, 2, 3, 42}.* *Source: `results/sensitivity_40863cdefcb4.json` — commit `b8ed448f` (modified working tree), Python 3.12.10, scikit-learn 1.6.1, umap-learn 0.5.7, seed 42, extraction: HTTP Range rows.*
+*Mean ± sample standard deviation over seeds {0, 1, 2, 3, 42}.* *Source: `results/sensitivity_40863cdefcb4.json` — commit `35fffe06` (clean working tree), Python 3.12.14, scikit-learn 1.6.1, umap-learn 0.5.7, seed 42, extraction: HTTP Range rows.*
 
 <!-- END:sensitivity -->
 
@@ -366,7 +366,7 @@ _Figure 9: UMAP projections of the four models from the same camera and paramete
 **No causal attribution.** The models differ in many factors at once.
 **Sample.** The dataset comes from the NLTK sample of the Penn Treebank and is limited by the 146 function words that are single tokens in all tokenizers; the results describe these 438 frequent English word types.
 **Descriptive statistics.** The main matrix uses one seed per configuration; variability is reported by the sensitivity analysis, and no hypothesis tests are performed.
-**Reproducibility across platforms.** All numbers in Section 5 come from the continuous-integration run (Linux, clean checkout of the recorded commit). A local re-run on Windows reproduced the dataset hash and the deterministic projections (PCA, PCA-NC, Isomap) exactly, but not t-SNE and UMAP: with the same seed, their metrics differed across the two platforms by amounts comparable to the seed-to-seed spread of Section 5.4. A fixed seed therefore guarantees reproducibility only on a fixed software and hardware stack, and the seed distribution, not a single seed, is the appropriate report for stochastic projections.
+**Reproducibility across platforms.** All numbers in Section 5 come from the continuous-integration run (Linux, clean checkout of the recorded commit); two such runs on different commits with unchanged pipeline code agreed to within $10^{-6}$. A local re-run on Windows reproduced the dataset hash and the deterministic projections (PCA, PCA-NC, Isomap) exactly, but not t-SNE and UMAP: with the same seed, their metrics differed across the two platforms by amounts comparable to the seed-to-seed spread of Section 5.4. A fixed seed therefore guarantees reproducibility only on a fixed software and hardware stack, and the seed distribution, not a single seed, is the appropriate report for stochastic projections.
 **Single-tokenisation bias.** Restricting to single-token words favours frequent, short words, whose embeddings are typically better trained.
 
 ## 7. Conclusion
