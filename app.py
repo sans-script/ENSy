@@ -77,6 +77,13 @@ def _check(model: str, algorithm: str, ds: dict) -> None:
                                         f"(built with {sorted(ds['models'])})")
 
 
+def _silhouette_2d(X: np.ndarray, algorithm: str, labels: np.ndarray) -> float:
+    """Silhouette on a genuine 2-D projection (same parameters, n_components = 2)."""
+    Y2, diag2 = P.project(X, algorithm, {"n_components": 2})
+    kept2 = np.asarray(diag2.get("kept", np.arange(len(X))))
+    return silhouette(Y2, labels[kept2])
+
+
 def _compute(model: str, algorithm: str, ds: dict) -> dict:
     key = (model, ds["dataset_hash"], algorithm)
     with _lock:
@@ -101,6 +108,7 @@ def _compute(model: str, algorithm: str, ds: dict) -> dict:
             "hd_order": kept[np.argsort(rho, axis=1)[:, 1:K_PROBE_MAX + 1]],
             "ld_order": kept[np.argsort(r, axis=1)[:, 1:K_PROBE_MAX + 1]],
             "silhouette": silhouette(Y, labels[kept]),
+            "silhouette_2d": _silhouette_2d(X, algorithm, labels),
         }
         _projections[key] = out
         return out
@@ -148,6 +156,7 @@ def _payload(model: str, algorithm: str, ds: dict) -> dict:
             "K_curve": list(K_CURVE),
             "metrics": res["curves"],
             "silhouette_projected": res["silhouette"],
+            "silhouette_projected_2d": res["silhouette_2d"],
             "category_colors": CATEGORY_COLORS,
         },
         "nodes": nodes,
@@ -233,7 +242,8 @@ def compare(models: str = Query(None)):
             _check(mk, alg, ds)
             res = _compute(mk, alg, ds)
             rows.append({"model": mk, "algorithm": alg, "curves": res["curves"],
-                         "silhouette_projected": res["silhouette"]})
+                         "silhouette_projected": res["silhouette"],
+                         "silhouette_projected_2d": res["silhouette_2d"]})
     return {"dataset_hash": ds["dataset_hash"], "frozen": ds["frozen"], "N": ds["N"], "rows": rows}
 
 

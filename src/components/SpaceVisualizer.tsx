@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { ColorLayer, SemanticNode, SemanticSpace, probeSets } from "../types";
+import { Algorithm, ColorLayer, SemanticNode, SemanticSpace, probeSets } from "../types";
 
 const EMPTY_NODES: SemanticNode[] = [];
 
@@ -54,7 +54,7 @@ interface SpaceVisualizerProps {
   probeEnabled: boolean;
   probeK: number;
   onPerfUpdate?: (sample: PerfSample) => void;
-  projectionType: "umap" | "tsne" | "pca" | "isomap" | "pca_nc";
+  projectionType: Algorithm;
   currentFilter: "all" | "positive" | "negative";
   cameraMode: "perspective" | "parallel" | "twopoint";
   fov: number;

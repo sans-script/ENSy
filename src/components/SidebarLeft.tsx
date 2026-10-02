@@ -205,7 +205,8 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
               onChange={onProjectionTypeChange}
               options={[
                 { value: 'umap', label: 'UMAP', text: 'UMAP' },
-                { value: 'tsne', label: 't-SNE', text: 't-SNE' },
+                { value: 'tsne', label: 't-SNE (perplexity 5)', text: 't-SNE, perplexity 5 (frozen)' },
+                { value: 'tsne_p30', label: 't-SNE (perplexity 30)', text: 't-SNE, perplexity 30 (library default)' },
                 { value: 'pca', label: 'PCA (centered)', text: 'PCA (centered)' },
                 { value: 'isomap', label: 'Isomap', text: 'Isomap' },
                 { value: 'pca_nc', label: 'PCA-NC (ablation)', text: 'PCA-NC (ablation)' },
@@ -247,7 +248,9 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
           <button
             type="button"
             onClick={() => onProbeEnabledChange(!probeEnabled)}
-            className={`col-span-2 flex items-center justify-center gap-1.5 bg-white border rounded-sm py-2 px-1 cursor-pointer text-[10px] border-[#111111] ${probeEnabled ? 'bg-[#111111]/15 font-bold' : 'hover:bg-slate-50'}`}
+            aria-pressed={probeEnabled}
+            className={`col-span-2 flex items-center justify-center gap-1.5 bg-white border rounded-sm py-2 px-1 text-center cursor-pointer font-medium transition-all duration-75 text-[10px]
+              ${probeEnabled ? 'bg-[#16a34a]/10 border-[#16a34a] text-[#15803d] font-bold shadow-none translate-y-[1.5px]' : 'hover:bg-slate-50 shadow-[0_1.5px_0_0_#111111] translate-y-0 text-[#111111] border-[#111111]'}`}
           >
             <span className={`w-2 h-2 rounded-full ${probeEnabled ? 'bg-[#16a34a]' : 'bg-slate-300'}`} />
             Neighbourhood probing on reticle target

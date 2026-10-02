@@ -22,23 +22,29 @@ PARAMS: dict[str, dict] = {
              "random_state": SEED, "init": "pca", "learning_rate": "auto",
              "max_iter": 1000, "early_exaggeration": 12.0, "method": "barnes_hut",
              "angle": 0.5},
+    # Reported alongside the frozen perplexity 5: the sign of B_NX depends on it
+    # (sensitivity analysis); 30 is the library default.
+    "tsne_p30": {"n_components": N_COMPONENTS, "perplexity": 30.0, "metric": "cosine",
+                 "random_state": SEED, "init": "pca", "learning_rate": "auto",
+                 "max_iter": 1000, "early_exaggeration": 12.0, "method": "barnes_hut",
+                 "angle": 0.5},
     "umap": {"n_components": N_COMPONENTS, "n_neighbors": 15, "min_dist": 0.1,
              "metric": "cosine", "random_state": SEED},
     "isomap": {"n_components": N_COMPONENTS, "n_neighbors": 15, "metric": "cosine"},
 }
 
-MAIN_ALGORITHMS = ("pca", "tsne", "umap", "isomap")
+MAIN_ALGORITHMS = ("pca", "tsne", "tsne_p30", "umap", "isomap")
 
 
-def _svd_projection(X: np.ndarray, center: bool) -> tuple[np.ndarray, dict]:
+def _svd_projection(X: np.ndarray, center: bool, n: int = N_COMPONENTS) -> tuple[np.ndarray, dict]:
     Xc = X - X.mean(axis=0) if center else X
     U, S, Vt = np.linalg.svd(Xc.astype(np.float64), full_matrices=False)
     # SVD sign is arbitrary: fix it so each component's largest loading is positive.
-    signs = np.sign(Vt[np.arange(N_COMPONENTS), np.abs(Vt[:N_COMPONENTS]).argmax(axis=1)])
-    V = Vt[:N_COMPONENTS].T * signs
+    signs = np.sign(Vt[np.arange(n), np.abs(Vt[:n]).argmax(axis=1)])
+    V = Vt[:n].T * signs
     Y = Xc @ V
     var = S**2
-    info = {"explained_variance_ratio": (var[:N_COMPONENTS] / var.sum()).tolist()}
+    info = {"explained_variance_ratio": (var[:n] / var.sum()).tolist()}
     return Y, info
 
 
@@ -61,8 +67,8 @@ def project(X: np.ndarray, algorithm: str, overrides: dict | None = None) -> tup
     p = {**PARAMS[algorithm], **(overrides or {})}
     diag: dict = {}
     if algorithm in ("pca", "pca_nc"):
-        Y, diag = _svd_projection(X, center=p["centering"])
-    elif algorithm == "tsne":
+        Y, diag = _svd_projection(X, center=p["centering"], n=p["n_components"])
+    elif algorithm in ("tsne", "tsne_p30"):
         from sklearn.manifold import TSNE
 
         if p["perplexity"] >= len(X):

@@ -91,12 +91,17 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
           ))}
         </tbody>
       </table>
-      <div className="mt-1.5 flex justify-between text-[11px]">
-        <span title="Complementary measure of class separation in the projected space (Rousseeuw, 1987)">
-          Silhouette (projected, reference partition)
-        </span>
-        <span className="font-times-numbers">{meta.silhouette_projected !== undefined ? fmt(meta.silhouette_projected, true) : '—'}</span>
-      </div>
+      {[
+        ['3D projection', meta.silhouette_projected],
+        ['2D projection', meta.silhouette_projected_2d],
+      ].map(([label, value]) => (
+        <div key={label as string} className="mt-1 flex justify-between text-[11px]">
+          <span title="Complementary measure of class separation in the projected space (Rousseeuw, 1987)">
+            Silhouette, reference partition — {label}
+          </span>
+          <span className="font-times-numbers">{typeof value === 'number' ? fmt(value, true) : '—'}</span>
+        </div>
+      ))}
       {isomapComponents !== undefined && isomapComponents > 1 && (
         <div className="mt-1 text-[11px] text-[#78350f]">
           Isomap k-NN graph has {isomapComponents} components; scikit-learn bridged them.

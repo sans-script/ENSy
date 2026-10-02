@@ -12,7 +12,7 @@ export interface Neighbor {
 }
 
 export type ModelKey = 'qwen' | 'gemma' | 'gemma2' | 'bert';
-export type Algorithm = 'umap' | 'tsne' | 'pca' | 'isomap' | 'pca_nc';
+export type Algorithm = 'umap' | 'tsne' | 'tsne_p30' | 'pca' | 'isomap' | 'pca_nc';
 export type ColorLayer = 'category' | 'heat';
 
 export interface SemanticNode {
@@ -63,6 +63,7 @@ export interface SemanticMeta {
   K_curve?: number[];
   metrics?: CorankingCurvePoint[];
   silhouette_projected?: number;
+  silhouette_projected_2d?: number;
   category_colors?: Record<string, string>;
 }
 

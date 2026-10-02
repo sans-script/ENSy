@@ -71,6 +71,10 @@ def run_config(X: np.ndarray, labels: np.ndarray, algorithm: str, Ks=K_CURVE,
     Y, diag = P.project(X, algorithm, overrides)
     kept = np.asarray(diag.pop("kept", np.arange(len(X))))
     ev = coranking.evaluate(X[kept], Y, Ks, high_metric="cosine")
+    # Silhouette is also reported on a genuine 2-D projection (same parameters,
+    # n_components = 2) -- the scope document's setting -- next to the 3-D one.
+    Y2, diag2 = P.project(X, algorithm, {**(overrides or {}), "n_components": 2})
+    kept2 = np.asarray(diag2.get("kept", np.arange(len(X))))
     return {
         "algorithm": algorithm,
         "params": {**P.PARAMS[algorithm], **(overrides or {})},
@@ -78,6 +82,7 @@ def run_config(X: np.ndarray, labels: np.ndarray, algorithm: str, Ks=K_CURVE,
         "N_evaluated": int(len(kept)),
         "curves": ev["curves"],
         "silhouette_projected": silhouette(Y, labels[kept]),
+        "silhouette_projected_2d": silhouette(Y2, labels[kept2]),
         "Y": Y,
         "kept": kept,
         "local_b_nx": ev["local_b_nx"],
@@ -131,9 +136,11 @@ def run_sensitivity(ds: dict, model_keys, cache: M.EmbeddingCache | None = None)
                               "min": float(vals.min()), "max": float(vals.max())}
                 summary.append(row)
             sil = np.array([r["silhouette_projected"] for r in runs])
+            sil2 = np.array([r["silhouette_projected_2d"] for r in runs])
             out["configs"].append({
                 "model": mk, "algorithm": alg, "overrides": extra, "curves": summary,
                 "silhouette_projected": {"mean": float(sil.mean()), "sd": float(sil.std(ddof=1))},
+                "silhouette_projected_2d": {"mean": float(sil2.mean()), "sd": float(sil2.std(ddof=1))},
             })
             k10 = summary[K_CURVE.index(K_MAIN)]
             print(f"  {mk:6s} {alg:5s} {extra or ''} K=10: T={k10['trustworthiness']['mean']:.3f}"
