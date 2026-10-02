@@ -1054,7 +1054,9 @@ mjx-container[jax="CHTML"][display="true"] {{
 .columns-layout figure,
 .columns-layout .plot-figure,
 .columns-layout .mermaid {{
-  column-span: all;
+  /* !important: wide tables also carry .booktabs-wrapper, whose in-column rule
+     above sets column-span: none !important */
+  column-span: all !important;
   break-inside: avoid;
   page-break-inside: avoid;
   margin-top: 12pt;
@@ -1363,7 +1365,7 @@ def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
                         justify-content:space-between; padding:0 20mm; margin:0;
                         box-sizing:border-box;">
               <span>ENSy &#8212; Embedding Navigation System</span>
-              <span>Alexandre Santos &#8212; UFMA</span>
+              <span>Alexandre Santos</span>
             </div>""",
             footer_template=f"""
             {header_font_style}

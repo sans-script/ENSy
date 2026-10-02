@@ -56,6 +56,8 @@ class Tour:
         merged = json.dumps({**BASE_SETTINGS, **settings})
         self.page.evaluate(f"localStorage.setItem('visualizerSettings', JSON.stringify({merged}))")
         self.page.goto(self.base_url)
+        # the "Click viewport to navigate" hint is UI chrome, not part of a figure
+        self.page.add_style_tag(content='[data-hud="lock-hint"]{display:none !important}')
         self.wait_for_data()
 
     def wait_for_data(self):
@@ -125,11 +127,11 @@ class Tour:
         self.page.set_viewport_size(size)
         self.page.wait_for_timeout(600)
 
-    def panel(self, name: str, element: str, max_height: int | None = None) -> Path:
+    def panel(self, name: str, element: str, max_height: int | None = None, scale: int = DEVICE_SCALE) -> Path:
         """An interface panel centred on a white 16:9 canvas."""
         path = self.shot(name, element, max_height)
         img = Image.open(path).convert("RGB")
-        h = max(img.height, int(img.width * 9 / 16)) + 40 * DEVICE_SCALE
+        h = max(img.height, int(img.width * 9 / 16)) + 40 * scale
         w = int(round(h * 16 / 9))
         canvas = Image.new("RGB", (w, h), "white")
         canvas.paste(img, ((w - img.width) // 2, (h - img.height) // 2))
@@ -165,7 +167,7 @@ def main():
 
         print("[1] full workspace")
         t.window(WINDOW_16_9)
-        t.open(modelKey="qwen", projectionType="umap", probeEnabled=True)
+        t.open(modelKey="qwen", projectionType="umap", probeEnabled=False)
         t.preset("Isometric")
         t.pin("market")
         t.shot("fig01_workspace")
@@ -211,9 +213,13 @@ def main():
         t.view("fig06_probing")
 
         print("[6] metrics panel")
-        t.open(modelKey="gpt2", projectionType="isomap")
-        t.preset("Isometric")
-        t.panel("fig08_metrics_panel", "div.absolute.bottom-\\[16px\\].right-\\[16px\\]")
+        # the panel is small on screen: capture it from a 4x-density page so it can
+        # span the full text width of the manuscript
+        hi = browser.new_page(viewport=VIEWPORT, device_scale_factor=4)
+        th = Tour(hi, args.base_url, args.out)
+        th.open(modelKey="gpt2", projectionType="isomap")
+        th.panel("fig08_metrics_panel", "div.absolute.bottom-\\[16px\\].right-\\[16px\\]", scale=4)
+        hi.close()
 
         print("[7] camera modes")
         t.window(WINDOW_16_9)

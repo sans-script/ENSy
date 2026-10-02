@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { SemanticNode, probeSets } from '../types';
 import { Tex } from './Tex';
 import { fmt } from './MetricsPanel';
@@ -23,34 +23,6 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, m
   const probe = activeNode && probeEnabled ? probeSets(activeNode, metricK) : null;
   const localB = activeNode?.b_nx_local?.[String(metricK)];
   const containerRef = useRef<HTMLDivElement>(null);
-  const matrixRef = useRef<HTMLDivElement>(null);
-  const [isTypesetting, setIsTypesetting] = useState(false);
-
-  useEffect(() => {
-    setIsTypesetting(!!activeNode);
-  }, [activeNode?.id ?? activeNode?.token_id]);
-
-  // Re-typeset LaTeX equations when selected node updates
-  useEffect(() => {
-    if (activeNode && (window as any).MathJax && (window as any).MathJax.typesetPromise) {
-      const timer = setTimeout(() => {
-        if (containerRef.current) {
-          // Passamos referências específicas para re-renderizar apenas o título e o container da matriz
-          (window as any).MathJax.typesetPromise([containerRef.current]).then(() => {
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                setIsTypesetting(false);
-              });
-            });
-          }).catch((err: any) => {
-            console.error('MathJax typeset error:', err);
-            setIsTypesetting(false);
-          });
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [activeNode]);
 
   return (
     <aside className="w-[340px] h-full border-l border-[#111111] bg-[#fcfcfc] flex flex-col justify-between p-[18px] overflow-y-auto shrink-0 select-none font-sans text-[#111111]">
@@ -67,10 +39,12 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, m
         ) : (
           <div className="flex-1 flex flex-col gap-3.5 min-h-0">
             {/* Vector Equation and Matrix */}
-            <div className={`matrix-math flex flex-col items-center justify-center text-[22px] text-black my-1 shrink-0 min-h-[110px] transition-opacity ${isTypesetting ? 'opacity-0 duration-0' : 'opacity-100 duration-500'}`}>
-              <div ref={matrixRef} className="w-full text-center">
-                {`$$\\mathbf{y}_i =\\begin{bmatrix} ${activeNode.coords.x3d.toFixed(4)} \\\\ ${activeNode.coords.y3d.toFixed(4)} \\\\ ${activeNode.coords.z3d.toFixed(4)} \\end{bmatrix}$$`}
-              </div>
+            <div className="matrix-math flex flex-col items-center justify-center text-[22px] text-black my-1 shrink-0 min-h-[110px]">
+              <Tex
+                display
+                className="w-full text-center"
+                tex={`\\mathbf{y}_i = \\begin{bmatrix} ${activeNode.coords.x3d.toFixed(4)} \\\\ ${activeNode.coords.y3d.toFixed(4)} \\\\ ${activeNode.coords.z3d.toFixed(4)} \\end{bmatrix}`}
+              />
             </div>
 
             <div className="flex flex-col gap-2.5 shrink-0">

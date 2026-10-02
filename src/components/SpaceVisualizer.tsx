@@ -1933,7 +1933,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       let scale = Math.max(0.3, 1 - dist / 120);
       if (type === "token") {
         // distance still fades words, but a placed word never drops below legibility
-        fade = Math.max(0.45, Math.min(1, 1 - (dist - 35) / 90));
+        fade = Math.max(0.8, Math.min(1, 1 - (dist - 35) / 90));
         if ((dom as HTMLElement).dataset.filterVisible === "0") fade = 0;
         if ((dom as HTMLElement).dataset.dim === "1") fade *= 0.3; // outside the probed neighbourhood
       } else {
@@ -2349,7 +2349,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
       {/* Interactive cursor pointer capture banner */}
       {!isLocked && (
-        <div className="absolute top-[20px] left-1/2 -translate-x-1/2 bg-white/98 border border-[#111111] px-5 py-[10px] z-50 shadow-[3px_3px_0px_rgba(0,0,0,1)] font-sans pointer-events-none transition-all duration-200 rounded-[4px] flex items-center justify-center">
+        <div data-hud="lock-hint" className="absolute top-[20px] left-1/2 -translate-x-1/2 bg-white/98 border border-[#111111] px-5 py-[10px] z-50 shadow-[3px_3px_0px_rgba(0,0,0,1)] font-sans pointer-events-none transition-all duration-200 rounded-[4px] flex items-center justify-center">
           <span className="inline-flex items-center whitespace-nowrap font-sans text-[12px] text-[#111111] font-medium tracking-wide leading-none">
             Click viewport to navigate &nbsp;|&nbsp; Press{" "}
             <span className="key mx-1 align-middle">

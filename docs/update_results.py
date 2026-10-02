@@ -66,7 +66,7 @@ def table_highdim(r: dict) -> str:
         seen.add(c["model"])
         evr = sum(c["diagnostics"]["explained_variance_ratio"])
         rows.append(f"| {MODELS[c['model']]} | {c['embedding_dim']} | {num(c['silhouette_high_dim_cosine'], True)} | {100 * evr:.1f}% |")
-    return ":::booktabs\n" + "\n".join(rows) + "\n:::"
+    return ":::booktabs[wide]\n" + "\n".join(rows) + "\n:::"
 
 
 COLORS = {"pca": "#2b5797", "tsne": "#d73a49", "tsne_p30": "#22863a", "umap": "#e36209", "isomap": "#6f42c1"}
@@ -131,7 +131,7 @@ def table_ablation(main: dict, abl: dict) -> str:
         a, m = pca[c["model"]], at_k(c["curves"], K_MAIN)
         rows.append(f"| {MODELS[c['model']]} | {num(a['trustworthiness'])} / {num(a['continuity'])} | "
                     f"{num(m['trustworthiness'])} / {num(m['continuity'])} | {num(m['B_NX'], True)} |")
-    return ":::booktabs\n" + "\n".join(rows) + "\n:::"
+    return ":::booktabs[wide]\n" + "\n".join(rows) + "\n:::"
 
 
 def table_dataset(ds: dict) -> str:
@@ -148,7 +148,7 @@ def table_dataset(ds: dict) -> str:
             f"{c['single_token_per_category']['content_noun']:,} / {c['single_token_per_category']['content_verb']:,} / "
             f"{c['single_token_per_category']['function_word']} |",
             f"| **Balanced dataset $N$** | **{ds['N']}** ({ds['N'] // 3} per category) |"]
-    return ":::booktabs\n" + "\n".join(rows) + "\n:::\n\n" + f"*Dataset hash `{ds['dataset_hash'][:12]}`.*"
+    return ":::booktabs[wide]\n" + "\n".join(rows) + "\n:::\n\n" + f"*Dataset hash `{ds['dataset_hash'][:12]}`.*"
 
 
 def replace_region(text: str, name: str, body: str) -> str:
