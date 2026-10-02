@@ -348,7 +348,11 @@ def postprocess_columns(html: str) -> str:
 # is set in columns when it is long enough; everything else uses the full text
 # width. The rendered PDF is then measured, and a run whose right column is left
 # empty on some page, or which ends in a short balanced tail followed by blank
-# space, is set full width instead. This repeats until the layout is stable.
+# space, is set full width instead. Chromium does not always balance the last
+# page of a run that spans pages (inline MathJax and lists can defeat it), so a
+# run whose last-page columns end at different heights gets a forced column
+# break before the block nearest the balanced midpoint. This repeats until the
+# layout is stable.
 _AUTO_OPEN_RE = re.compile(r'<!--AUTOCOL-OPEN (.*?)-->(.*?)<!--AUTOCOL-CLOSE-->', re.DOTALL)
 _AUTO_CLOSE = '<!--AUTOCOL-CLOSE-->'
 AUTO_MIN_WORDS = 600            # shorter text runs stay full width
@@ -375,17 +379,59 @@ def _with_probe(chunk: str, label: str, probe: bool) -> str:
     return f'<div style="height:0;margin:0;padding:0">{span}</div>' + chunk
 
 
+_VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
+              "meta", "source", "track", "wbr"}
+_COLUMN_BREAK = '<div style="break-before:column;height:0;margin:0;padding:0"></div>'
+
+
+def _top_level_blocks(fragment: str) -> list[str]:
+    """Split an HTML fragment into its top-level elements (text between them is kept)."""
+    from html.parser import HTMLParser
+
+    class Starts(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=False)
+            self.depth, self.starts = 0, []
+
+        def handle_starttag(self, tag, attrs):
+            if self.depth == 0:
+                self.starts.append(self.getpos())
+            if tag not in _VOID_TAGS:
+                self.depth += 1
+
+        def handle_startendtag(self, tag, attrs):
+            if self.depth == 0:
+                self.starts.append(self.getpos())
+
+        def handle_endtag(self, tag):
+            if tag not in _VOID_TAGS:
+                self.depth = max(0, self.depth - 1)
+
+    parser = Starts()
+    parser.feed(fragment)
+    parser.close()
+    line_offsets = [0] + [i + 1 for i, c in enumerate(fragment) if c == "\n"]
+    cuts = [line_offsets[line - 1] + col for line, col in parser.starts]
+    if not cuts:
+        return [fragment]
+    cuts[0] = 0
+    return [fragment[a:b] for a, b in zip(cuts, cuts[1:] + [len(fragment)])]
+
+
 def _words(fragment: str) -> int:
     return len(re.sub(r'<[^>]+>', ' ', fragment).split())
 
 
-def layout_auto_columns(html: str, demoted: frozenset = frozenset(), probe: bool = False):
+def layout_auto_columns(html: str, demoted: frozenset = frozenset(), probe: bool = False,
+                        breaks: frozenset = frozenset()):
     """
-    Lay out every auto region. Returns (html, groups), where each group is
-    (chunk_ids, next_label): the chunk ids set in columns and the label of the
-    first marker after them (used by the measurement step).
+    Lay out every auto region. `breaks` holds (chunk_id, block_index) keys that get
+    a forced column break before them. Returns (html, groups), where each group is
+    (chunk_ids, next_label, blocks): the chunk ids set in columns, the label of the
+    first marker after them, and the (key, label) of every block in the run (used
+    by the measurement step).
     """
-    groups: list[tuple[list[int], str]] = []
+    groups: list[tuple[list[int], str, list]] = []
     next_id = 0
     region = 0
 
@@ -423,10 +469,18 @@ def layout_auto_columns(html: str, demoted: frozenset = frozenset(), probe: bool
             while j < len(chunks) and two[j]:
                 j += 1
             nxt = _auto_label(ids[j]) if j < len(chunks) else end_label
-            groups.append((ids[k:j], nxt))
+            blocks = []
             out.append(div_open)
-            out.extend(_with_probe(chunks[t], _auto_label(ids[t]), probe) for t in range(k, j))
+            for t in range(k, j):
+                for b, block in enumerate(_top_level_blocks(chunks[t])):
+                    key = (ids[t], b)
+                    label = _auto_label(ids[t]) if b == 0 else _auto_label(f'B{ids[t]}x{b}')
+                    blocks.append((key, label))
+                    if key in breaks:
+                        out.append(_COLUMN_BREAK)
+                    out.append(_with_probe(block, label, probe))
             out.append('</div>')
+            groups.append((ids[k:j], nxt, blocks))
             k = j
         if probe:
             out.append(f'<div style="height:0;margin:0;padding:0"><span style="{_PROBE_STYLE}">{end_label}</span></div>')
@@ -435,11 +489,12 @@ def layout_auto_columns(html: str, demoted: frozenset = frozenset(), probe: bool
     return _AUTO_OPEN_RE.sub(lay, html), groups
 
 
-def _measure_auto_columns(pdf_path: str, groups) -> set:
+def _measure_auto_columns(pdf_path: str, groups, breaks: frozenset = frozenset()):
     """
-    Return the chunk ids to set full width: those of runs whose right column is
-    (nearly) empty on a page, and short runs ending in a balanced tail with blank
-    space below it.
+    Return (demote, breaks): the chunk ids to set full width (runs whose right
+    column is nearly empty on a page, and short runs ending in a balanced tail
+    with blank space below it) and the forced column breaks that balance the
+    last page of the remaining runs.
     """
     import pypdfium2 as pdfium
 
@@ -461,7 +516,8 @@ def _measure_auto_columns(pdf_path: str, groups) -> set:
         return None
 
     demote: set = set()
-    for ids, nxt in groups:
+    new_breaks = set(breaks)
+    for ids, nxt, blocks in groups:
         start, end = find(_auto_label(ids[0])), find(nxt)
         if not start or not end:
             continue
@@ -492,10 +548,49 @@ def _measure_auto_columns(pdf_path: str, groups) -> set:
             if p1 - p0 <= 1 and p1 > p0 and tail < 0.4 * (h - 2 * margin) and not below:
                 demote |= set(ids)
                 print(f"[AUTO] p. {p1 + 1}: short two-column tail above blank space — run set full width")
+                continue
+            # balance the last page: both columns should end at the same height.
+            # When the content after the run was pushed to a new page, the run's
+            # last page is the one before the next marker's.
+            top = y0 + 2 if p1 == p0 else h - margin
+            band = [r for r in rects if y1 < (r[1] + r[3]) / 2 < top]
+            if not band and p1 > p0:
+                p1, y1 = p1 - 1, margin
+                _, w, h, rects = pages[p1]
+                top = y0 + 2 if p1 == p0 else h - margin
+                band = [r for r in rects if y1 < (r[1] + r[3]) / 2 < top]
+            mid = w / 2
+            left = [r for r in band if r[2] < mid - 6]
+            right = [r for r in band if r[0] > mid + 6]
+            if not left or not right:
+                continue
+            y_left, y_right = min(r[1] for r in left), min(r[1] for r in right)
+            if abs(y_left - y_right) <= 16:      # about one line: balanced
+                continue
+            target = ((top - y_left) + (top - y_right)) / 2
+            best = None
+            tp = pages[p1][0]
+            for key, label in blocks:
+                hit = tp.search(label, match_case=True).get_next()
+                if not hit:
+                    continue
+                x0, _, _, y_top = tp.get_charbox(hit[0])
+                if not (y1 < y_top <= top + 2):
+                    continue
+                flow = (top - y_top) if x0 < mid else (top - y_left) + (top - y_top)
+                if flow < 14:                        # the block already at the top
+                    continue
+                if best is None or abs(flow - target) < abs(best[0] - target):
+                    best = (flow, key)
+            if best is not None and best[1] not in new_breaks:
+                group_keys = {key for key, _ in blocks}
+                new_breaks = (new_breaks - group_keys) | {best[1]}
+                print(f"[AUTO] p. {p1 + 1}: columns end {abs(y_left - y_right):.0f} pt apart — "
+                      f"column break before block {best[1]}")
     for tp, *_ in pages:   # release the file (Windows keeps it locked otherwise)
         tp.close()
     pdf.close()
-    return demote
+    return demote, frozenset(new_breaks)
 
 
 def preprocess_figures(md_content: str) -> str:
@@ -1182,6 +1277,14 @@ p.reference {{
   text-wrap: pretty;
 }}
 
+/* MathJax's hidden screen-reader copy of each formula is absolutely positioned
+   inside a position:relative container; inside a multi-page column run this makes
+   Chromium give the run's last page its full height instead of balancing it, so
+   the content after the run is pushed to the next page. A PDF does not use it. */
+.columns-layout mjx-assistive-mml {{
+  display: none !important;
+}}
+
 /* Top alignment: eliminate top margin on first element to align both columns flush to the top */
 .columns-layout > *:first-child,
 .columns-layout > h2:first-child,
@@ -1201,8 +1304,9 @@ p.reference {{
   hyphenate-limit-chars: 5 2 3;
   -webkit-hyphenate-limit-before: 2;
   -webkit-hyphenate-limit-after: 3;
-  orphans: 2 !important;
-  widows: 2 !important;
+  /* single lines may end or start a column, so both columns reach the same bottom */
+  orphans: 1 !important;
+  widows: 1 !important;
 }}
 
 .columns-layout h1,
@@ -1639,6 +1743,7 @@ def render_pdf(html_path: str = TEMP_HTML_PATH,
         return
 
     demoted: frozenset = frozenset()
+    breaks: frozenset = frozenset()
     try:
         import pypdfium2  # noqa: F401  (measurement needs it)
         measurable = True
@@ -1649,19 +1754,21 @@ def render_pdf(html_path: str = TEMP_HTML_PATH,
     probe_html = html_path + ".probe.html"
     probe_pdf = pdf_path + ".probe.pdf"
     for n in range(AUTO_MAX_PASSES if measurable else 0):
-        html, groups = layout_auto_columns(source, demoted, probe=True)
+        html, groups = layout_auto_columns(source, demoted, probe=True, breaks=breaks)
         with open(probe_html, "w", encoding="utf-8") as f:
             f.write(html)
         print(f"[AUTO] layout pass {n + 1}: {len(groups)} two-column run(s)")
         convert_to_pdf(probe_html, probe_pdf, cleanup=True)
-        more = _measure_auto_columns(probe_pdf, groups)
-        if not more - demoted:
+        more, new_breaks = _measure_auto_columns(probe_pdf, groups, breaks)
+        if not more - demoted and new_breaks == breaks:
             break
         demoted = demoted | frozenset(more)
+        # breaks inside runs that were just set full width no longer apply
+        breaks = frozenset(b for b in new_breaks if b[0] not in demoted)
     if os.path.exists(probe_pdf):
         os.remove(probe_pdf)
 
-    html, groups = layout_auto_columns(source, demoted, probe=False)
+    html, groups = layout_auto_columns(source, demoted, probe=False, breaks=breaks)
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"[AUTO] final layout: {len(groups)} two-column run(s)")
