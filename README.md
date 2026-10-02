@@ -5,7 +5,9 @@
 Undergraduate thesis (TCC) · B.Sc. in Science and Technology – Computer Engineering · Federal University of Maranhão (UFMA), 2026
 Author: Alexandre da Silva Santos
 
-![ENSy 3D Workspace](docs/screenshots/01_isometric_full_workspace.png)
+![ENSy 3D Workspace](docs/screenshots/fig01_workspace.png)
+
+The full manuscript with results is in [docs/DOCS.pdf](docs/DOCS.pdf) (source: [docs/DOCS.md](docs/DOCS.md)).
 
 ---
 
@@ -45,15 +47,9 @@ Only the input embedding matrix is extracted (`get_input_embeddings().weight` fo
 
 ## Dimensionality Reduction
 
-| **UMAP** | **PCA** |
-|:---:|:---:|
-| ![UMAP Projection](docs/screenshots/02_projection_umap_isometric.png) | ![PCA Projection](docs/screenshots/03_projection_pca_isometric.png) |
-| *Fuzzy topological graph; local + global structure* | *Linear, maximum variance (SVD of centered data)* |
+![The five projection configurations of Gemma 2 2B](docs/screenshots/fig02_projections_gemma2.png)
 
-| **t-SNE** | **Isomap** |
-|:---:|:---:|
-| ![t-SNE Projection](docs/screenshots/04_projection_tsne_isometric.png) | ![Isomap Projection](docs/screenshots/05_projection_isomap_isometric.png) |
-| *Probabilistic; local neighborhoods, not global distances* | *Geodesic distances over a k-NN graph* |
+*PCA (linear, maximum variance), t-SNE at perplexity 5 and 30 (local neighbourhoods, not global distances), UMAP (fuzzy topological graph) and Isomap (geodesic distances over a k-NN graph), all on Gemma 2 2B from the same camera.*
 
 ### Frozen parameter table
 
@@ -117,12 +113,12 @@ Precedence: **Probing (3) > Thermal Camera (2) > Reference Partition (1)**.
 - **6-DOF flight camera** using pointer lock; LERP/SLERP transitions to Front, Top, Side and Isometric presets
 - **Perspective, orthographic and two-point perspective** camera modes; adaptive grid and minimap
 - **Central reticle selection**: the token nearest the screen center (25 px radius) is selected and inspected in the right sidebar — coordinates, category, $B_{NX,i}(K)$, true/false/missing neighbors with cosine similarity, CSV export
-- **Comparative metrics panel**: the 12-configuration matrix with co-ranking curves
-- Rendering uses a single `BufferGeometry` (one draw call) and canvas-sprite labels; settings persist to `localStorage`
+- **Comparative metrics panel**: the 4 models × 5 projection configurations with co-ranking curves
+- Rendering uses a single `BufferGeometry` (one draw call) and culled DOM labels (the 120 nearest); settings persist to `localStorage`
 
 | **Front (XY)** | **Top (XZ)** |
 |:---:|:---:|
-| ![Front View](docs/screenshots/front_xy.png) | ![Top View](docs/screenshots/top_xz.png) |
+| ![Front View](docs/screenshots/fig11_front.png) | ![Top View](docs/screenshots/fig12_top.png) |
 
 ### Controls
 

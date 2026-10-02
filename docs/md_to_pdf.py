@@ -1285,7 +1285,18 @@ def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
     print("[*] Starting Playwright PDF generation...")
     header_font_style = get_header_font_style()
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        try:
+            browser = p.chromium.launch()
+        except Exception:
+            # Bundled Chromium not installed: fall back to an installed Edge/Chrome.
+            for channel in ("msedge", "chrome"):
+                try:
+                    browser = p.chromium.launch(channel=channel)
+                    break
+                except Exception:
+                    continue
+            else:
+                raise
         page = browser.new_page(
             viewport={"width": 794, "height": 1123},
             device_scale_factor=2,

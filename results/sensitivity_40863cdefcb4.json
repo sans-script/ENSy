@@ -1,7 +1,7 @@
 {
  "kind": "sensitivity",
  "provisional": false,
- "created_utc": "2026-10-02T14:27:27+00:00",
+ "created_utc": "2026-10-02T14:59:44+00:00",
  "dataset_hash": "40863cdefcb4afec7d5331da3e30834976d6efcbf594ad8e011fc9dfae215715",
  "N": 438,
  "K_main": 10,
@@ -24,7 +24,7 @@
   "bert": "86b5e0934494bd15c9632b12f734a8a67f723594"
  },
  "environment": {
-  "commit_sha": "02b6fc64a3a2a36703f6c317ceb60712e8589c9d",
+  "commit_sha": "b8ed448f264c6dbc2527f18a40d47d5f3bc21dfb",
   "working_tree_dirty": true,
   "python": "3.12.10",
   "platform": "Windows-11-10.0.26200-SP0",
@@ -163,6 +163,10 @@
    "silhouette_projected": {
     "mean": 0.25046506058149687,
     "sd": 0.006278094893404775
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.2929822400839477,
+    "sd": 0.004728840812316764
    }
   },
   {
@@ -284,6 +288,10 @@
    "silhouette_projected": {
     "mean": 0.18884313173778344,
     "sd": 0.016765534794378385
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.29734829723382805,
+    "sd": 0.014165282257571741
    }
   },
   {
@@ -403,6 +411,10 @@
    "silhouette_projected": {
     "mean": 0.3627616795118024,
     "sd": 0.0075513927190504005
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.37816608215331565,
+    "sd": 0.005132454950980226
    }
   },
   {
@@ -524,6 +536,10 @@
    "silhouette_projected": {
     "mean": 0.2603747573608043,
     "sd": 0.017328371404422574
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.3195155381158131,
+    "sd": 0.003979716212604706
    }
   },
   {
@@ -645,6 +661,10 @@
    "silhouette_projected": {
     "mean": 0.1939230054143452,
     "sd": 0.01789444240192414
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.3480154496482655,
+    "sd": 0.018470198104123276
    }
   },
   {
@@ -764,6 +784,10 @@
    "silhouette_projected": {
     "mean": 0.3933448474185955,
     "sd": 0.010053955917413765
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.39380264067812254,
+    "sd": 0.013858045254102459
    }
   },
   {
@@ -885,6 +909,10 @@
    "silhouette_projected": {
     "mean": 0.23467948453801774,
     "sd": 0.03269600938971436
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.28914135569115934,
+    "sd": 0.006403278630091362
    }
   },
   {
@@ -1006,6 +1034,10 @@
    "silhouette_projected": {
     "mean": 0.22371696151018475,
     "sd": 0.007003538358209471
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.31232363842569183,
+    "sd": 0.026607423539280656
    }
   },
   {
@@ -1125,6 +1157,10 @@
    "silhouette_projected": {
     "mean": 0.35570318093753495,
     "sd": 0.00207968876753025
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.3761749455048856,
+    "sd": 0.010533151830565251
    }
   },
   {
@@ -1246,6 +1282,10 @@
    "silhouette_projected": {
     "mean": 0.20389398975691134,
     "sd": 0.005059600658424416
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.2599408567790017,
+    "sd": 0.009275510084849021
    }
   },
   {
@@ -1367,6 +1407,10 @@
    "silhouette_projected": {
     "mean": 0.17309616901349756,
     "sd": 0.015882574529844803
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.1740713206885247,
+    "sd": 0.06797921049218045
    }
   },
   {
@@ -1486,6 +1530,10 @@
    "silhouette_projected": {
     "mean": 0.25402748844261647,
     "sd": 0.007480693658857974
+   },
+   "silhouette_projected_2d": {
+    "mean": 0.3009657893265901,
+    "sd": 0.014159897288473368
    }
   }
  ]

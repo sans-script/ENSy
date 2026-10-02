@@ -2016,10 +2016,11 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       p.dom.style.zIndex = Math.max(1, Math.floor(1000 - p.dist)).toString();
     });
 
-    // Tokens whose word is legible need no dot; refresh dot alphas when that set changes
+    // Tokens whose word is clearly legible need no dot (faint labels keep it);
+    // refresh dot alphas when that set changes
     const shown = new Set<number>();
     tokenLabelByIdRef.current.forEach((label, id) => {
-      if (parseFloat(label.dom.style.opacity || "0") > 0.35) shown.add(id);
+      if (parseFloat(label.dom.style.opacity || "0") >= 0.75) shown.add(id);
     });
     const prevShown = shownLabelIdsRef.current;
     if (shown.size !== prevShown.size || [...shown].some((id) => !prevShown.has(id))) {

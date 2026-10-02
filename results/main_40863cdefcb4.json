@@ -1,7 +1,7 @@
 {
  "kind": "main",
  "provisional": false,
- "created_utc": "2026-10-02T14:21:17+00:00",
+ "created_utc": "2026-10-02T14:53:14+00:00",
  "dataset_hash": "40863cdefcb4afec7d5331da3e30834976d6efcbf594ad8e011fc9dfae215715",
  "N": 438,
  "K_main": 10,
@@ -24,8 +24,8 @@
   "bert": "86b5e0934494bd15c9632b12f734a8a67f723594"
  },
  "environment": {
-  "commit_sha": "02b6fc64a3a2a36703f6c317ceb60712e8589c9d",
-  "working_tree_dirty": true,
+  "commit_sha": "b8ed448f264c6dbc2527f18a40d47d5f3bc21dfb",
+  "working_tree_dirty": false,
   "python": "3.12.10",
   "platform": "Windows-11-10.0.26200-SP0",
   "processor": "AMD64 Family 23 Model 104 Stepping 1, AuthenticAMD",
@@ -122,7 +122,8 @@
      "hard_extrusions": 6331
     }
    ],
-   "silhouette_projected": 0.16141422451288223
+   "silhouette_projected": 0.16141422451288223,
+   "silhouette_projected_2d": 0.08099957071976983
   },
   {
    "model": "qwen",
@@ -210,7 +211,97 @@
      "hard_extrusions": 5098
     }
    ],
-   "silhouette_projected": 0.2566112708501925
+   "silhouette_projected": 0.2566112708501925,
+   "silhouette_projected_2d": 0.29619582391626625
+  },
+  {
+   "model": "qwen",
+   "hf_id": "Qwen/Qwen2.5-0.5B-Instruct",
+   "embedding_dim": 896,
+   "silhouette_high_dim_cosine": 0.030646929517388344,
+   "algorithm": "tsne_p30",
+   "params": {
+    "n_components": 3,
+    "perplexity": 30.0,
+    "metric": "cosine",
+    "random_state": 42,
+    "init": "pca",
+    "learning_rate": "auto",
+    "max_iter": 1000,
+    "early_exaggeration": 12.0,
+    "method": "barnes_hut",
+    "angle": 0.5
+   },
+   "diagnostics": {},
+   "N_evaluated": 438,
+   "curves": [
+    {
+     "K": 5,
+     "N": 438,
+     "trustworthiness": 0.9455739619836466,
+     "continuity": 0.9359381968779866,
+     "U_P": 0.3817351598173516,
+     "U_N": 0.12374429223744292,
+     "U_X": 0.09406392694063927,
+     "Q_NX": 0.5995433789954338,
+     "B_NX": -0.02968036529680365,
+     "LCMC": 0.5881017313981798,
+     "R_NX": 0.5949084644004735,
+     "B_TC": -0.009635765105659999,
+     "hard_intrusions": 877,
+     "hard_extrusions": 877
+    },
+    {
+     "K": 10,
+     "N": 438,
+     "trustworthiness": 0.8871816486990354,
+     "continuity": 0.9009548512604361,
+     "U_P": 0.2093607305936073,
+     "U_N": 0.15182648401826485,
+     "U_X": 0.11963470319634703,
+     "Q_NX": 0.48082191780821915,
+     "B_NX": -0.032191780821917815,
+     "LCMC": 0.45793862261371115,
+     "R_NX": 0.46866318052035544,
+     "B_TC": 0.013773202561400688,
+     "hard_intrusions": 2274,
+     "hard_extrusions": 2274
+    },
+    {
+     "K": 15,
+     "N": 438,
+     "trustworthiness": 0.8571528121618895,
+     "continuity": 0.8769995048687902,
+     "U_P": 0.145662100456621,
+     "U_N": 0.15905631659056316,
+     "U_X": 0.13881278538812786,
+     "Q_NX": 0.443531202435312,
+     "B_NX": -0.0202435312024353,
+     "LCMC": 0.40920625964355,
+     "R_NX": 0.42375150583941074,
+     "B_TC": 0.019846692706900648,
+     "hard_intrusions": 3656,
+     "hard_extrusions": 3656
+    },
+    {
+     "K": 20,
+     "N": 438,
+     "trustworthiness": 0.8370266408941928,
+     "continuity": 0.8602375549766087,
+     "U_P": 0.11267123287671232,
+     "U_N": 0.161986301369863,
+     "U_X": 0.15353881278538814,
+     "Q_NX": 0.4281963470319635,
+     "B_NX": -0.00844748858447486,
+     "LCMC": 0.3824297566429475,
+     "R_NX": 0.40077171139800494,
+     "B_TC": 0.023210914082415934,
+     "hard_intrusions": 5009,
+     "hard_extrusions": 5009
+    }
+   ],
+   "silhouette_projected": 0.20840084181686883,
+   "silhouette_projected_2d": 0.3066322144836934
   },
   {
    "model": "qwen",
@@ -293,7 +384,8 @@
      "hard_extrusions": 4618
     }
    ],
-   "silhouette_projected": 0.36180866357054786
+   "silhouette_projected": 0.36180866357054786,
+   "silhouette_projected_2d": 0.3792894927445086
   },
   {
    "model": "qwen",
@@ -317,7 +409,7 @@
      "K": 5,
      "N": 438,
      "trustworthiness": 0.800998194754168,
-     "continuity": 0.9202145056812148,
+     "continuity": 0.9202166294998407,
      "U_P": 0.041552511415525115,
      "U_N": 0.0639269406392694,
      "U_X": 0.0863013698630137,
@@ -325,7 +417,7 @@
      "B_NX": 0.022374429223744302,
      "LCMC": 0.1803391743205542,
      "R_NX": 0.18242643328259764,
-     "B_TC": 0.11921631092704676,
+     "B_TC": 0.11921843474567273,
      "hard_intrusions": 1770,
      "hard_extrusions": 1770
     },
@@ -333,7 +425,7 @@
      "K": 10,
      "N": 438,
      "trustworthiness": 0.7923476804193348,
-     "continuity": 0.909584718056794,
+     "continuity": 0.9095857988165681,
      "U_P": 0.030136986301369864,
      "U_N": 0.09497716894977169,
      "U_X": 0.1226027397260274,
@@ -341,7 +433,7 @@
      "B_NX": 0.0276255707762557,
      "LCMC": 0.22483359978266093,
      "R_NX": 0.23009902366515883,
-     "B_TC": 0.11723703763745918,
+     "B_TC": 0.1172381183972333,
      "hard_intrusions": 3295,
      "hard_extrusions": 3295
     },
@@ -349,7 +441,7 @@
      "K": 15,
      "N": 438,
      "trustworthiness": 0.7882562212319598,
-     "continuity": 0.9054706497221764,
+     "continuity": 0.9054710164860355,
      "U_P": 0.024809741248097414,
      "U_N": 0.11598173515981736,
      "U_X": 0.14550989345509893,
@@ -357,7 +449,7 @@
      "B_NX": 0.029528158295281576,
      "LCMC": 0.2519764270712517,
      "R_NX": 0.2609329351425047,
-     "B_TC": 0.11721442849021657,
+     "B_TC": 0.11721479525407563,
      "hard_intrusions": 4689,
      "hard_extrusions": 4689
     },
@@ -365,7 +457,7 @@
      "K": 20,
      "N": 438,
      "trustworthiness": 0.7853452671092809,
-     "continuity": 0.8933941227554136,
+     "continuity": 0.8933944028909993,
      "U_P": 0.0204337899543379,
      "U_N": 0.12157534246575342,
      "U_X": 0.16335616438356165,
@@ -373,12 +465,13 @@
      "B_NX": 0.04178082191780823,
      "LCMC": 0.25959870641463695,
      "R_NX": 0.2720494837007107,
-     "B_TC": 0.10804885564613276,
+     "B_TC": 0.10804913578171838,
      "hard_intrusions": 6085,
      "hard_extrusions": 6085
     }
    ],
-   "silhouette_projected": 0.28062927204839694
+   "silhouette_projected": 0.28062932086879055,
+   "silhouette_projected_2d": 0.3412239547064222
   },
   {
    "model": "gemma",
@@ -465,7 +558,8 @@
      "hard_extrusions": 6061
     }
    ],
-   "silhouette_projected": 0.3072502916482249
+   "silhouette_projected": 0.3072502916482249,
+   "silhouette_projected_2d": 0.36868559556717734
   },
   {
    "model": "gemma",
@@ -553,7 +647,97 @@
      "hard_extrusions": 5676
     }
    ],
-   "silhouette_projected": 0.2458344600774156
+   "silhouette_projected": 0.2458344600774156,
+   "silhouette_projected_2d": 0.31985892562625085
+  },
+  {
+   "model": "gemma",
+   "hf_id": "google/gemma-2b",
+   "embedding_dim": 2048,
+   "silhouette_high_dim_cosine": 0.055266641080379486,
+   "algorithm": "tsne_p30",
+   "params": {
+    "n_components": 3,
+    "perplexity": 30.0,
+    "metric": "cosine",
+    "random_state": 42,
+    "init": "pca",
+    "learning_rate": "auto",
+    "max_iter": 1000,
+    "early_exaggeration": 12.0,
+    "method": "barnes_hut",
+    "angle": 0.5
+   },
+   "diagnostics": {},
+   "N_evaluated": 438,
+   "curves": [
+    {
+     "K": 5,
+     "N": 438,
+     "trustworthiness": 0.9035234151003504,
+     "continuity": 0.8912934055431666,
+     "U_P": 0.28036529680365296,
+     "U_N": 0.11643835616438356,
+     "U_X": 0.06986301369863014,
+     "Q_NX": 0.4666666666666667,
+     "B_NX": -0.046575342465753414,
+     "LCMC": 0.45522501906941265,
+     "R_NX": 0.46049382716049386,
+     "B_TC": -0.012230009557183785,
+     "hard_intrusions": 1168,
+     "hard_extrusions": 1168
+    },
+    {
+     "K": 10,
+     "N": 438,
+     "trustworthiness": 0.853794277376996,
+     "continuity": 0.8744794790737889,
+     "U_P": 0.15136986301369862,
+     "U_N": 0.13858447488584474,
+     "U_X": 0.09611872146118722,
+     "Q_NX": 0.3860730593607306,
+     "B_NX": -0.042465753424657526,
+     "LCMC": 0.3631897641662226,
+     "R_NX": 0.3716953792520826,
+     "B_TC": 0.020685201696792888,
+     "hard_intrusions": 2689,
+     "hard_extrusions": 2689
+    },
+    {
+     "K": 15,
+     "N": 438,
+     "trustworthiness": 0.8363642698648475,
+     "continuity": 0.8625339715024481,
+     "U_P": 0.10471841704718417,
+     "U_N": 0.14809741248097413,
+     "U_X": 0.12313546423135464,
+     "Q_NX": 0.3759512937595129,
+     "B_NX": -0.02496194824961949,
+     "LCMC": 0.3416263509677509,
+     "R_NX": 0.3537694677083108,
+     "B_TC": 0.026169701637600684,
+     "hard_intrusions": 4100,
+     "hard_extrusions": 4100
+    },
+    {
+     "K": 20,
+     "N": 438,
+     "trustworthiness": 0.8245704120794465,
+     "continuity": 0.8567030842927977,
+     "U_P": 0.08139269406392693,
+     "U_N": 0.1562785388127854,
+     "U_X": 0.1408675799086758,
+     "Q_NX": 0.37853881278538815,
+     "B_NX": -0.015410958904109595,
+     "LCMC": 0.3327722223963721,
+     "R_NX": 0.34873252083264894,
+     "B_TC": 0.032132672213351254,
+     "hard_intrusions": 5444,
+     "hard_extrusions": 5444
+    }
+   ],
+   "silhouette_projected": 0.2123084813662384,
+   "silhouette_projected_2d": 0.3584574193204398
   },
   {
    "model": "gemma",
@@ -636,7 +820,8 @@
      "hard_extrusions": 5128
     }
    ],
-   "silhouette_projected": 0.39943746203631403
+   "silhouette_projected": 0.39943746203631403,
+   "silhouette_projected_2d": 0.3835370113025553
   },
   {
    "model": "gemma",
@@ -708,7 +893,7 @@
      "K": 20,
      "N": 438,
      "trustworthiness": 0.8088738549457938,
-     "continuity": 0.8739443090455781,
+     "continuity": 0.8739445891811637,
      "U_P": 0.018378995433789954,
      "U_N": 0.13378995433789953,
      "U_X": 0.13105022831050228,
@@ -716,12 +901,13 @@
      "B_NX": -0.002739726027397249,
      "LCMC": 0.23745258769317576,
      "R_NX": 0.2488412010117933,
-     "B_TC": 0.06507045409978429,
+     "B_TC": 0.06507073423536991,
      "hard_intrusions": 6279,
      "hard_extrusions": 6279
     }
    ],
-   "silhouette_projected": 0.27856174114736537
+   "silhouette_projected": 0.27856174210074053,
+   "silhouette_projected_2d": 0.2945900661834089
   },
   {
    "model": "gemma2",
@@ -808,7 +994,8 @@
      "hard_extrusions": 6400
     }
    ],
-   "silhouette_projected": 0.24015917118066066
+   "silhouette_projected": 0.24015917118066066,
+   "silhouette_projected_2d": 0.15740353572282265
   },
   {
    "model": "gemma2",
@@ -896,7 +1083,97 @@
      "hard_extrusions": 5375
     }
    ],
-   "silhouette_projected": 0.24726704109488828
+   "silhouette_projected": 0.24726704109488828,
+   "silhouette_projected_2d": 0.28152618613848523
+  },
+  {
+   "model": "gemma2",
+   "hf_id": "google/gemma-2-2b",
+   "embedding_dim": 2304,
+   "silhouette_high_dim_cosine": 0.043648283928632736,
+   "algorithm": "tsne_p30",
+   "params": {
+    "n_components": 3,
+    "perplexity": 30.0,
+    "metric": "cosine",
+    "random_state": 42,
+    "init": "pca",
+    "learning_rate": "auto",
+    "max_iter": 1000,
+    "early_exaggeration": 12.0,
+    "method": "barnes_hut",
+    "angle": 0.5
+   },
+   "diagnostics": {},
+   "N_evaluated": 438,
+   "curves": [
+    {
+     "K": 5,
+     "N": 438,
+     "trustworthiness": 0.9394074546033768,
+     "continuity": 0.9078114049060211,
+     "U_P": 0.31643835616438354,
+     "U_N": 0.12968036529680366,
+     "U_X": 0.08356164383561644,
+     "Q_NX": 0.5296803652968036,
+     "B_NX": -0.046118721461187215,
+     "LCMC": 0.5182387176995497,
+     "R_NX": 0.5242368510062574,
+     "B_TC": -0.031596049697355744,
+     "hard_intrusions": 1030,
+     "hard_extrusions": 1030
+    },
+    {
+     "K": 10,
+     "N": 438,
+     "trustworthiness": 0.8905790170489855,
+     "continuity": 0.8794774526492124,
+     "U_P": 0.1684931506849315,
+     "U_N": 0.15045662100456622,
+     "U_X": 0.09634703196347032,
+     "Q_NX": 0.41529680365296806,
+     "B_NX": -0.054109589041095904,
+     "LCMC": 0.39241350845846007,
+     "R_NX": 0.4016035203661524,
+     "B_TC": -0.011101564399773056,
+     "hard_intrusions": 2561,
+     "hard_extrusions": 2561
+    },
+    {
+     "K": 15,
+     "N": 438,
+     "trustworthiness": 0.865883625827511,
+     "continuity": 0.8688866883057343,
+     "U_P": 0.11765601217656012,
+     "U_N": 0.1552511415525114,
+     "U_X": 0.11948249619482496,
+     "Q_NX": 0.39238964992389647,
+     "B_NX": -0.03576864535768645,
+     "LCMC": 0.35806470713213445,
+     "R_NX": 0.3707921256320918,
+     "B_TC": 0.0030030624782233506,
+     "hard_intrusions": 3992,
+     "hard_extrusions": 3992
+    },
+    {
+     "K": 20,
+     "N": 438,
+     "trustworthiness": 0.8513250413199989,
+     "continuity": 0.8616645656497744,
+     "U_P": 0.09143835616438356,
+     "U_N": 0.15856164383561644,
+     "U_X": 0.13401826484018264,
+     "Q_NX": 0.38401826484018264,
+     "B_NX": -0.024543378995433796,
+     "LCMC": 0.3382516744511666,
+     "R_NX": 0.35447477634330893,
+     "B_TC": 0.010339524329775585,
+     "hard_intrusions": 5396,
+     "hard_extrusions": 5396
+    }
+   ],
+   "silhouette_projected": 0.2327681762065971,
+   "silhouette_projected_2d": 0.2702026720286001
   },
   {
    "model": "gemma2",
@@ -979,7 +1256,8 @@
      "hard_extrusions": 4910
     }
    ],
-   "silhouette_projected": 0.3527527002180362
+   "silhouette_projected": 0.3527527002180362,
+   "silhouette_projected_2d": 0.3847327869088064
   },
   {
    "model": "gemma2",
@@ -1064,7 +1342,8 @@
      "hard_extrusions": 5962
     }
    ],
-   "silhouette_projected": 0.2976290226720966
+   "silhouette_projected": 0.2976290424696196,
+   "silhouette_projected_2d": 0.33579875725536906
   },
   {
    "model": "bert",
@@ -1151,7 +1430,8 @@
      "hard_extrusions": 6646
     }
    ],
-   "silhouette_projected": 0.15912240858576873
+   "silhouette_projected": 0.15912240858576873,
+   "silhouette_projected_2d": 0.08931609199502624
   },
   {
    "model": "bert",
@@ -1239,7 +1519,97 @@
      "hard_extrusions": 5544
     }
    ],
-   "silhouette_projected": 0.1987618191088946
+   "silhouette_projected": 0.1987618191088946,
+   "silhouette_projected_2d": 0.2620123038776885
+  },
+  {
+   "model": "bert",
+   "hf_id": "bert-base-uncased",
+   "embedding_dim": 768,
+   "silhouette_high_dim_cosine": 0.02522098459303379,
+   "algorithm": "tsne_p30",
+   "params": {
+    "n_components": 3,
+    "perplexity": 30.0,
+    "metric": "cosine",
+    "random_state": 42,
+    "init": "pca",
+    "learning_rate": "auto",
+    "max_iter": 1000,
+    "early_exaggeration": 12.0,
+    "method": "barnes_hut",
+    "angle": 0.5
+   },
+   "diagnostics": {},
+   "N_evaluated": 438,
+   "curves": [
+    {
+     "K": 5,
+     "N": 438,
+     "trustworthiness": 0.9279675055750238,
+     "continuity": 0.880153976850377,
+     "U_P": 0.32100456621004564,
+     "U_N": 0.1178082191780822,
+     "U_X": 0.07488584474885844,
+     "Q_NX": 0.5136986301369862,
+     "B_NX": -0.04292237442922375,
+     "LCMC": 0.5022569825397323,
+     "R_NX": 0.508070142059868,
+     "B_TC": -0.04781352872464684,
+     "hard_intrusions": 1065,
+     "hard_extrusions": 1065
+    },
+    {
+     "K": 10,
+     "N": 438,
+     "trustworthiness": 0.8728529356137364,
+     "continuity": 0.8448509902461431,
+     "U_P": 0.1769406392694064,
+     "U_N": 0.13401826484018264,
+     "U_X": 0.1004566210045662,
+     "Q_NX": 0.41141552511415524,
+     "B_NX": -0.03356164383561644,
+     "LCMC": 0.38853222991964725,
+     "R_NX": 0.39763134537443995,
+     "B_TC": -0.028001945367593373,
+     "hard_intrusions": 2578,
+     "hard_extrusions": 2578
+    },
+    {
+     "K": 15,
+     "N": 438,
+     "trustworthiness": 0.8400014670554363,
+     "continuity": 0.8235939190552163,
+     "U_P": 0.12070015220700152,
+     "U_N": 0.13835616438356163,
+     "U_X": 0.11339421613394216,
+     "Q_NX": 0.37245053272450535,
+     "B_NX": -0.024961948249619476,
+     "LCMC": 0.33812558993274333,
+     "R_NX": 0.35014427203935744,
+     "B_TC": -0.01640754800022004,
+     "hard_intrusions": 4123,
+     "hard_extrusions": 4123
+    },
+    {
+     "K": 20,
+     "N": 438,
+     "trustworthiness": 0.8217273160209542,
+     "continuity": 0.8146877888898226,
+     "U_P": 0.09292237442922374,
+     "U_N": 0.14520547945205478,
+     "U_X": 0.1247716894977169,
+     "Q_NX": 0.36289954337899544,
+     "B_NX": -0.02043378995433788,
+     "LCMC": 0.3171329529899794,
+     "R_NX": 0.33234316656264035,
+     "B_TC": -0.00703952713113154,
+     "hard_intrusions": 5581,
+     "hard_extrusions": 5581
+    }
+   ],
+   "silhouette_projected": 0.19649554196171243,
+   "silhouette_projected_2d": 0.23076364566142554
   },
   {
    "model": "bert",
@@ -1322,7 +1692,8 @@
      "hard_extrusions": 5258
     }
    ],
-   "silhouette_projected": 0.25587675704654245
+   "silhouette_projected": 0.25587675704654245,
+   "silhouette_projected_2d": 0.308081821854182
   },
   {
    "model": "bert",
@@ -1362,7 +1733,7 @@
      "K": 10,
      "N": 438,
      "trustworthiness": 0.7942103698900327,
-     "continuity": 0.8599978384804517,
+     "continuity": 0.8599983788603388,
      "U_P": 0.019178082191780823,
      "U_N": 0.08515981735159818,
      "U_X": 0.09680365296803653,
@@ -1370,7 +1741,7 @@
      "B_NX": 0.01164383561643835,
      "LCMC": 0.1782582573169075,
      "R_NX": 0.18243292376461026,
-     "B_TC": 0.06578746859041906,
+     "B_TC": 0.06578800897030612,
      "hard_intrusions": 3499,
      "hard_extrusions": 3499
     },
@@ -1378,7 +1749,7 @@
      "K": 15,
      "N": 438,
      "trustworthiness": 0.7940415543452348,
-     "continuity": 0.8589264821844456,
+     "continuity": 0.8589268489483046,
      "U_P": 0.01704718417047184,
      "U_N": 0.09771689497716896,
      "U_X": 0.1178082191780822,
@@ -1386,7 +1757,7 @@
      "B_NX": 0.020091324200913238,
      "LCMC": 0.19824735553396097,
      "R_NX": 0.20529406248422025,
-     "B_TC": 0.06488492783921074,
+     "B_TC": 0.0648852946030698,
      "hard_intrusions": 5042,
      "hard_extrusions": 5042
     },
@@ -1394,7 +1765,7 @@
      "K": 20,
      "N": 438,
      "trustworthiness": 0.794352746729417,
-     "continuity": 0.8534184945513629,
+     "continuity": 0.8534190548225341,
      "U_P": 0.015182648401826484,
      "U_N": 0.10947488584474886,
      "U_X": 0.13287671232876713,
@@ -1402,12 +1773,13 @@
      "B_NX": 0.02340182648401827,
      "LCMC": 0.21176765618632645,
      "R_NX": 0.2219243783055747,
-     "B_TC": 0.059065747821945846,
+     "B_TC": 0.05906630809311708,
      "hard_intrusions": 6504,
      "hard_extrusions": 6504
     }
    ],
-   "silhouette_projected": 0.16640988544882093
+   "silhouette_projected": 0.16640987465571888,
+   "silhouette_projected_2d": 0.056005182237561485
   }
  ]
 }
