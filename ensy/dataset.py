@@ -120,9 +120,10 @@ def disambiguate(types: dict[str, Counter]) -> tuple[dict[str, dict], dict[str, 
     return kept, excluded
 
 
-def single_token_filter(words: dict[str, dict], model_keys) -> tuple[dict, dict]:
+def single_token_filter(words: dict[str, dict], model_keys, revisions: dict | None = None) -> tuple[dict, dict]:
     """Steps 1-3 and 7: keep forms that are exactly one valid token in every model."""
-    tokenizers = {k: M.load_tokenizer(k) for k in model_keys}
+    revisions = revisions or {}
+    tokenizers = {k: M.load_tokenizer(k, revisions.get(k)) for k in model_keys}
     kept, dropped = {}, {}
     for w, meta in words.items():
         ids = {}
@@ -164,7 +165,8 @@ def build(model_keys=tuple(M.MODELS)) -> dict:
     tagged = ptb_tagged_words()
     types, artefacts = lexical_types(tagged)
     words, excluded = disambiguate(types)
-    single, dropped = single_token_filter(words, model_keys)
+    revisions = {k: M.resolved_revision(k) for k in model_keys}  # tokenizer and record share one commit
+    single, dropped = single_token_filter(words, model_keys, revisions)
     items, available = balance(single)
     complete = set(model_keys) == set(M.MODELS)
     return {
@@ -172,10 +174,10 @@ def build(model_keys=tuple(M.MODELS)) -> dict:
         "version": "2.1.2",
         "frozen": complete,
         "note": None if complete else
-            "PROVISIONAL: built without all three tokenizers; not valid for experiments",
+            f"PROVISIONAL: built without all {len(M.MODELS)} tokenizers; not valid for experiments",
         "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "nltk.corpus.treebank (PTB WSJ sample)",
-        "models": {k: {"hf_id": M.MODELS[k].hf_id, "revision": M.resolved_revision(k),
+        "models": {k: {"hf_id": M.MODELS[k].hf_id, "revision": revisions[k],
                        "surface_form": "' '+word" if M.MODELS[k].space_prefix else "word"}
                    for k in model_keys},
         "rules": {

@@ -1,7 +1,8 @@
 """Model abstraction and static input-embedding extraction (plan Section 4).
 
 Only the input embedding matrix is read -- no forward pass. The tensor is read
-straight from the checkpoint's safetensors shard, which is the same tensor that
+straight from the checkpoint's safetensors file -- by default only the needed
+rows, via HTTP Range requests -- and is the same tensor that
 ``model.get_input_embeddings().weight`` returns (verified for Qwen/BERT in
 tests/test_models.py) without materialising the whole model in RAM.
 """
@@ -9,6 +10,8 @@ from __future__ import annotations
 
 import json
 import os
+import struct
+import time
 from dataclasses import dataclass
 
 import numpy as np
@@ -33,8 +36,14 @@ MODELS: dict[str, ModelSpec] = {
         "qwen", "Qwen/Qwen2.5-0.5B-Instruct", "decoder", True,
         ("embed_tokens.weight",),
     ),
+    # Both Gemma 2B variants are run and compared (plan v2.1.3, open item):
+    # Gemma 1 (d = 2048) and Gemma 2 (d = 2304).
     "gemma": ModelSpec(
-        "gemma", os.environ.get("ENSY_GEMMA_ID", "google/gemma-2b"), "decoder", True,
+        "gemma", "google/gemma-2b", "decoder", True,
+        ("embed_tokens.weight",), gated=True,
+    ),
+    "gemma2": ModelSpec(
+        "gemma2", "google/gemma-2-2b", "decoder", True,
         ("embed_tokens.weight",), gated=True,
     ),
     "bert": ModelSpec(
@@ -48,10 +57,10 @@ def hf_token() -> str | None:
     return os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
 
 
-def load_tokenizer(key: str):
+def load_tokenizer(key: str, revision: str | None = None):
     from transformers import AutoTokenizer
 
-    return AutoTokenizer.from_pretrained(MODELS[key].hf_id, token=hf_token())
+    return AutoTokenizer.from_pretrained(MODELS[key].hf_id, revision=revision, token=hf_token())
 
 
 def resolved_revision(key: str) -> str | None:
@@ -90,34 +99,118 @@ def single_token_id(tokenizer, key: str, word: str, n_rows: int | None = None) -
     return tid
 
 
-def _find_embedding_tensor(key: str):
-    """(local shard path, tensor name) of the input embedding matrix."""
+def _embedding_location(key: str, revision: str | None = None) -> tuple[str, str]:
+    """(safetensors file name, tensor name) of the input embedding matrix."""
+    import requests
     from huggingface_hub import hf_hub_download
     from huggingface_hub.utils import EntryNotFoundError
 
     spec = MODELS[key]
-    tok = hf_token()
     try:
-        index_path = hf_hub_download(spec.hf_id, "model.safetensors.index.json", token=tok)
-        weight_map = json.load(open(index_path, encoding="utf-8"))["weight_map"]
-        candidates = weight_map
+        index_path = hf_hub_download(spec.hf_id, "model.safetensors.index.json",
+                                     revision=revision, token=hf_token())
+        candidates = json.load(open(index_path, encoding="utf-8"))["weight_map"]
     except EntryNotFoundError:
-        shard = hf_hub_download(spec.hf_id, "model.safetensors", token=tok)
-        from safetensors import safe_open
-
-        with safe_open(shard, "np") as f:
-            candidates = {name: "model.safetensors" for name in f.keys()}
+        header = _safetensors_header(key, "model.safetensors", revision, requests.Session())
+        candidates = {name: "model.safetensors" for name in header if name != "__metadata__"}
     for name, fname in candidates.items():
         if any(name.endswith(s) for s in spec.embedding_key_suffixes) and "position" not in name:
-            return hf_hub_download(spec.hf_id, fname, token=tok), name
+            return fname, name
     raise KeyError(f"no input-embedding tensor found for {spec.hf_id}")
 
 
-def embedding_matrix(key: str) -> np.ndarray:
-    """Full input-embedding matrix as float32 (rows = token ids)."""
+def _ranged_get(session, url: str, start: int, end: int) -> bytes:
+    """Inclusive byte range; the Hub redirects to a CDN that honours Range."""
+    headers = {"Range": f"bytes={start}-{end}"}
+    token = hf_token()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    for attempt in range(4):
+        try:
+            r = session.get(url, headers=headers, timeout=60)
+            if r.status_code == 206 and len(r.content) == end - start + 1:
+                return r.content
+            r.raise_for_status()
+            raise IOError(f"server ignored Range (HTTP {r.status_code})")
+        except Exception:
+            if attempt == 3:
+                raise
+            time.sleep(2 ** attempt)
+
+
+def _safetensors_header(key: str, fname: str, revision: str | None, session) -> dict:
+    from huggingface_hub import hf_hub_url
+
+    url = hf_hub_url(MODELS[key].hf_id, fname, revision=revision)
+    n = struct.unpack("<Q", _ranged_get(session, url, 0, 7))[0]
+    header = json.loads(_ranged_get(session, url, 8, 8 + n - 1))
+    header["__data_start__"] = 8 + n
+    header["__url__"] = url
+    return header
+
+
+_DTYPES = {"F32": np.float32, "F16": np.float16, "BF16": np.uint16}
+
+
+def _decode(raw: bytes, dtype: str) -> np.ndarray:
+    a = np.frombuffer(raw, dtype=_DTYPES[dtype])
+    if dtype == "BF16":  # bfloat16 is the upper half of a float32: exact widening
+        return (a.astype(np.uint32) << 16).view(np.float32)
+    return a.astype(np.float32)
+
+
+def embedding_rows(key: str, ids, revision: str | None = None, workers: int = 8) -> np.ndarray:
+    """Selected rows of the input-embedding matrix, fetched with HTTP Range requests.
+
+    Only the safetensors header and the requested rows are transferred (a few MB
+    instead of a multi-GB checkpoint); the values are bit-identical to
+    ``embedding_matrix(key)[ids]`` (tests/test_models.py).
+    """
+    import requests
+    from concurrent.futures import ThreadPoolExecutor
+
+    ids = [int(i) for i in ids]
+    fname, name = _embedding_location(key, revision)
+    session = requests.Session()
+    header = _safetensors_header(key, fname, revision, session)
+    meta = header[name]
+    rows, dim = meta["shape"]
+    if meta["dtype"] not in _DTYPES:
+        raise TypeError(f"unsupported dtype {meta['dtype']}")
+    itemsize = np.dtype(_DTYPES[meta["dtype"]]).itemsize
+    row_bytes = dim * itemsize
+    base = header["__data_start__"] + meta["data_offsets"][0]
+    if any(not 0 <= i < rows for i in ids):
+        raise IndexError("token id outside the embedding matrix")
+
+    # Merge sorted ids into contiguous runs -> one request per run
+    runs, uniq = [], sorted(set(ids))
+    for i in uniq:
+        if runs and i == runs[-1][1] + 1:
+            runs[-1][1] = i
+        else:
+            runs.append([i, i])
+
+    def fetch(run):
+        a, b = run
+        raw = _ranged_get(session, header["__url__"], base + a * row_bytes, base + (b + 1) * row_bytes - 1)
+        return a, _decode(raw, meta["dtype"]).reshape(b - a + 1, dim)
+
+    found = {}
+    with ThreadPoolExecutor(workers) as pool:
+        for a, block in pool.map(fetch, runs):
+            for off, row in enumerate(block):
+                found[a + off] = row
+    return np.stack([found[i] for i in ids]).astype(np.float32, copy=False)
+
+
+def embedding_matrix(key: str, revision: str | None = None) -> np.ndarray:
+    """Full input-embedding matrix as float32 (reference path: downloads the shard)."""
+    from huggingface_hub import hf_hub_download
     from safetensors import safe_open
 
-    path, name = _find_embedding_tensor(key)
+    fname, name = _embedding_location(key, revision)
+    path = hf_hub_download(MODELS[key].hf_id, fname, revision=revision, token=hf_token())
     with safe_open(path, "pt") as f:  # "pt" handles bf16 checkpoints
         W = f.get_tensor(name)
     return W.float().numpy().astype(np.float32, copy=False)
@@ -141,9 +234,12 @@ class EmbeddingCache:
         ck = (MODELS[key].hf_id, dataset["dataset_hash"], "static_input_embedding",
               "l2" if normalise else "raw")
         if ck not in self._store:
-            W = embedding_matrix(key)
             ids = [item["token_ids"][key] for item in dataset["items"]]
-            X = W[ids]
+            revision = dataset["models"][key].get("revision")
+            if os.environ.get("ENSY_FULL_DOWNLOAD"):
+                X = embedding_matrix(key, revision)[ids]
+            else:
+                X = embedding_rows(key, ids, revision)
             self._store[ck] = l2_normalise(X) if normalise else X
         return self._store[ck]
 

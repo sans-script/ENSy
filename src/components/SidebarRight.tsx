@@ -14,7 +14,7 @@ const ProbeList: React.FC<{ title: string; color: string; ids: Set<number>; node
   <div className="text-[12px]">
     <span className="font-semibold" style={{ color }}>{title} ({ids.size})</span>
     <div className="font-serif italic text-[12.5px] leading-snug text-[#111111] break-words">
-      {[...ids].map((j) => nodes[j]?.label).join(', ') || '—'}
+      {[...ids].map((j) => nodes.find((n) => n.id === j)?.label).join(', ') || '—'}
     </div>
   </div>
 );

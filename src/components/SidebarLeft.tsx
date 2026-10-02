@@ -190,7 +190,8 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
               onChange={onModelKeyChange}
               options={[
                 { value: 'qwen', label: 'Qwen 2.5 0.5B-Instruct', text: 'Qwen 2.5 0.5B-Instruct' },
-                { value: 'gemma', label: 'Gemma 2B', text: 'Gemma 2B' },
+                { value: 'gemma', label: 'Gemma 2B (v1)', text: 'Gemma 2B — google/gemma-2b' },
+                { value: 'gemma2', label: 'Gemma 2 2B', text: 'Gemma 2 2B — google/gemma-2-2b' },
                 { value: 'bert', label: 'BERT base uncased', text: 'BERT base uncased' },
               ]}
             />

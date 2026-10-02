@@ -88,14 +88,19 @@ def _compute(model: str, algorithm: str, ds: dict) -> dict:
             raise HTTPException(503, detail=f"cannot load embeddings for {model}: {exc}")
         labels = np.array([CATEGORY_INDEX[it["category"]] for it in ds["items"]])
         Y, diag = P.project(X, algorithm)
-        ev = coranking.evaluate(X, Y, K_CURVE, high_metric="cosine")
+        # Isomap may drop points outside the giant k-NN component; everything is
+        # evaluated on the projected subset and indices are mapped back to items.
+        kept = np.asarray(diag.pop("kept", np.arange(len(X))))
+        if diag.get("removed"):
+            diag["removed_words"] = [ds["items"][i]["word"] for i in diag["removed"]]
+        ev = coranking.evaluate(X[kept], Y, K_CURVE, high_metric="cosine")
         rho, r = ev["rho"], ev["r"]
         out = {
-            "X": X, "Y": Y, "diag": diag, "curves": ev["curves"],
+            "X": X, "Y": Y, "kept": kept, "diag": diag, "curves": ev["curves"],
             "local": {K: v.tolist() for K, v in ev["local_b_nx"].items()},
-            "hd_order": np.argsort(rho, axis=1)[:, 1:K_PROBE_MAX + 1],
-            "ld_order": np.argsort(r, axis=1)[:, 1:K_PROBE_MAX + 1],
-            "silhouette": silhouette(Y, labels),
+            "hd_order": kept[np.argsort(rho, axis=1)[:, 1:K_PROBE_MAX + 1]],
+            "ld_order": kept[np.argsort(r, axis=1)[:, 1:K_PROBE_MAX + 1]],
+            "silhouette": silhouette(Y, labels[kept]),
         }
         _projections[key] = out
         return out
@@ -103,11 +108,13 @@ def _compute(model: str, algorithm: str, ds: dict) -> dict:
 
 def _payload(model: str, algorithm: str, ds: dict) -> dict:
     res = _compute(model, algorithm, ds)
-    X, Y = res["X"], res["Y"]
-    N = len(ds["items"])
+    X, Y, kept = res["X"], res["Y"], res["kept"]
+    N = len(kept)
     nodes = []
-    for i, item in enumerate(ds["items"]):
-        hd = res["hd_order"][i]
+    for row, i in enumerate(kept):
+        i = int(i)
+        item = ds["items"][i]
+        hd = res["hd_order"][row]
         top5 = [{"label": ds["items"][j]["word"], "cosine_similarity": round(float(X[i] @ X[j]), 6)}
                 for j in hd[:5]]
         nodes.append({
@@ -116,12 +123,12 @@ def _payload(model: str, algorithm: str, ds: dict) -> dict:
             "token_id": item["token_ids"][model],
             "cluster": item["category"],
             "color": CATEGORY_COLORS[item["category"]],
-            "coords": {"x2d": float(Y[i, 0]), "y2d": float(Y[i, 1]),
-                       "x3d": float(Y[i, 0]), "y3d": float(Y[i, 1]), "z3d": float(Y[i, 2])},
+            "coords": {"x2d": float(Y[row, 0]), "y2d": float(Y[row, 1]),
+                       "x3d": float(Y[row, 0]), "y3d": float(Y[row, 1]), "z3d": float(Y[row, 2])},
             "top5_neighbors": top5,
             "hd_neighbors": hd.tolist(),
-            "ld_neighbors": res["ld_order"][i].tolist(),
-            "b_nx_local": {str(K): res["local"][K][i] for K in K_CURVE},
+            "ld_neighbors": res["ld_order"][row].tolist(),
+            "b_nx_local": {str(K): res["local"][K][row] for K in K_CURVE},
         })
     return {
         "status": "STABLE",

@@ -1,14 +1,24 @@
 {
  "name": "ENSy lexical dataset derived from the Penn Treebank",
  "version": "2.1.2",
- "frozen": false,
- "note": "PROVISIONAL: built without all three tokenizers; not valid for experiments",
- "created_utc": "2026-10-01T21:46:37+00:00",
+ "frozen": true,
+ "note": null,
+ "created_utc": "2026-10-02T14:20:59+00:00",
  "source": "nltk.corpus.treebank (PTB WSJ sample)",
  "models": {
   "qwen": {
    "hf_id": "Qwen/Qwen2.5-0.5B-Instruct",
    "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+   "surface_form": "' '+word"
+  },
+  "gemma": {
+   "hf_id": "google/gemma-2b",
+   "revision": "9cf48e52b224239de00d483ec8eb84fb8d0f3a3a",
+   "surface_form": "' '+word"
+  },
+  "gemma2": {
+   "hf_id": "google/gemma-2-2b",
+   "revision": "c5ebcd40d208330abc697524c919956e692655cf",
    "surface_form": "' '+word"
   },
   "bert": {
@@ -81,17 +91,19 @@
   "excluded_outside_partition": 1418,
   "dropped_multi_token": {
    "qwen": 932,
-   "bert": 316
+   "gemma": 4,
+   "gemma2": 0,
+   "bert": 314
   },
   "single_token_per_category": {
-   "content_noun": 2686,
+   "content_noun": 2684,
    "content_verb": 1712,
    "function_word": 146
   },
   "N": 438
  },
  "N": 438,
- "dataset_hash": "a4eed31405ab04a0018cb3bacca66cda89b3422868484184961b61097088c2ac",
+ "dataset_hash": "40863cdefcb4afec7d5331da3e30834976d6efcbf594ad8e011fc9dfae215715",
  "items": [
   {
    "word": "action",
@@ -100,6 +112,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1917,
+    "gemma": 3105,
+    "gemma2": 3105,
     "bert": 2895
    }
   },
@@ -110,6 +124,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 993,
+    "gemma": 835,
+    "gemma2": 835,
     "bert": 4748
    }
   },
@@ -120,6 +136,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8567,
+    "gemma": 11588,
+    "gemma2": 11588,
     "bert": 3447
    }
   },
@@ -130,6 +148,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 18237,
+    "gemma": 43279,
+    "gemma2": 43279,
     "bert": 12941
    }
   },
@@ -140,6 +160,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 30399,
+    "gemma": 49843,
+    "gemma2": 49843,
     "bert": 18288
    }
   },
@@ -150,6 +172,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 92566,
+    "gemma": 99851,
+    "gemma2": 99851,
     "bert": 22713
    }
   },
@@ -160,6 +184,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6073,
+    "gemma": 5681,
+    "gemma2": 5681,
     "bert": 2924
    }
   },
@@ -170,6 +196,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 13959,
+    "gemma": 14183,
+    "gemma2": 14183,
     "bert": 5085
    }
   },
@@ -180,6 +208,8 @@
    "category_share": 0.8611111111111112,
    "token_ids": {
     "qwen": 14103,
+    "gemma": 12551,
+    "gemma2": 12551,
     "bert": 7226
    }
   },
@@ -190,6 +220,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4031,
+    "gemma": 9350,
+    "gemma2": 9350,
     "bert": 3021
    }
   },
@@ -200,6 +232,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4479,
+    "gemma": 4924,
+    "gemma2": 4924,
     "bert": 2604
    }
   },
@@ -210,6 +244,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 10815,
+    "gemma": 12429,
+    "gemma2": 12429,
     "bert": 5416
    }
   },
@@ -220,6 +256,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 26363,
+    "gemma": 20345,
+    "gemma2": 20345,
     "bert": 9547
    }
   },
@@ -230,6 +268,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2562,
+    "gemma": 2567,
+    "gemma2": 2567,
     "bert": 2449
    }
   },
@@ -240,6 +280,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6722,
+    "gemma": 6037,
+    "gemma2": 6037,
     "bert": 3007
    }
   },
@@ -250,6 +292,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1142,
+    "gemma": 2270,
+    "gemma2": 2270,
     "bert": 2553
    }
   },
@@ -260,6 +304,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8350,
+    "gemma": 9852,
+    "gemma2": 9852,
     "bert": 5356
    }
   },
@@ -270,6 +316,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 30191,
+    "gemma": 19563,
+    "gemma2": 19563,
     "bert": 16653
    }
   },
@@ -280,6 +328,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 21201,
+    "gemma": 24249,
+    "gemma2": 24249,
     "bert": 3472
    }
   },
@@ -290,6 +340,8 @@
    "category_share": 0.8333333333333334,
    "token_ids": {
     "qwen": 6757,
+    "gemma": 6256,
+    "gemma2": 6256,
     "bert": 3715
    }
   },
@@ -300,6 +352,8 @@
    "category_share": 0.803921568627451,
    "token_ids": {
     "qwen": 10178,
+    "gemma": 8987,
+    "gemma2": 8987,
     "bert": 2708
    }
   },
@@ -310,6 +364,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5110,
+    "gemma": 6439,
+    "gemma2": 6439,
     "bert": 3316
    }
   },
@@ -320,6 +376,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2813,
+    "gemma": 3277,
+    "gemma2": 3277,
     "bert": 2194
    }
   },
@@ -330,6 +388,8 @@
    "category_share": 0.9761904761904762,
    "token_ids": {
     "qwen": 4643,
+    "gemma": 11115,
+    "gemma2": 11115,
     "bert": 5142
    }
   },
@@ -340,6 +400,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8086,
+    "gemma": 6584,
+    "gemma2": 6584,
     "bert": 2810
    }
   },
@@ -350,6 +412,8 @@
    "category_share": 0.972972972972973,
    "token_ids": {
     "qwen": 5116,
+    "gemma": 7613,
+    "gemma2": 7613,
     "bert": 3206
    }
   },
@@ -360,6 +424,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 17080,
+    "gemma": 20078,
+    "gemma2": 20078,
     "bert": 8311
    }
   },
@@ -370,6 +436,8 @@
    "category_share": 0.8461538461538461,
    "token_ids": {
     "qwen": 7049,
+    "gemma": 6331,
+    "gemma2": 6331,
     "bert": 5366
    }
   },
@@ -380,6 +448,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3146,
+    "gemma": 3170,
+    "gemma2": 3170,
     "bert": 2406
    }
   },
@@ -390,6 +460,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5473,
+    "gemma": 4624,
+    "gemma2": 4624,
     "bert": 2457
    }
   },
@@ -400,6 +472,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6310,
+    "gemma": 7138,
+    "gemma2": 7138,
     "bert": 6304
    }
   },
@@ -410,6 +484,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2849,
+    "gemma": 2705,
+    "gemma2": 2705,
     "bert": 2420
    }
   },
@@ -420,6 +496,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 11636,
+    "gemma": 13040,
+    "gemma2": 13040,
     "bert": 7016
    }
   },
@@ -430,6 +508,8 @@
    "category_share": 0.9666666666666667,
    "token_ids": {
     "qwen": 7479,
+    "gemma": 5388,
+    "gemma2": 5388,
     "bert": 5157
    }
   },
@@ -440,6 +520,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 9292,
+    "gemma": 9888,
+    "gemma2": 9888,
     "bert": 2533
    }
   },
@@ -450,6 +532,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7538,
+    "gemma": 8453,
+    "gemma2": 8453,
     "bert": 2472
    }
   },
@@ -460,6 +544,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 12804,
+    "gemma": 10226,
+    "gemma2": 10226,
     "bert": 2407
    }
   },
@@ -470,6 +556,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 23681,
+    "gemma": 24261,
+    "gemma2": 24261,
     "bert": 16565
    }
   },
@@ -480,6 +568,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8584,
+    "gemma": 9797,
+    "gemma2": 9797,
     "bert": 4610
    }
   },
@@ -490,6 +580,8 @@
    "category_share": 0.7741935483870968,
    "token_ids": {
     "qwen": 835,
+    "gemma": 1580,
+    "gemma2": 1580,
     "bert": 2203
    }
   },
@@ -500,6 +592,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3110,
+    "gemma": 3287,
+    "gemma2": 3287,
     "bert": 2742
    }
   },
@@ -510,6 +604,8 @@
    "category_share": 0.5882352941176471,
    "token_ids": {
     "qwen": 10905,
+    "gemma": 14762,
+    "gemma2": 14762,
     "bert": 3237
    }
   },
@@ -520,6 +616,8 @@
    "category_share": 0.64,
    "token_ids": {
     "qwen": 4399,
+    "gemma": 3881,
+    "gemma2": 3881,
     "bert": 2991
    }
   },
@@ -530,6 +628,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 12436,
+    "gemma": 13561,
+    "gemma2": 13561,
     "bert": 9883
    }
   },
@@ -540,6 +640,8 @@
    "category_share": 0.96,
    "token_ids": {
     "qwen": 6915,
+    "gemma": 4948,
+    "gemma2": 4948,
     "bert": 2986
    }
   },
@@ -550,6 +652,8 @@
    "category_share": 0.95,
    "token_ids": {
     "qwen": 7474,
+    "gemma": 7650,
+    "gemma2": 7650,
     "bert": 3813
    }
   },
@@ -560,6 +664,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 18809,
+    "gemma": 18700,
+    "gemma2": 18700,
     "bert": 9786
    }
   },
@@ -570,6 +676,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 10514,
+    "gemma": 10202,
+    "gemma2": 10202,
     "bert": 5029
    }
   },
@@ -580,6 +688,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 36823,
+    "gemma": 54005,
+    "gemma2": 54005,
     "bert": 17795
    }
   },
@@ -590,6 +700,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3033,
+    "gemma": 3838,
+    "gemma2": 3838,
     "bert": 2231
    }
   },
@@ -600,6 +712,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1874,
+    "gemma": 2778,
+    "gemma2": 2778,
     "bert": 2177
    }
   },
@@ -610,6 +724,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6513,
+    "gemma": 5115,
+    "gemma2": 5115,
     "bert": 3930
    }
   },
@@ -620,6 +736,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7911,
+    "gemma": 8316,
+    "gemma2": 8316,
     "bert": 3318
    }
   },
@@ -630,6 +748,8 @@
    "category_share": 0.6451612903225806,
    "token_ids": {
     "qwen": 5263,
+    "gemma": 4740,
+    "gemma2": 4740,
     "bert": 3623
    }
   },
@@ -640,6 +760,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1922,
+    "gemma": 3921,
+    "gemma2": 3921,
     "bert": 5950
    }
   },
@@ -650,6 +772,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4958,
+    "gemma": 5361,
+    "gemma2": 5361,
     "bert": 3068
    }
   },
@@ -660,6 +784,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1995,
+    "gemma": 2113,
+    "gemma2": 2113,
     "bert": 2592
    }
   },
@@ -670,6 +796,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2734,
+    "gemma": 3273,
+    "gemma2": 3273,
     "bert": 3037
    }
   },
@@ -680,6 +808,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 9162,
+    "gemma": 9245,
+    "gemma2": 9245,
     "bert": 5211
    }
   },
@@ -690,6 +820,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 29593,
+    "gemma": 38737,
+    "gemma2": 38737,
     "bert": 14316
    }
   },
@@ -700,6 +832,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 14823,
+    "gemma": 19195,
+    "gemma2": 19195,
     "bert": 9387
    }
   },
@@ -710,6 +844,8 @@
    "category_share": 0.9,
    "token_ids": {
     "qwen": 4265,
+    "gemma": 4295,
+    "gemma2": 4295,
     "bert": 3277
    }
   },
@@ -720,6 +856,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4714,
+    "gemma": 5004,
+    "gemma2": 5004,
     "bert": 3314
    }
   },
@@ -730,6 +868,8 @@
    "category_share": 0.9666666666666667,
    "token_ids": {
     "qwen": 29674,
+    "gemma": 44029,
+    "gemma2": 44029,
     "bert": 18015
    }
   },
@@ -740,6 +880,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2329,
+    "gemma": 2912,
+    "gemma2": 2912,
     "bert": 2375
    }
   },
@@ -750,6 +892,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4709,
+    "gemma": 4783,
+    "gemma2": 4783,
     "bert": 3279
    }
   },
@@ -760,6 +904,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 24232,
+    "gemma": 27493,
+    "gemma2": 27493,
     "bert": 9338
    }
   },
@@ -770,6 +916,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6645,
+    "gemma": 8866,
+    "gemma2": 8866,
     "bert": 3208
    }
   },
@@ -780,6 +928,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 19680,
+    "gemma": 20641,
+    "gemma2": 20641,
     "bert": 10489
    }
   },
@@ -790,6 +940,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3081,
+    "gemma": 3952,
+    "gemma2": 3952,
     "bert": 3006
    }
   },
@@ -800,6 +952,8 @@
    "category_share": 0.9814814814814815,
    "token_ids": {
     "qwen": 11725,
+    "gemma": 13037,
+    "gemma2": 13037,
     "bert": 6089
    }
   },
@@ -810,6 +964,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3613,
+    "gemma": 3778,
+    "gemma2": 3778,
     "bert": 2372
    }
   },
@@ -820,6 +976,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3220,
+    "gemma": 3370,
+    "gemma2": 3370,
     "bert": 2769
    }
   },
@@ -830,6 +988,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2254,
+    "gemma": 2514,
+    "gemma2": 2514,
     "bert": 3204
    }
   },
@@ -840,6 +1000,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3951,
+    "gemma": 4063,
+    "gemma2": 4063,
     "bert": 2706
    }
   },
@@ -850,6 +1012,8 @@
    "category_share": 0.6923076923076923,
    "token_ids": {
     "qwen": 3271,
+    "gemma": 3124,
+    "gemma2": 3124,
     "bert": 2693
    }
   },
@@ -860,6 +1024,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6995,
+    "gemma": 7165,
+    "gemma2": 7165,
     "bert": 3842
    }
   },
@@ -870,6 +1036,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3669,
+    "gemma": 3905,
+    "gemma2": 3905,
     "bert": 2739
    }
   },
@@ -880,6 +1048,8 @@
    "category_share": 0.90625,
    "token_ids": {
     "qwen": 8388,
+    "gemma": 8467,
+    "gemma2": 8467,
     "bert": 3964
    }
   },
@@ -890,6 +1060,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1372,
+    "gemma": 1758,
+    "gemma2": 1758,
     "bert": 2193
    }
   },
@@ -900,6 +1072,8 @@
    "category_share": 0.7872340425531915,
    "token_ids": {
     "qwen": 3010,
+    "gemma": 3255,
+    "gemma2": 3255,
     "bert": 3749
    }
   },
@@ -910,6 +1084,8 @@
    "category_share": 0.5769230769230769,
    "token_ids": {
     "qwen": 10004,
+    "gemma": 13051,
+    "gemma2": 13051,
     "bert": 5378
    }
   },
@@ -920,6 +1096,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 9452,
+    "gemma": 11053,
+    "gemma2": 11053,
     "bert": 2961
    }
   },
@@ -930,6 +1108,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7359,
+    "gemma": 11730,
+    "gemma2": 11730,
     "bert": 4584
    }
   },
@@ -940,6 +1120,8 @@
    "category_share": 0.5769230769230769,
    "token_ids": {
     "qwen": 10350,
+    "gemma": 10470,
+    "gemma2": 10470,
     "bert": 4082
    }
   },
@@ -950,6 +1132,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7525,
+    "gemma": 8582,
+    "gemma2": 8582,
     "bert": 3136
    }
   },
@@ -960,6 +1144,8 @@
    "category_share": 0.9666666666666667,
    "token_ids": {
     "qwen": 10163,
+    "gemma": 10840,
+    "gemma2": 10840,
     "bert": 4449
    }
   },
@@ -970,6 +1156,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5567,
+    "gemma": 4368,
+    "gemma2": 4368,
     "bert": 3259
    }
   },
@@ -980,6 +1168,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 949,
+    "gemma": 1702,
+    "gemma2": 1702,
     "bert": 2112
    }
   },
@@ -990,6 +1180,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1251,
+    "gemma": 1461,
+    "gemma2": 1461,
     "bert": 2111
    }
   },
@@ -1000,6 +1192,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4168,
+    "gemma": 4037,
+    "gemma2": 4037,
     "bert": 2558
    }
   },
@@ -1010,6 +1204,8 @@
    "category_share": 0.9375,
    "token_ids": {
     "qwen": 3119,
+    "gemma": 1780,
+    "gemma2": 1780,
     "bert": 2933
    }
   },
@@ -1020,6 +1216,8 @@
    "category_share": 0.896551724137931,
    "token_ids": {
     "qwen": 1459,
+    "gemma": 2377,
+    "gemma2": 2377,
     "bert": 2391
    }
   },
@@ -1030,6 +1228,8 @@
    "category_share": 0.967741935483871,
    "token_ids": {
     "qwen": 3501,
+    "gemma": 3782,
+    "gemma2": 3782,
     "bert": 2685
    }
   },
@@ -1040,6 +1240,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2355,
+    "gemma": 2384,
+    "gemma2": 2384,
     "bert": 2373
    }
   },
@@ -1050,6 +1252,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4767,
+    "gemma": 9456,
+    "gemma2": 9456,
     "bert": 2343
    }
   },
@@ -1060,6 +1264,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3349,
+    "gemma": 3712,
+    "gemma2": 3712,
     "bert": 3976
    }
   },
@@ -1070,6 +1276,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7576,
+    "gemma": 7501,
+    "gemma2": 7501,
     "bert": 7597
    }
   },
@@ -1080,6 +1288,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3491,
+    "gemma": 3210,
+    "gemma2": 3210,
     "bert": 3291
    }
   },
@@ -1090,6 +1300,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5322,
+    "gemma": 4552,
+    "gemma2": 4552,
     "bert": 3471
    }
   },
@@ -1100,6 +1312,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3871,
+    "gemma": 3773,
+    "gemma2": 3773,
     "bert": 3688
    }
   },
@@ -1110,6 +1324,8 @@
    "category_share": 0.9375,
    "token_ids": {
     "qwen": 11372,
+    "gemma": 12610,
+    "gemma2": 12610,
     "bert": 5618
    }
   },
@@ -1120,6 +1336,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2025,
+    "gemma": 2733,
+    "gemma2": 2733,
     "bert": 2565
    }
   },
@@ -1130,6 +1348,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7468,
+    "gemma": 7658,
+    "gemma2": 7658,
     "bert": 3454
    }
   },
@@ -1140,6 +1360,8 @@
    "category_share": 0.92,
    "token_ids": {
     "qwen": 7627,
+    "gemma": 8210,
+    "gemma2": 8210,
     "bert": 5309
    }
   },
@@ -1150,6 +1372,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8338,
+    "gemma": 9453,
+    "gemma2": 9453,
     "bert": 4284
    }
   },
@@ -1160,6 +1384,8 @@
    "category_share": 0.9761904761904762,
    "token_ids": {
     "qwen": 4379,
+    "gemma": 3974,
+    "gemma2": 3974,
     "bert": 3446
    }
   },
@@ -1170,6 +1396,8 @@
    "category_share": 0.9803921568627451,
    "token_ids": {
     "qwen": 7813,
+    "gemma": 7803,
+    "gemma2": 7803,
     "bert": 6165
    }
   },
@@ -1180,6 +1408,8 @@
    "category_share": 0.8333333333333334,
    "token_ids": {
     "qwen": 3255,
+    "gemma": 3661,
+    "gemma2": 3661,
     "bert": 2501
    }
   },
@@ -1190,6 +1420,8 @@
    "category_share": 0.775,
    "token_ids": {
     "qwen": 1895,
+    "gemma": 3484,
+    "gemma2": 3484,
     "bert": 3189
    }
   },
@@ -1200,6 +1432,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3412,
+    "gemma": 3679,
+    "gemma2": 3679,
     "bert": 2470
    }
   },
@@ -1210,6 +1444,8 @@
    "category_share": 0.7857142857142857,
    "token_ids": {
     "qwen": 470,
+    "gemma": 2203,
+    "gemma2": 2203,
     "bert": 2709
    }
   },
@@ -1220,6 +1456,8 @@
    "category_share": 0.6111111111111112,
    "token_ids": {
     "qwen": 1290,
+    "gemma": 1833,
+    "gemma2": 1833,
     "bert": 2157
    }
   },
@@ -1230,6 +1468,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7149,
+    "gemma": 6514,
+    "gemma2": 6514,
     "bert": 3808
    }
   },
@@ -1240,6 +1480,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6278,
+    "gemma": 5934,
+    "gemma2": 5934,
     "bert": 5096
    }
   },
@@ -1250,6 +1492,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6625,
+    "gemma": 7108,
+    "gemma2": 7108,
     "bert": 4341
    }
   },
@@ -1260,6 +1504,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 33819,
+    "gemma": 38784,
+    "gemma2": 38784,
     "bert": 12012
    }
   },
@@ -1270,6 +1516,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2473,
+    "gemma": 2566,
+    "gemma2": 2566,
     "bert": 2326
    }
   },
@@ -1280,6 +1528,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3516,
+    "gemma": 3545,
+    "gemma2": 3545,
     "bert": 2578
    }
   },
@@ -1290,6 +1540,8 @@
    "category_share": 0.975,
    "token_ids": {
     "qwen": 4332,
+    "gemma": 4638,
+    "gemma2": 4638,
     "bert": 3745
    }
   },
@@ -1300,6 +1552,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 13248,
+    "gemma": 14324,
+    "gemma2": 14324,
     "bert": 6661
    }
   },
@@ -1310,6 +1564,8 @@
    "category_share": 0.9259259259259259,
    "token_ids": {
     "qwen": 10164,
+    "gemma": 15271,
+    "gemma2": 15271,
     "bert": 5938
    }
   },
@@ -1320,6 +1576,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 17885,
+    "gemma": 36362,
+    "gemma2": 36362,
     "bert": 14056
    }
   },
@@ -1330,6 +1588,8 @@
    "category_share": 0.9583333333333334,
    "token_ids": {
     "qwen": 18279,
+    "gemma": 18493,
+    "gemma2": 18493,
     "bert": 8406
    }
   },
@@ -1340,6 +1600,8 @@
    "category_share": 0.9696969696969697,
    "token_ids": {
     "qwen": 1584,
+    "gemma": 2329,
+    "gemma2": 2329,
     "bert": 2110
    }
   },
@@ -1350,6 +1612,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5591,
+    "gemma": 2306,
+    "gemma2": 2306,
     "bert": 4518
    }
   },
@@ -1360,6 +1624,8 @@
    "category_share": 0.9855072463768116,
    "token_ids": {
     "qwen": 22488,
+    "gemma": 22095,
+    "gemma2": 22095,
     "bert": 15768
    }
   },
@@ -1370,6 +1636,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4143,
+    "gemma": 3787,
+    "gemma2": 3787,
     "bert": 2493
    }
   },
@@ -1380,6 +1648,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 24301,
+    "gemma": 22716,
+    "gemma2": 22716,
     "bert": 8636
    }
   },
@@ -1390,6 +1660,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3793,
+    "gemma": 4563,
+    "gemma2": 4563,
     "bert": 3408
    }
   },
@@ -1400,6 +1672,8 @@
    "category_share": 0.9487179487179487,
    "token_ids": {
     "qwen": 1273,
+    "gemma": 2121,
+    "gemma2": 2121,
     "bert": 3231
    }
   },
@@ -1410,6 +1684,8 @@
    "category_share": 0.9841269841269841,
    "token_ids": {
     "qwen": 882,
+    "gemma": 1069,
+    "gemma2": 1069,
     "bert": 2051
    }
   },
@@ -1420,6 +1696,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3351,
+    "gemma": 3646,
+    "gemma2": 3646,
     "bert": 2651
    }
   },
@@ -1430,6 +1708,8 @@
    "category_share": 0.76,
    "token_ids": {
     "qwen": 6559,
+    "gemma": 6082,
+    "gemma2": 6082,
     "bert": 3119
    }
   },
@@ -1440,6 +1720,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 34587,
+    "gemma": 42574,
+    "gemma2": 42574,
     "bert": 13066
    }
   },
@@ -1450,6 +1732,8 @@
    "category_share": 0.8909090909090909,
    "token_ids": {
     "qwen": 11133,
+    "gemma": 15126,
+    "gemma2": 15126,
     "bert": 6202
    }
   },
@@ -1460,6 +1744,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4982,
+    "gemma": 4982,
+    "gemma2": 4982,
     "bert": 3131
    }
   },
@@ -1470,6 +1756,8 @@
    "category_share": 0.9772727272727273,
    "token_ids": {
     "qwen": 16774,
+    "gemma": 16832,
+    "gemma2": 16832,
     "bert": 3580
    }
   },
@@ -1480,6 +1768,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8123,
+    "gemma": 6620,
+    "gemma2": 6620,
     "bert": 3872
    }
   },
@@ -1490,6 +1780,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1616,
+    "gemma": 1703,
+    "gemma2": 1703,
     "bert": 2126
    }
   },
@@ -1500,6 +1792,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2003,
+    "gemma": 2788,
+    "gemma2": 2788,
     "bert": 2733
    }
   },
@@ -1510,6 +1804,8 @@
    "category_share": 0.7037037037037037,
    "token_ids": {
     "qwen": 975,
+    "gemma": 1160,
+    "gemma2": 1160,
     "bert": 2147
    }
   },
@@ -1520,6 +1816,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1042,
+    "gemma": 1162,
+    "gemma2": 1162,
     "bert": 2095
    }
   },
@@ -1530,6 +1828,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1635,
+    "gemma": 1658,
+    "gemma2": 1658,
     "bert": 2086
    }
   },
@@ -1540,6 +1840,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 57340,
+    "gemma": 42001,
+    "gemma2": 42001,
     "bert": 18371
    }
   },
@@ -1550,6 +1852,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 13671,
+    "gemma": 13351,
+    "gemma2": 13351,
     "bert": 7483
    }
   },
@@ -1560,6 +1864,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4092,
+    "gemma": 4523,
+    "gemma2": 4523,
     "bert": 2429
    }
   },
@@ -1570,6 +1876,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 18892,
+    "gemma": 18453,
+    "gemma2": 18453,
     "bert": 3734
    }
   },
@@ -1580,6 +1888,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3694,
+    "gemma": 4192,
+    "gemma2": 4192,
     "bert": 2794
    }
   },
@@ -1590,6 +1900,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 11367,
+    "gemma": 15985,
+    "gemma2": 15985,
     "bert": 9909
    }
   },
@@ -1600,6 +1912,8 @@
    "category_share": 0.9411764705882353,
    "token_ids": {
     "qwen": 7230,
+    "gemma": 11327,
+    "gemma2": 11327,
     "bert": 3530
    }
   },
@@ -1610,6 +1924,8 @@
    "category_share": 0.6923076923076923,
    "token_ids": {
     "qwen": 10491,
+    "gemma": 14846,
+    "gemma2": 14846,
     "bert": 6884
    }
   },
@@ -1620,6 +1936,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7228,
+    "gemma": 9777,
+    "gemma2": 9777,
     "bert": 2623
    }
   },
@@ -1630,6 +1948,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 11792,
+    "gemma": 11559,
+    "gemma2": 11559,
     "bert": 4844
    }
   },
@@ -1640,6 +1960,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4588,
+    "gemma": 4351,
+    "gemma2": 4351,
     "bert": 2356
    }
   },
@@ -1650,6 +1972,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3118,
+    "gemma": 3482,
+    "gemma2": 3482,
     "bert": 2241
    }
   },
@@ -1660,6 +1984,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6116,
+    "gemma": 5981,
+    "gemma2": 5981,
     "bert": 2150
    }
   },
@@ -1670,6 +1996,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3635,
+    "gemma": 3831,
+    "gemma2": 3831,
     "bert": 2468
    }
   },
@@ -1680,6 +2008,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6009,
+    "gemma": 6343,
+    "gemma2": 6343,
     "bert": 2211
    }
   },
@@ -1690,6 +2020,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4411,
+    "gemma": 4564,
+    "gemma2": 4564,
     "bert": 2903
    }
   },
@@ -1700,6 +2032,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 13605,
+    "gemma": 19267,
+    "gemma2": 19267,
     "bert": 7164
    }
   },
@@ -1710,6 +2044,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5798,
+    "gemma": 6233,
+    "gemma2": 6233,
     "bert": 2328
    }
   },
@@ -1720,6 +2056,8 @@
    "category_share": 0.9285714285714286,
    "token_ids": {
     "qwen": 3695,
+    "gemma": 4631,
+    "gemma2": 4631,
     "bert": 4965
    }
   },
@@ -1730,6 +2068,8 @@
    "category_share": 0.7142857142857143,
    "token_ids": {
     "qwen": 11833,
+    "gemma": 13014,
+    "gemma2": 13014,
     "bert": 9343
    }
   },
@@ -1740,6 +2080,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2598,
+    "gemma": 3151,
+    "gemma2": 3151,
     "bert": 2170
    }
   },
@@ -1750,6 +2092,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3697,
+    "gemma": 3392,
+    "gemma2": 3392,
     "bert": 2234
    }
   },
@@ -1760,6 +2104,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8881,
+    "gemma": 8830,
+    "gemma2": 8830,
     "bert": 3303
    }
   },
@@ -1770,6 +2116,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5497,
+    "gemma": 7052,
+    "gemma2": 7052,
     "bert": 2904
    }
   },
@@ -1780,6 +2128,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7877,
+    "gemma": 7337,
+    "gemma2": 7337,
     "bert": 2701
    }
   },
@@ -1790,6 +2140,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2525,
+    "gemma": 2063,
+    "gemma2": 2063,
     "bert": 2272
    }
   },
@@ -1800,6 +2152,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5001,
+    "gemma": 5163,
+    "gemma2": 5163,
     "bert": 2746
    }
   },
@@ -1810,6 +2164,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7707,
+    "gemma": 7631,
+    "gemma2": 7631,
     "bert": 4102
    }
   },
@@ -1820,6 +2176,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8145,
+    "gemma": 8735,
+    "gemma2": 8735,
     "bert": 2949
    }
   },
@@ -1830,6 +2188,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3060,
+    "gemma": 5374,
+    "gemma2": 5374,
     "bert": 3613
    }
   },
@@ -1840,6 +2200,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8570,
+    "gemma": 7822,
+    "gemma2": 7822,
     "bert": 2506
    }
   },
@@ -1850,6 +2212,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 9539,
+    "gemma": 11614,
+    "gemma2": 11614,
     "bert": 4247
    }
   },
@@ -1860,6 +2224,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 14354,
+    "gemma": 14995,
+    "gemma2": 14995,
     "bert": 5719
    }
   },
@@ -1870,6 +2236,8 @@
    "category_share": 0.8928571428571429,
    "token_ids": {
     "qwen": 3931,
+    "gemma": 3652,
+    "gemma2": 3652,
     "bert": 3013
    }
   },
@@ -1880,6 +2248,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6635,
+    "gemma": 7697,
+    "gemma2": 7697,
     "bert": 2787
    }
   },
@@ -1890,6 +2260,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 18758,
+    "gemma": 26858,
+    "gemma2": 26858,
     "bert": 6430
    }
   },
@@ -1900,6 +2272,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6188,
+    "gemma": 6869,
+    "gemma2": 6869,
     "bert": 2881
    }
   },
@@ -1910,6 +2284,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 35389,
+    "gemma": 41982,
+    "gemma2": 41982,
     "bert": 21362
    }
   },
@@ -1920,6 +2296,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 12226,
+    "gemma": 15143,
+    "gemma2": 15143,
     "bert": 3333
    }
   },
@@ -1930,6 +2308,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 9482,
+    "gemma": 11807,
+    "gemma2": 11807,
     "bert": 3092
    }
   },
@@ -1940,6 +2320,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 12943,
+    "gemma": 11995,
+    "gemma2": 11995,
     "bert": 4358
    }
   },
@@ -1950,6 +2332,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3601,
+    "gemma": 5043,
+    "gemma2": 5043,
     "bert": 3517
    }
   },
@@ -1960,6 +2344,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 24297,
+    "gemma": 37644,
+    "gemma2": 37644,
     "bert": 24273
    }
   },
@@ -1970,6 +2356,8 @@
    "category_share": 0.5652173913043478,
    "token_ids": {
     "qwen": 3579,
+    "gemma": 3142,
+    "gemma2": 3142,
     "bert": 2227
    }
   },
@@ -1980,6 +2368,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4641,
+    "gemma": 8520,
+    "gemma2": 8520,
     "bert": 3478
    }
   },
@@ -1990,6 +2380,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 11052,
+    "gemma": 10652,
+    "gemma2": 10652,
     "bert": 3062
    }
   },
@@ -2000,6 +2392,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 12729,
+    "gemma": 14431,
+    "gemma2": 14431,
     "bert": 6406
    }
   },
@@ -2010,6 +2404,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1477,
+    "gemma": 1717,
+    "gemma2": 1717,
     "bert": 2424
    }
   },
@@ -2020,6 +2416,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 53881,
+    "gemma": 76303,
+    "gemma2": 76303,
     "bert": 16981
    }
   },
@@ -2030,6 +2428,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8110,
+    "gemma": 7599,
+    "gemma2": 7599,
     "bert": 2628
    }
   },
@@ -2040,6 +2440,8 @@
    "category_share": 0.8235294117647058,
    "token_ids": {
     "qwen": 2701,
+    "gemma": 2412,
+    "gemma2": 2412,
     "bert": 2206
    }
   },
@@ -2050,6 +2452,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1730,
+    "gemma": 1942,
+    "gemma2": 1942,
     "bert": 2179
    }
   },
@@ -2060,6 +2464,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 18163,
+    "gemma": 19246,
+    "gemma2": 19246,
     "bert": 4227
    }
   },
@@ -2070,6 +2476,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 633,
+    "gemma": 947,
+    "gemma2": 947,
     "bert": 2131
    }
   },
@@ -2080,6 +2488,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2968,
+    "gemma": 2734,
+    "gemma2": 2734,
     "bert": 2507
    }
   },
@@ -2090,6 +2500,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2661,
+    "gemma": 2764,
+    "gemma2": 2764,
     "bert": 2445
    }
   },
@@ -2100,6 +2512,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6696,
+    "gemma": 6156,
+    "gemma2": 6156,
     "bert": 3957
    }
   },
@@ -2110,6 +2524,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 728,
+    "gemma": 871,
+    "gemma2": 871,
     "bert": 2175
    }
   },
@@ -2120,6 +2536,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5780,
+    "gemma": 6128,
+    "gemma2": 6128,
     "bert": 3632
    }
   },
@@ -2130,6 +2548,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2087,
+    "gemma": 2319,
+    "gemma2": 2319,
     "bert": 2183
    }
   },
@@ -2140,6 +2560,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2684,
+    "gemma": 2371,
+    "gemma2": 2371,
     "bert": 2288
    }
   },
@@ -2150,6 +2572,8 @@
    "category_share": 0.9565217391304348,
    "token_ids": {
     "qwen": 7826,
+    "gemma": 8547,
+    "gemma2": 8547,
     "bert": 3652
    }
   },
@@ -2160,6 +2584,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3432,
+    "gemma": 3372,
+    "gemma2": 3372,
     "bert": 2383
    }
   },
@@ -2170,6 +2596,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5644,
+    "gemma": 4600,
+    "gemma2": 4600,
     "bert": 2218
    }
   },
@@ -2180,6 +2608,8 @@
    "category_share": 0.9069767441860465,
    "token_ids": {
     "qwen": 1492,
+    "gemma": 1707,
+    "gemma2": 1707,
     "bert": 2393
    }
   },
@@ -2190,6 +2620,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8910,
+    "gemma": 10088,
+    "gemma2": 10088,
     "bert": 3271
    }
   },
@@ -2200,6 +2632,8 @@
    "category_share": 0.85,
    "token_ids": {
     "qwen": 9963,
+    "gemma": 8576,
+    "gemma2": 8576,
     "bert": 3173
    }
   },
@@ -2210,6 +2644,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7269,
+    "gemma": 4771,
+    "gemma2": 4771,
     "bert": 5335
    }
   },
@@ -2220,6 +2656,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2924,
+    "gemma": 3707,
+    "gemma2": 3707,
     "bert": 2421
    }
   },
@@ -2230,6 +2668,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5230,
+    "gemma": 5484,
+    "gemma2": 5484,
     "bert": 2443
    }
   },
@@ -2240,6 +2680,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5646,
+    "gemma": 6566,
+    "gemma2": 6566,
     "bert": 2950
    }
   },
@@ -2250,6 +2692,8 @@
    "category_share": 0.9743589743589743,
    "token_ids": {
     "qwen": 2670,
+    "gemma": 3359,
+    "gemma2": 3359,
     "bert": 2164
    }
   },
@@ -2260,6 +2704,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7172,
+    "gemma": 6629,
+    "gemma2": 6629,
     "bert": 3445
    }
   },
@@ -2270,6 +2716,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7703,
+    "gemma": 8185,
+    "gemma2": 8185,
     "bert": 4852
    }
   },
@@ -2280,6 +2728,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 16317,
+    "gemma": 11969,
+    "gemma2": 11969,
     "bert": 5393
    }
   },
@@ -2290,6 +2740,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6398,
+    "gemma": 6664,
+    "gemma2": 6664,
     "bert": 2920
    }
   },
@@ -2300,6 +2752,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 10897,
+    "gemma": 11856,
+    "gemma2": 11856,
     "bert": 3843
    }
   },
@@ -2310,6 +2764,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2506,
+    "gemma": 2745,
+    "gemma2": 2745,
     "bert": 2562
    }
   },
@@ -2320,6 +2776,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1414,
+    "gemma": 1230,
+    "gemma2": 1230,
     "bert": 2113
    }
   },
@@ -2330,6 +2788,8 @@
    "category_share": 0.9230769230769231,
    "token_ids": {
     "qwen": 3881,
+    "gemma": 3836,
+    "gemma2": 3836,
     "bert": 2124
    }
   },
@@ -2340,6 +2800,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 11626,
+    "gemma": 16140,
+    "gemma2": 16140,
     "bert": 3390
    }
   },
@@ -2350,6 +2812,8 @@
    "category_share": 0.65,
    "token_ids": {
     "qwen": 2990,
+    "gemma": 2389,
+    "gemma2": 2389,
     "bert": 2599
    }
   },
@@ -2360,6 +2824,8 @@
    "category_share": 0.9230769230769231,
    "token_ids": {
     "qwen": 6388,
+    "gemma": 8133,
+    "gemma2": 8133,
     "bert": 2877
    }
   },
@@ -2370,6 +2836,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6069,
+    "gemma": 5140,
+    "gemma2": 5140,
     "bert": 2419
    }
   },
@@ -2380,6 +2848,8 @@
    "category_share": 0.6428571428571429,
    "token_ids": {
     "qwen": 1401,
+    "gemma": 1612,
+    "gemma2": 1612,
     "bert": 2298
    }
   },
@@ -2390,6 +2860,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5558,
+    "gemma": 5501,
+    "gemma2": 5501,
     "bert": 2439
    }
   },
@@ -2400,6 +2872,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1865,
+    "gemma": 1644,
+    "gemma2": 1644,
     "bert": 2081
    }
   },
@@ -2410,6 +2884,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1281,
+    "gemma": 1501,
+    "gemma2": 1501,
     "bert": 2191
    }
   },
@@ -2420,6 +2896,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3259,
+    "gemma": 3547,
+    "gemma2": 3547,
     "bert": 2437
    }
   },
@@ -2430,6 +2908,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6941,
+    "gemma": 8602,
+    "gemma2": 8602,
     "bert": 2315
    }
   },
@@ -2440,6 +2920,8 @@
    "category_share": 0.7777777777777778,
    "token_ids": {
     "qwen": 1184,
+    "gemma": 1476,
+    "gemma2": 1476,
     "bert": 2342
    }
   },
@@ -2450,6 +2932,8 @@
    "category_share": 0.9333333333333333,
    "token_ids": {
     "qwen": 4362,
+    "gemma": 4880,
+    "gemma2": 4880,
     "bert": 2734
    }
   },
@@ -2460,6 +2944,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 10342,
+    "gemma": 9611,
+    "gemma2": 9611,
     "bert": 3264
    }
   },
@@ -2470,6 +2956,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8900,
+    "gemma": 9336,
+    "gemma2": 9336,
     "bert": 3253
    }
   },
@@ -2480,6 +2968,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 11457,
+    "gemma": 11538,
+    "gemma2": 11538,
     "bert": 3641
    }
   },
@@ -2490,6 +2980,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 24256,
+    "gemma": 33241,
+    "gemma2": 33241,
     "bert": 8617
    }
   },
@@ -2500,6 +2992,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7171,
+    "gemma": 6838,
+    "gemma2": 6838,
     "bert": 3825
    }
   },
@@ -2510,6 +3004,8 @@
    "category_share": 0.8048780487804879,
    "token_ids": {
     "qwen": 2291,
+    "gemma": 2523,
+    "gemma2": 2523,
     "bert": 3477
    }
   },
@@ -2520,6 +3016,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 12515,
+    "gemma": 15576,
+    "gemma2": 15576,
     "bert": 7079
    }
   },
@@ -2530,6 +3028,8 @@
    "category_share": 0.9285714285714286,
    "token_ids": {
     "qwen": 12909,
+    "gemma": 14196,
+    "gemma2": 14196,
     "bert": 3740
    }
   },
@@ -2540,6 +3040,8 @@
    "category_share": 0.5277777777777778,
    "token_ids": {
     "qwen": 6649,
+    "gemma": 7362,
+    "gemma2": 7362,
     "bert": 3488
    }
   },
@@ -2550,6 +3052,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8454,
+    "gemma": 5727,
+    "gemma2": 5727,
     "bert": 6866
    }
   },
@@ -2560,6 +3064,8 @@
    "category_share": 0.7692307692307693,
    "token_ids": {
     "qwen": 14890,
+    "gemma": 16841,
+    "gemma2": 16841,
     "bert": 6871
    }
   },
@@ -2570,6 +3076,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 32605,
+    "gemma": 36900,
+    "gemma2": 36900,
     "bert": 21125
    }
   },
@@ -2580,6 +3088,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 10981,
+    "gemma": 8725,
+    "gemma2": 8725,
     "bert": 3818
    }
   },
@@ -2590,6 +3100,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3410,
+    "gemma": 3658,
+    "gemma2": 3658,
     "bert": 3073
    }
   },
@@ -2600,6 +3112,8 @@
    "category_share": 0.6428571428571429,
    "token_ids": {
     "qwen": 22577,
+    "gemma": 27066,
+    "gemma2": 27066,
     "bert": 13131
    }
   },
@@ -2610,6 +3124,8 @@
    "category_share": 0.96,
    "token_ids": {
     "qwen": 2182,
+    "gemma": 2507,
+    "gemma2": 2507,
     "bert": 2404
    }
   },
@@ -2620,6 +3136,8 @@
    "category_share": 0.9523809523809523,
    "token_ids": {
     "qwen": 4828,
+    "gemma": 12310,
+    "gemma2": 12310,
     "bert": 5333
    }
   },
@@ -2630,6 +3148,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 9226,
+    "gemma": 9244,
+    "gemma2": 9244,
     "bert": 2992
    }
   },
@@ -2640,6 +3160,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8643,
+    "gemma": 8951,
+    "gemma2": 8951,
     "bert": 2584
    }
   },
@@ -2650,6 +3172,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5258,
+    "gemma": 6427,
+    "gemma2": 6427,
     "bert": 4374
    }
   },
@@ -2660,6 +3184,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3949,
+    "gemma": 4956,
+    "gemma2": 4956,
     "bert": 2363
    }
   },
@@ -2670,6 +3196,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7949,
+    "gemma": 8339,
+    "gemma2": 8339,
     "bert": 5547
    }
   },
@@ -2680,6 +3208,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8458,
+    "gemma": 9168,
+    "gemma2": 9168,
     "bert": 3464
    }
   },
@@ -2690,6 +3220,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4961,
+    "gemma": 5504,
+    "gemma2": 5504,
     "bert": 2988
    }
   },
@@ -2700,6 +3232,8 @@
    "category_share": 0.5833333333333334,
    "token_ids": {
     "qwen": 1102,
+    "gemma": 2196,
+    "gemma2": 2196,
     "bert": 2765
    }
   },
@@ -2710,6 +3244,8 @@
    "category_share": 0.5714285714285714,
    "token_ids": {
     "qwen": 10000,
+    "gemma": 9407,
+    "gemma2": 9407,
     "bert": 4125
    }
   },
@@ -2720,6 +3256,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 16009,
+    "gemma": 8270,
+    "gemma2": 8270,
     "bert": 3123
    }
   },
@@ -2730,6 +3268,8 @@
    "category_share": 0.8888888888888888,
    "token_ids": {
     "qwen": 1598,
+    "gemma": 2060,
+    "gemma2": 2060,
     "bert": 2448
    }
   },
@@ -2740,6 +3280,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1053,
+    "gemma": 1180,
+    "gemma2": 1180,
     "bert": 2056
    }
   },
@@ -2750,6 +3292,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1977,
+    "gemma": 1931,
+    "gemma2": 1931,
     "bert": 2360
    }
   },
@@ -2760,6 +3304,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5488,
+    "gemma": 6508,
+    "gemma2": 6508,
     "bert": 3038
    }
   },
@@ -2770,6 +3316,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2727,
+    "gemma": 2889,
+    "gemma2": 2889,
     "bert": 2758
    }
   },
@@ -2780,6 +3328,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 13537,
+    "gemma": 17221,
+    "gemma2": 17221,
     "bert": 5115
    }
   },
@@ -2790,6 +3340,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1490,
+    "gemma": 1443,
+    "gemma2": 1443,
     "bert": 2156
    }
   },
@@ -2800,6 +3352,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5931,
+    "gemma": 8361,
+    "gemma2": 8361,
     "bert": 6148
    }
   },
@@ -2810,6 +3364,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 10887,
+    "gemma": 16519,
+    "gemma2": 16519,
     "bert": 6224
    }
   },
@@ -2820,6 +3376,8 @@
    "category_share": 0.8913043478260869,
    "token_ids": {
     "qwen": 4559,
+    "gemma": 4874,
+    "gemma2": 4874,
     "bert": 5271
    }
   },
@@ -2830,6 +3388,8 @@
    "category_share": 0.896551724137931,
    "token_ids": {
     "qwen": 738,
+    "gemma": 1142,
+    "gemma2": 1142,
     "bert": 2275
    }
   },
@@ -2840,6 +3400,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8542,
+    "gemma": 8588,
+    "gemma2": 8588,
     "bert": 3662
    }
   },
@@ -2850,6 +3412,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6088,
+    "gemma": 7596,
+    "gemma2": 7596,
     "bert": 2853
    }
   },
@@ -2860,6 +3424,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1896,
+    "gemma": 1987,
+    "gemma2": 1987,
     "bert": 2202
    }
   },
@@ -2870,6 +3436,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4429,
+    "gemma": 3443,
+    "gemma2": 3443,
     "bert": 2579
    }
   },
@@ -2880,6 +3448,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1744,
+    "gemma": 1742,
+    "gemma2": 1742,
     "bert": 2228
    }
   },
@@ -2890,6 +3460,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3229,
+    "gemma": 4203,
+    "gemma2": 4203,
     "bert": 2409
    }
   },
@@ -2900,6 +3472,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3867,
+    "gemma": 3895,
+    "gemma2": 3895,
     "bert": 2165
    }
   },
@@ -2910,6 +3484,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 30107,
+    "gemma": 46037,
+    "gemma2": 46037,
     "bert": 7007
    }
   },
@@ -2920,6 +3496,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4460,
+    "gemma": 5326,
+    "gemma2": 5326,
     "bert": 2667
    }
   },
@@ -2930,6 +3508,8 @@
    "category_share": 0.5384615384615384,
    "token_ids": {
     "qwen": 990,
+    "gemma": 1281,
+    "gemma2": 1281,
     "bert": 2224
    }
   },
@@ -2940,6 +3520,8 @@
    "category_share": 0.9393939393939394,
    "token_ids": {
     "qwen": 1483,
+    "gemma": 1671,
+    "gemma2": 1671,
     "bert": 2109
    }
   },
@@ -2950,6 +3532,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1667,
+    "gemma": 2177,
+    "gemma2": 2177,
     "bert": 2478
    }
   },
@@ -2960,6 +3544,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1366,
+    "gemma": 1938,
+    "gemma2": 1938,
     "bert": 2215
    }
   },
@@ -2970,6 +3556,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4829,
+    "gemma": 5466,
+    "gemma2": 5466,
     "bert": 2359
    }
   },
@@ -2980,6 +3568,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6801,
+    "gemma": 8507,
+    "gemma2": 8507,
     "bert": 4122
    }
   },
@@ -2990,6 +3580,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3937,
+    "gemma": 3815,
+    "gemma2": 3815,
     "bert": 2253
    }
   },
@@ -3000,6 +3592,8 @@
    "category_share": 0.6428571428571429,
    "token_ids": {
     "qwen": 3238,
+    "gemma": 3434,
+    "gemma2": 3434,
     "bert": 2551
    }
   },
@@ -3010,6 +3604,8 @@
    "category_share": 0.5833333333333334,
    "token_ids": {
     "qwen": 7540,
+    "gemma": 9458,
+    "gemma2": 9458,
     "bert": 10750
    }
   },
@@ -3020,6 +3616,8 @@
    "category_share": 0.9969788519637462,
    "token_ids": {
     "qwen": 264,
+    "gemma": 476,
+    "gemma2": 476,
     "bert": 1037
    }
   },
@@ -3030,6 +3628,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 36506,
+    "gemma": 47147,
+    "gemma2": 47147,
     "bert": 7548
    }
   },
@@ -3040,6 +3640,8 @@
    "category_share": 0.8726415094339622,
    "token_ids": {
     "qwen": 911,
+    "gemma": 1105,
+    "gemma2": 1105,
     "bert": 2055
    }
   },
@@ -3050,6 +3652,8 @@
    "category_share": 0.8421052631578947,
    "token_ids": {
     "qwen": 3403,
+    "gemma": 3131,
+    "gemma2": 3131,
     "bert": 2682
    }
   },
@@ -3060,6 +3664,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3941,
+    "gemma": 4492,
+    "gemma2": 4492,
     "bert": 2408
    }
   },
@@ -3070,6 +3676,8 @@
    "category_share": 0.9775280898876404,
    "token_ids": {
     "qwen": 1283,
+    "gemma": 1452,
+    "gemma2": 1452,
     "bert": 2044
    }
   },
@@ -3080,6 +3688,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2348,
+    "gemma": 2691,
+    "gemma2": 2691,
     "bert": 2114
    }
   },
@@ -3090,6 +3700,8 @@
    "category_share": 0.5789473684210527,
    "token_ids": {
     "qwen": 4134,
+    "gemma": 3958,
+    "gemma2": 3958,
     "bert": 3283
    }
   },
@@ -3100,6 +3712,8 @@
    "category_share": 0.9741379310344828,
    "token_ids": {
     "qwen": 678,
+    "gemma": 832,
+    "gemma2": 832,
     "bert": 2035
    }
   },
@@ -3110,6 +3724,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3156,
+    "gemma": 3731,
+    "gemma2": 3731,
     "bert": 2247
    }
   },
@@ -3120,6 +3736,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7892,
+    "gemma": 7546,
+    "gemma2": 7546,
     "bert": 2348
    }
   },
@@ -3130,6 +3748,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1079,
+    "gemma": 1144,
+    "gemma2": 1144,
     "bert": 2572
    }
   },
@@ -3140,6 +3760,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 22617,
+    "gemma": 24885,
+    "gemma2": 24885,
     "bert": 13463
    }
   },
@@ -3150,6 +3772,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4221,
+    "gemma": 3932,
+    "gemma2": 3932,
     "bert": 2426
    }
   },
@@ -3160,6 +3784,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 458,
+    "gemma": 671,
+    "gemma2": 671,
     "bert": 2019
    }
   },
@@ -3170,6 +3796,8 @@
    "category_share": 0.9967845659163987,
    "token_ids": {
     "qwen": 323,
+    "gemma": 578,
+    "gemma2": 578,
     "bert": 1998
    }
   },
@@ -3180,6 +3808,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2441,
+    "gemma": 2550,
+    "gemma2": 2550,
     "bert": 2178
    }
   },
@@ -3190,6 +3820,8 @@
    "category_share": 0.9814814814814815,
    "token_ids": {
     "qwen": 894,
+    "gemma": 1089,
+    "gemma2": 1089,
     "bert": 2151
    }
   },
@@ -3200,6 +3832,8 @@
    "category_share": 0.997289972899729,
    "token_ids": {
     "qwen": 525,
+    "gemma": 708,
+    "gemma2": 708,
     "bert": 2024
    }
   },
@@ -3210,6 +3844,8 @@
    "category_share": 0.9,
    "token_ids": {
     "qwen": 2163,
+    "gemma": 2449,
+    "gemma2": 2449,
     "bert": 2105
    }
   },
@@ -3220,6 +3856,8 @@
    "category_share": 0.8722891566265061,
    "token_ids": {
     "qwen": 438,
+    "gemma": 685,
+    "gemma2": 685,
     "bert": 2004
    }
   },
@@ -3230,6 +3868,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 518,
+    "gemma": 696,
+    "gemma2": 696,
     "bert": 2012
    }
   },
@@ -3240,6 +3880,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 387,
+    "gemma": 614,
+    "gemma2": 614,
     "bert": 2022
    }
   },
@@ -3250,6 +3892,8 @@
    "category_share": 0.9838709677419355,
    "token_ids": {
     "qwen": 1576,
+    "gemma": 1861,
+    "gemma2": 1861,
     "bert": 2138
    }
   },
@@ -3260,6 +3904,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1012,
+    "gemma": 1125,
+    "gemma2": 1125,
     "bert": 2042
    }
   },
@@ -3270,6 +3916,8 @@
    "category_share": 0.88,
    "token_ids": {
     "qwen": 1573,
+    "gemma": 1794,
+    "gemma2": 1794,
     "bert": 2077
    }
   },
@@ -3280,6 +3928,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4815,
+    "gemma": 5470,
+    "gemma2": 5470,
     "bert": 2369
    }
   },
@@ -3290,6 +3940,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1660,
+    "gemma": 1855,
+    "gemma2": 1855,
     "bert": 2108
    }
   },
@@ -3300,6 +3952,8 @@
    "category_share": 0.9696969696969697,
    "token_ids": {
     "qwen": 3685,
+    "gemma": 3582,
+    "gemma2": 3582,
     "bert": 2917
    }
   },
@@ -3310,6 +3964,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 27758,
+    "gemma": 24259,
+    "gemma2": 24259,
     "bert": 4661
    }
   },
@@ -3320,6 +3976,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1948,
+    "gemma": 1865,
+    "gemma2": 1865,
     "bert": 2090
    }
   },
@@ -3330,6 +3988,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7797,
+    "gemma": 7781,
+    "gemma2": 7781,
     "bert": 3458
    }
   },
@@ -3340,6 +4000,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2176,
+    "gemma": 2145,
+    "gemma2": 2145,
     "bert": 2119
    }
   },
@@ -3350,6 +4012,8 @@
    "category_share": 0.9967637540453075,
    "token_ids": {
     "qwen": 714,
+    "gemma": 901,
+    "gemma2": 901,
     "bert": 2021
    }
   },
@@ -3360,6 +4024,8 @@
    "category_share": 0.9977272727272727,
    "token_ids": {
     "qwen": 553,
+    "gemma": 731,
+    "gemma2": 731,
     "bert": 2011
    }
   },
@@ -3370,6 +4036,8 @@
    "category_share": 0.9894736842105263,
    "token_ids": {
     "qwen": 646,
+    "gemma": 798,
+    "gemma2": 798,
     "bert": 2064
    }
   },
@@ -3380,6 +4048,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1410,
+    "gemma": 1538,
+    "gemma2": 1538,
     "bert": 2071
    }
   },
@@ -3390,6 +4060,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8818,
+    "gemma": 12391,
+    "gemma2": 12391,
     "bert": 2750
    }
   },
@@ -3400,6 +4072,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1521,
+    "gemma": 1498,
+    "gemma2": 1498,
     "bert": 2106
    }
   },
@@ -3410,6 +4084,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 653,
+    "gemma": 749,
+    "gemma2": 749,
     "bert": 2079
    }
   },
@@ -3420,6 +4096,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1558,
+    "gemma": 1721,
+    "gemma2": 1721,
     "bert": 2515
    }
   },
@@ -3430,6 +4108,8 @@
    "category_share": 0.5892857142857143,
    "token_ids": {
     "qwen": 1495,
+    "gemma": 1706,
+    "gemma2": 1706,
     "bert": 2091
    }
   },
@@ -3440,6 +4120,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2337,
+    "gemma": 2290,
+    "gemma2": 2290,
     "bert": 2076
    }
   },
@@ -3450,6 +4132,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1817,
+    "gemma": 1853,
+    "gemma2": 1853,
     "bert": 2169
    }
   },
@@ -3460,6 +4144,8 @@
    "category_share": 0.8,
    "token_ids": {
     "qwen": 2987,
+    "gemma": 3906,
+    "gemma2": 3906,
     "bert": 2593
    }
   },
@@ -3470,6 +4156,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1449,
+    "gemma": 1535,
+    "gemma2": 1535,
     "bert": 2296
    }
   },
@@ -3480,6 +4168,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3650,
+    "gemma": 7694,
+    "gemma2": 7694,
     "bert": 3272
    }
   },
@@ -3490,6 +4180,8 @@
    "category_share": 0.9988276670574443,
    "token_ids": {
     "qwen": 369,
+    "gemma": 604,
+    "gemma2": 604,
     "bert": 2005
    }
   },
@@ -3500,6 +4192,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 504,
+    "gemma": 774,
+    "gemma2": 774,
     "bert": 2013
    }
   },
@@ -3510,6 +4204,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1030,
+    "gemma": 1093,
+    "gemma2": 1093,
     "bert": 2018
    }
   },
@@ -3520,6 +4216,8 @@
    "category_share": 0.6086956521739131,
    "token_ids": {
     "qwen": 4279,
+    "gemma": 3933,
+    "gemma2": 3933,
     "bert": 2431
    }
   },
@@ -3530,6 +4228,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 702,
+    "gemma": 919,
+    "gemma2": 919,
     "bert": 2038
    }
   },
@@ -3540,6 +4240,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 614,
+    "gemma": 791,
+    "gemma2": 791,
     "bert": 2031
    }
   },
@@ -3550,6 +4252,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 566,
+    "gemma": 693,
+    "gemma2": 693,
     "bert": 2002
    }
   },
@@ -3560,6 +4264,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1059,
+    "gemma": 1070,
+    "gemma2": 1070,
     "bert": 2014
    }
   },
@@ -3570,6 +4276,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 11675,
+    "gemma": 12074,
+    "gemma2": 12074,
     "bert": 2841
    }
   },
@@ -3580,6 +4288,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1435,
+    "gemma": 1357,
+    "gemma2": 1357,
     "bert": 2032
    }
   },
@@ -3590,6 +4300,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5561,
+    "gemma": 4916,
+    "gemma2": 4916,
     "bert": 2370
    }
   },
@@ -3600,6 +4312,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 806,
+    "gemma": 926,
+    "gemma2": 926,
     "bert": 2010
    }
   },
@@ -3610,6 +4324,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1246,
+    "gemma": 1368,
+    "gemma2": 1368,
     "bert": 2129
    }
   },
@@ -3620,6 +4336,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 600,
+    "gemma": 496,
+    "gemma2": 496,
     "bert": 1045
    }
   },
@@ -3630,6 +4348,8 @@
    "category_share": 0.9917355371900827,
    "token_ids": {
     "qwen": 421,
+    "gemma": 1013,
+    "gemma2": 1013,
     "bert": 2065
    }
   },
@@ -3640,6 +4360,8 @@
    "category_share": 0.99830220713073,
    "token_ids": {
     "qwen": 304,
+    "gemma": 575,
+    "gemma2": 575,
     "bert": 1999
    }
   },
@@ -3650,6 +4372,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1119,
+    "gemma": 1280,
+    "gemma2": 1280,
     "bert": 2046
    }
   },
@@ -3660,6 +4384,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 374,
+    "gemma": 603,
+    "gemma2": 603,
     "bert": 2003
    }
   },
@@ -3670,6 +4396,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 432,
+    "gemma": 665,
+    "gemma2": 665,
     "bert": 2009
    }
   },
@@ -3680,6 +4408,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1181,
+    "gemma": 1277,
+    "gemma2": 1277,
     "bert": 2049
    }
   },
@@ -3690,6 +4420,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5086,
+    "gemma": 5344,
+    "gemma2": 5344,
     "bert": 2993
    }
   },
@@ -3700,6 +4432,8 @@
    "category_share": 0.7903225806451613,
    "token_ids": {
     "qwen": 1075,
+    "gemma": 1154,
+    "gemma2": 1154,
     "bert": 2066
    }
   },
@@ -3710,6 +4444,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1231,
+    "gemma": 1249,
+    "gemma2": 1249,
     "bert": 2089
    }
   },
@@ -3720,6 +4456,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 752,
+    "gemma": 682,
+    "gemma2": 682,
     "bert": 2033
    }
   },
@@ -3730,6 +4468,8 @@
    "category_share": 0.9772727272727273,
    "token_ids": {
     "qwen": 2578,
+    "gemma": 2613,
+    "gemma2": 2613,
     "bert": 2453
    }
   },
@@ -3740,6 +4480,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1969,
+    "gemma": 2004,
+    "gemma2": 2004,
     "bert": 2442
    }
   },
@@ -3750,6 +4492,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 847,
+    "gemma": 970,
+    "gemma2": 970,
     "bert": 2026
    }
   },
@@ -3760,6 +4504,8 @@
    "category_share": 0.8888888888888888,
    "token_ids": {
     "qwen": 3143,
+    "gemma": 3018,
+    "gemma2": 3018,
     "bert": 2379
    }
   },
@@ -3770,6 +4516,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 13866,
+    "gemma": 12687,
+    "gemma2": 12687,
     "bert": 4445
    }
   },
@@ -3780,6 +4528,8 @@
    "category_share": 0.8775510204081632,
    "token_ids": {
     "qwen": 902,
+    "gemma": 793,
+    "gemma2": 793,
     "bert": 2053
    }
   },
@@ -3790,6 +4540,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6329,
+    "gemma": 4641,
+    "gemma2": 4641,
     "bert": 4496
    }
   },
@@ -3800,6 +4552,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 71565,
+    "gemma": 58397,
+    "gemma2": 58397,
     "bert": 26206
    }
   },
@@ -3810,6 +4564,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 315,
+    "gemma": 576,
+    "gemma2": 576,
     "bert": 1997
    }
   },
@@ -3820,6 +4576,8 @@
    "category_share": 0.8666666666666667,
    "token_ids": {
     "qwen": 1007,
+    "gemma": 1401,
+    "gemma2": 1401,
     "bert": 2125
    }
   },
@@ -3830,6 +4588,8 @@
    "category_share": 0.9980276134122288,
    "token_ids": {
     "qwen": 389,
+    "gemma": 611,
+    "gemma2": 611,
     "bert": 2006
    }
   },
@@ -3840,6 +4600,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8630,
+    "gemma": 10401,
+    "gemma2": 10401,
     "bert": 3031
    }
   },
@@ -3850,6 +4612,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 476,
+    "gemma": 689,
+    "gemma2": 689,
     "bert": 2030
    }
   },
@@ -3860,6 +4624,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 21776,
+    "gemma": 17326,
+    "gemma2": 17326,
     "bert": 11276
    }
   },
@@ -3870,6 +4636,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1039,
+    "gemma": 1167,
+    "gemma2": 1167,
     "bert": 2256
    }
   },
@@ -3880,6 +4648,8 @@
    "category_share": 0.9615384615384616,
    "token_ids": {
     "qwen": 700,
+    "gemma": 921,
+    "gemma2": 921,
     "bert": 2041
    }
   },
@@ -3890,6 +4660,8 @@
    "category_share": 0.9647058823529412,
    "token_ids": {
     "qwen": 916,
+    "gemma": 1163,
+    "gemma2": 1163,
     "bert": 2058
    }
   },
@@ -3900,6 +4672,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 817,
+    "gemma": 842,
+    "gemma2": 842,
     "bert": 2566
    }
   },
@@ -3910,6 +4684,8 @@
    "category_share": 0.6,
    "token_ids": {
     "qwen": 5519,
+    "gemma": 2755,
+    "gemma2": 2755,
     "bert": 4606
    }
   },
@@ -3920,6 +4696,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4880,
+    "gemma": 3213,
+    "gemma2": 3213,
     "bert": 4618
    }
   },
@@ -3930,6 +4708,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1340,
+    "gemma": 1284,
+    "gemma2": 1284,
     "bert": 2016
    }
   },
@@ -3940,6 +4720,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1265,
+    "gemma": 1412,
+    "gemma2": 1412,
     "bert": 2323
    }
   },
@@ -3950,6 +4732,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2474,
+    "gemma": 2754,
+    "gemma2": 2754,
     "bert": 2144
    }
   },
@@ -3960,6 +4744,8 @@
    "category_share": 0.9863013698630136,
    "token_ids": {
     "qwen": 1045,
+    "gemma": 1009,
+    "gemma2": 1009,
     "bert": 2070
    }
   },
@@ -3970,6 +4756,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1091,
+    "gemma": 1178,
+    "gemma2": 1178,
     "bert": 2084
    }
   },
@@ -3980,6 +4768,8 @@
    "category_share": 0.9964622641509434,
    "token_ids": {
     "qwen": 429,
+    "gemma": 674,
+    "gemma2": 674,
     "bert": 2008
    }
   },
@@ -3990,6 +4780,8 @@
    "category_share": 0.9987392309308678,
    "token_ids": {
     "qwen": 279,
+    "gemma": 573,
+    "gemma2": 573,
     "bert": 1996
    }
   },
@@ -4000,6 +4792,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 862,
+    "gemma": 1024,
+    "gemma2": 1024,
     "bert": 2037
    }
   },
@@ -4010,6 +4804,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1105,
+    "gemma": 1174,
+    "gemma2": 1174,
     "bert": 2068
    }
   },
@@ -4020,6 +4816,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5577,
+    "gemma": 5771,
+    "gemma2": 5771,
     "bert": 3209
    }
   },
@@ -4030,6 +4828,8 @@
    "category_share": 0.88,
    "token_ids": {
     "qwen": 1052,
+    "gemma": 1104,
+    "gemma2": 1104,
     "bert": 2045
    }
   },
@@ -4040,6 +4840,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1493,
+    "gemma": 1450,
+    "gemma2": 1450,
     "bert": 2122
    }
   },
@@ -4050,6 +4852,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 807,
+    "gemma": 984,
+    "gemma2": 984,
     "bert": 2027
    }
   },
@@ -4060,6 +4864,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 419,
+    "gemma": 736,
+    "gemma2": 736,
     "bert": 2023
    }
   },
@@ -4070,6 +4876,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1846,
+    "gemma": 1941,
+    "gemma2": 1941,
     "bert": 2216
    }
   },
@@ -4080,6 +4888,8 @@
    "category_share": 0.8666666666666667,
    "token_ids": {
     "qwen": 3498,
+    "gemma": 2862,
+    "gemma2": 2862,
     "bert": 2295
    }
   },
@@ -4090,6 +4900,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1526,
+    "gemma": 1593,
+    "gemma2": 1593,
     "bert": 2083
    }
   },
@@ -4100,6 +4912,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6814,
+    "gemma": 6900,
+    "gemma2": 6900,
     "bert": 2802
    }
   },
@@ -4110,6 +4924,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 11956,
+    "gemma": 5525,
+    "gemma2": 5525,
     "bert": 6229
    }
   },
@@ -4120,6 +4936,8 @@
    "category_share": 0.9995417048579285,
    "token_ids": {
     "qwen": 311,
+    "gemma": 577,
+    "gemma2": 577,
     "bert": 2000
    }
   },
@@ -4130,6 +4948,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8841,
+    "gemma": 8906,
+    "gemma2": 8906,
     "bert": 2646
    }
   },
@@ -4140,6 +4960,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1212,
+    "gemma": 1362,
+    "gemma2": 1362,
     "bert": 2104
    }
   },
@@ -4150,6 +4972,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 7241,
+    "gemma": 8841,
+    "gemma2": 8841,
     "bert": 4983
    }
   },
@@ -4160,6 +4984,8 @@
    "category_share": 0.8333333333333334,
    "token_ids": {
     "qwen": 19836,
+    "gemma": 27078,
+    "gemma2": 27078,
     "bert": 4406
    }
   },
@@ -4170,6 +4996,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3080,
+    "gemma": 3274,
+    "gemma2": 3274,
     "bert": 2127
    }
   },
@@ -4180,6 +5008,8 @@
    "category_share": 0.6797385620915033,
    "token_ids": {
     "qwen": 705,
+    "gemma": 908,
+    "gemma2": 908,
     "bert": 2039
    }
   },
@@ -4190,6 +5020,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 5193,
+    "gemma": 3054,
+    "gemma2": 3054,
     "bert": 2588
    }
   },
@@ -4200,6 +5032,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 601,
+    "gemma": 917,
+    "gemma2": 917,
     "bert": 2149
    }
   },
@@ -4210,6 +5044,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 19041,
+    "gemma": 17529,
+    "gemma2": 17529,
     "bert": 6431
    }
   },
@@ -4220,6 +5056,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 4566,
+    "gemma": 3998,
+    "gemma2": 3998,
     "bert": 3081
    }
   },
@@ -4230,6 +5068,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 572,
+    "gemma": 729,
+    "gemma2": 729,
     "bert": 2001
    }
   },
@@ -4240,6 +5080,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 582,
+    "gemma": 783,
+    "gemma2": 783,
     "bert": 2057
    }
   },
@@ -4250,6 +5092,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1033,
+    "gemma": 1049,
+    "gemma2": 1049,
     "bert": 2020
    }
   },
@@ -4260,6 +5104,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1128,
+    "gemma": 1212,
+    "gemma2": 1212,
     "bert": 2054
    }
   },
@@ -4270,6 +5116,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 979,
+    "gemma": 1185,
+    "gemma2": 1185,
     "bert": 2043
    }
   },
@@ -4280,6 +5128,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 15356,
+    "gemma": 18264,
+    "gemma2": 18264,
     "bert": 7188
    }
   },
@@ -4290,6 +5140,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1380,
+    "gemma": 1570,
+    "gemma2": 1570,
     "bert": 2073
    }
   },
@@ -4300,6 +5152,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 19853,
+    "gemma": 17546,
+    "gemma2": 17546,
     "bert": 6168
    }
   },
@@ -4310,6 +5164,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 47901,
+    "gemma": 43879,
+    "gemma2": 43879,
     "bert": 13557
    }
   },
@@ -4320,6 +5176,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3425,
+    "gemma": 4270,
+    "gemma2": 4270,
     "bert": 3251
    }
   },
@@ -4330,6 +5188,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 892,
+    "gemma": 948,
+    "gemma2": 948,
     "bert": 2029
    }
   },
@@ -4340,6 +5200,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 53684,
+    "gemma": 75528,
+    "gemma2": 75528,
     "bert": 29221
    }
   },
@@ -4350,6 +5212,8 @@
    "category_share": 0.972972972972973,
    "token_ids": {
     "qwen": 1393,
+    "gemma": 2183,
+    "gemma2": 2183,
     "bert": 2096
    }
   },
@@ -4360,6 +5224,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 879,
+    "gemma": 1064,
+    "gemma2": 1064,
     "bert": 2040
    }
   },
@@ -4370,6 +5236,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 8711,
+    "gemma": 7624,
+    "gemma2": 7624,
     "bert": 3183
    }
   },
@@ -4380,6 +5248,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6693,
+    "gemma": 6305,
+    "gemma2": 6305,
     "bert": 3005
    }
   },
@@ -4390,6 +5260,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 3170,
+    "gemma": 3165,
+    "gemma2": 3165,
     "bert": 2339
    }
   },
@@ -4400,6 +5272,8 @@
    "category_share": 0.99644128113879,
    "token_ids": {
     "qwen": 686,
+    "gemma": 877,
+    "gemma2": 877,
     "bert": 2097
    }
   },
@@ -4410,6 +5284,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 448,
+    "gemma": 675,
+    "gemma2": 675,
     "bert": 2007
    }
   },
@@ -4420,6 +5296,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2878,
+    "gemma": 2819,
+    "gemma2": 2819,
     "bert": 2306
    }
   },
@@ -4430,6 +5308,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 2041,
+    "gemma": 2346,
+    "gemma2": 2346,
     "bert": 2302
    }
   },
@@ -4440,6 +5320,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 1035,
+    "gemma": 1134,
+    "gemma2": 1134,
     "bert": 2052
    }
   },
@@ -4450,6 +5332,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 498,
+    "gemma": 692,
+    "gemma2": 692,
     "bert": 2017
    }
   },
@@ -4460,6 +5344,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 697,
+    "gemma": 861,
+    "gemma2": 861,
     "bert": 2115
    }
   },
@@ -4470,6 +5356,8 @@
    "category_share": 1.0,
    "token_ids": {
     "qwen": 6133,
+    "gemma": 5804,
+    "gemma2": 5804,
     "bert": 4426
    }
   }

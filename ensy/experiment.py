@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import subprocess
 from datetime import datetime, timezone
@@ -56,16 +57,29 @@ def environment() -> dict:
     }
 
 
-def run_config(X: np.ndarray, labels: np.ndarray, algorithm: str, Ks=K_CURVE) -> dict:
-    Y, diag = P.project(X, algorithm)
-    ev = coranking.evaluate(X, Y, Ks, high_metric="cosine")
+# Sensitivity analysis (plan Sec. 7): reported separately, never mixed with the main matrix
+SENSITIVITY_SEEDS = (0, 1, 2, 3, 42)
+SENSITIVITY_GRID = (
+    ("tsne", {"perplexity": 5.0}),
+    ("tsne", {"perplexity": 30.0}),
+    ("umap", {}),
+)
+
+
+def run_config(X: np.ndarray, labels: np.ndarray, algorithm: str, Ks=K_CURVE,
+               overrides: dict | None = None) -> dict:
+    Y, diag = P.project(X, algorithm, overrides)
+    kept = np.asarray(diag.pop("kept", np.arange(len(X))))
+    ev = coranking.evaluate(X[kept], Y, Ks, high_metric="cosine")
     return {
         "algorithm": algorithm,
-        "params": P.PARAMS[algorithm],
+        "params": {**P.PARAMS[algorithm], **(overrides or {})},
         "diagnostics": diag,
+        "N_evaluated": int(len(kept)),
         "curves": ev["curves"],
-        "silhouette_projected": silhouette(Y, labels),
+        "silhouette_projected": silhouette(Y, labels[kept]),
         "Y": Y,
+        "kept": kept,
         "local_b_nx": ev["local_b_nx"],
     }
 
@@ -79,8 +93,11 @@ def run(ds: dict, model_keys, algorithms, cache: M.EmbeddingCache | None = None)
         sil_high = silhouette(X, labels, metric="cosine")
         for alg in algorithms:
             res = run_config(X, labels, alg)
-            res.pop("Y")
-            res.pop("local_b_nx")
+            for k in ("Y", "local_b_nx", "kept"):
+                res.pop(k)
+            if res["diagnostics"].get("removed"):
+                res["diagnostics"]["removed_words"] = [
+                    ds["items"][i]["word"] for i in res["diagnostics"]["removed"]]
             out["configs"].append({
                 "model": mk,
                 "hf_id": M.MODELS[mk].hf_id,
@@ -94,26 +111,59 @@ def run(ds: dict, model_keys, algorithms, cache: M.EmbeddingCache | None = None)
     return out
 
 
+def run_sensitivity(ds: dict, model_keys, cache: M.EmbeddingCache | None = None) -> dict:
+    """Seed (and perplexity) sensitivity of the stochastic algorithms: mean and SD per K."""
+    cache = cache or M.EmbeddingCache()
+    labels = np.array([CATEGORY_INDEX[it["category"]] for it in ds["items"]])
+    metrics = ("trustworthiness", "continuity", "Q_NX", "B_NX")
+    out = {"seeds": list(SENSITIVITY_SEEDS), "configs": []}
+    for mk in model_keys:
+        X = cache.get(mk, ds)
+        for alg, extra in SENSITIVITY_GRID:
+            runs = [run_config(X, labels, alg, overrides={**extra, "random_state": seed})
+                    for seed in SENSITIVITY_SEEDS]
+            summary = []
+            for ki, K in enumerate(K_CURVE):
+                row = {"K": K}
+                for m in metrics:
+                    vals = np.array([r["curves"][ki][m] for r in runs])
+                    row[m] = {"mean": float(vals.mean()), "sd": float(vals.std(ddof=1)),
+                              "min": float(vals.min()), "max": float(vals.max())}
+                summary.append(row)
+            sil = np.array([r["silhouette_projected"] for r in runs])
+            out["configs"].append({
+                "model": mk, "algorithm": alg, "overrides": extra, "curves": summary,
+                "silhouette_projected": {"mean": float(sil.mean()), "sd": float(sil.std(ddof=1))},
+            })
+            k10 = summary[K_CURVE.index(K_MAIN)]
+            print(f"  {mk:6s} {alg:5s} {extra or ''} K=10: T={k10['trustworthiness']['mean']:.3f}"
+                  f"±{k10['trustworthiness']['sd']:.3f}  B_NX={k10['B_NX']['mean']:+.4f}±{k10['B_NX']['sd']:.4f}")
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset", type=Path, default=D.DEFAULT_OUT)
     ap.add_argument("--models", default=",".join(M.MODELS))
     ap.add_argument("--ablation", action="store_true", help="run PCA-NC instead of the main matrix")
+    ap.add_argument("--sensitivity", action="store_true",
+                    help="multi-seed / perplexity sensitivity of t-SNE and UMAP")
     ap.add_argument("--allow-provisional", action="store_true")
     ap.add_argument("--out", type=Path, default=Path("results"))
     args = ap.parse_args(argv)
 
     ds = D.load(args.dataset)
     if not ds["frozen"] and not args.allow_provisional:
-        raise SystemExit("dataset is not frozen (built without all three tokenizers); "
+        raise SystemExit("dataset is not frozen (built without every model tokenizer); "
                          "pass --allow-provisional for exploratory runs only")
     keys = tuple(args.models.split(","))
     missing = set(keys) - set(ds["models"])
     if missing:
         raise SystemExit(f"dataset has no token ids for {sorted(missing)}")
+    kind = "sensitivity" if args.sensitivity else "ablation" if args.ablation else "main"
     algorithms = ("pca_nc",) if args.ablation else P.MAIN_ALGORITHMS
     result = {
-        "kind": "ablation" if args.ablation else "main",
+        "kind": kind,
         "provisional": not ds["frozen"],
         "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "dataset_hash": ds["dataset_hash"],
@@ -121,15 +171,17 @@ def main(argv=None):
         "K_main": K_MAIN,
         "K_curve": list(K_CURVE),
         "preprocessing": "static input embedding, float32, L2-normalised",
+        "extraction": "full download" if os.environ.get("ENSY_FULL_DOWNLOAD") else "HTTP Range rows",
         "high_dim_metric": "cosine (rank-equivalent to euclidean after L2)",
         "low_dim_metric": "euclidean",
         "seed": P.SEED,
-        "model_revisions": {k: M.resolved_revision(k) for k in keys},
+        "isomap_policy": "giant component of the k-NN graph only (Tenenbaum et al., 2000, note 19)",
+        "model_revisions": {k: ds["models"][k].get("revision") for k in keys},
         "environment": environment(),
-        **run(ds, keys, algorithms),
+        **(run_sensitivity(ds, keys) if args.sensitivity else run(ds, keys, algorithms)),
     }
     args.out.mkdir(parents=True, exist_ok=True)
-    name = f"{result['kind']}{'_provisional' if result['provisional'] else ''}_{ds['dataset_hash'][:12]}.json"
+    name = f"{kind}{'_provisional' if result['provisional'] else ''}_{ds['dataset_hash'][:12]}.json"
     path = args.out / name
     path.write_text(json.dumps(result, indent=1), encoding="utf-8")
     print(f"-> {path}")

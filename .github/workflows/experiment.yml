@@ -1,0 +1,98 @@
+# Canonical ENSy run: clean checkout of a commit, pinned dependencies, logs kept.
+# Produces the frozen results and checks them against the committed ones.
+name: ENSy Experiment
+
+on:
+  workflow_dispatch:
+    inputs:
+      sensitivity:
+        description: "Also run the multi-seed / perplexity sensitivity analysis"
+        type: boolean
+        default: true
+  push:
+    branches: ["ensy-*"]
+    paths:
+      - "ensy/**"
+      - "data/dataset.json"
+      - "requirements.txt"
+      - ".github/workflows/experiment.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: experiment-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      PYTHONIOENCODING: utf-8
+      HF_HUB_DISABLE_PROGRESS_BARS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pinned dependencies (CPU-only torch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Check the Hugging Face token reaches the gated models
+        run: |
+          python - <<'EOF'
+          from huggingface_hub import hf_hub_download
+          for repo in ("google/gemma-2b", "google/gemma-2-2b"):
+              hf_hub_download(repo, "config.json")
+              print(repo, "accessible")
+          EOF
+
+      - name: Validation suite (co-ranking, dataset, extraction)
+        run: python -m pytest tests/test_coranking.py tests/test_dataset.py tests/test_models.py -p no:playwright -q
+
+      - name: Rebuild the dataset and check it matches the committed one
+        run: |
+          python -m ensy.dataset --out /tmp/dataset.json
+          python - <<'EOF'
+          import json
+          a = json.load(open("data/dataset.json", encoding="utf-8"))
+          b = json.load(open("/tmp/dataset.json", encoding="utf-8"))
+          same = a["dataset_hash"] == b["dataset_hash"]
+          print("committed", a["dataset_hash"][:12], "rebuilt", b["dataset_hash"][:12], "identical" if same else "DIFFERENT")
+          raise SystemExit(0 if same else 1)
+          EOF
+
+      - name: Main matrix (4 models x 4 algorithms)
+        run: python -m ensy.experiment --out ci-results
+
+      - name: Ablation (PCA-NC)
+        run: python -m ensy.experiment --ablation --out ci-results
+
+      - name: Sensitivity analysis
+        if: github.event_name == 'push' || inputs.sensitivity
+        run: python -m ensy.experiment --sensitivity --out ci-results
+
+      - name: Compare with the committed results (reproducibility check)
+        run: |
+          for f in ci-results/main_*.json ci-results/ablation_*.json; do
+            ref="results/$(basename "$f")"
+            if [ -f "$ref" ]; then
+              python -m ensy.compare "$ref" "$f" --markdown >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "No committed $ref to compare with." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ensy-results-${{ github.sha }}
+          path: ci-results/
+          retention-days: 90

@@ -11,7 +11,7 @@ export interface Neighbor {
   cosine_similarity: number;
 }
 
-export type ModelKey = 'qwen' | 'gemma' | 'bert';
+export type ModelKey = 'qwen' | 'gemma' | 'gemma2' | 'bert';
 export type Algorithm = 'umap' | 'tsne' | 'pca' | 'isomap' | 'pca_nc';
 export type ColorLayer = 'category' | 'heat';
 

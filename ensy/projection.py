@@ -42,17 +42,23 @@ def _svd_projection(X: np.ndarray, center: bool) -> tuple[np.ndarray, dict]:
     return Y, info
 
 
-def isomap_graph_components(X: np.ndarray, n_neighbors: int, metric: str) -> int:
+def isomap_graph_components(X: np.ndarray, n_neighbors: int, metric: str) -> np.ndarray:
+    """Connected-component label of every point in the (symmetrised) k-NN graph."""
     from sklearn.neighbors import kneighbors_graph
 
     G = kneighbors_graph(X, n_neighbors, metric=metric, mode="connectivity")
-    n, _ = connected_components(G, directed=False)
-    return int(n)
+    _, labels = connected_components(G, directed=False)
+    return labels
 
 
-def project(X: np.ndarray, algorithm: str) -> tuple[np.ndarray, dict]:
-    """Return (Y in R^3, diagnostics). X is expected L2-normalised."""
-    p = PARAMS[algorithm]
+def project(X: np.ndarray, algorithm: str, overrides: dict | None = None) -> tuple[np.ndarray, dict]:
+    """Return (Y in R^3, diagnostics). X is expected L2-normalised.
+
+    ``diagnostics["kept"]`` (Isomap only) lists the row indices that were
+    projected; every other algorithm projects all rows. ``overrides`` replaces
+    parameters for sensitivity analyses only -- never for the main results.
+    """
+    p = {**PARAMS[algorithm], **(overrides or {})}
     diag: dict = {}
     if algorithm in ("pca", "pca_nc"):
         Y, diag = _svd_projection(X, center=p["centering"])
@@ -61,8 +67,7 @@ def project(X: np.ndarray, algorithm: str) -> tuple[np.ndarray, dict]:
 
         if p["perplexity"] >= len(X):
             raise ValueError("t-SNE perplexity must be smaller than N")
-        kw = {k: v for k, v in p.items()}
-        Y = TSNE(**kw).fit_transform(X)
+        Y = TSNE(**p).fit_transform(X)
     elif algorithm == "umap":
         import umap
 
@@ -73,12 +78,18 @@ def project(X: np.ndarray, algorithm: str) -> tuple[np.ndarray, dict]:
     elif algorithm == "isomap":
         from sklearn.manifold import Isomap
 
-        n_cc = isomap_graph_components(X, p["n_neighbors"], p["metric"])
-        diag["knn_graph_components"] = n_cc
-        diag["components_bridged_by_sklearn"] = n_cc > 1
+        # Policy (TENENBAUM et al., 2000, note 19): points disconnected from the
+        # giant component of the neighbourhood graph have no finite geodesic
+        # distance and are deleted from further analysis, not bridged.
+        labels = isomap_graph_components(X, p["n_neighbors"], p["metric"])
+        giant = np.bincount(labels).argmax()
+        kept = np.flatnonzero(labels == giant)
+        diag["knn_graph_components"] = int(labels.max() + 1)
+        diag["kept"] = kept.tolist()
+        diag["removed"] = np.flatnonzero(labels != giant).tolist()
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            Y = Isomap(**p).fit_transform(X)
+            Y = Isomap(**p).fit_transform(X[kept])
         diag["warnings"] = sorted({str(w.message)[:160] for w in caught})
     else:
         raise KeyError(algorithm)
