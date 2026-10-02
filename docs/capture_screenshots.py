@@ -56,8 +56,8 @@ class Tour:
         merged = json.dumps({**BASE_SETTINGS, **settings})
         self.page.evaluate(f"localStorage.setItem('visualizerSettings', JSON.stringify({merged}))")
         self.page.goto(self.base_url)
-        # the "Click viewport to navigate" hint is UI chrome, not part of a figure
-        self.page.add_style_tag(content='[data-hud="lock-hint"]{display:none !important}')
+        # the "Click viewport to navigate" hint and the minimap are UI chrome, not part of a figure
+        self.page.add_style_tag(content='[data-hud="lock-hint"],[data-hud="minimap"]{display:none !important}')
         self.wait_for_data()
 
     def wait_for_data(self):
@@ -195,15 +195,15 @@ def main():
             t.approach(APPROACH_MS)
             t.view(f"fig03_{model}")
 
-        print("[4] thermal camera, K = 10 and K = 20")
+        print("[4] behaviour map, K = 10 and K = 20")
         t.open(modelKey="qwen", projectionType="tsne", **clean)
         t.choose("Colour layer", "heat")
         t.preset("Isometric")
         t.approach(APPROACH_MS)
-        t.view("fig04_thermal_k10")
+        t.view("fig04_behaviour_k10")
         t.choose("Neighbourhood K", "20")
         t.page.wait_for_timeout(800)
-        t.view("fig05_thermal_k20")
+        t.view("fig05_behaviour_k20")
 
         print("[5] neighbourhood probing after flying towards a token")
         t.open(modelKey="bert", projectionType="umap", **{**clean, "probeEnabled": True})
@@ -218,12 +218,18 @@ def main():
         hi = browser.new_page(viewport=VIEWPORT, device_scale_factor=4)
         th = Tour(hi, args.base_url, args.out)
         th.open(modelKey="gpt2", projectionType="isomap")
+        # on a white page the card's hard drop shadow reads as a stray border, and the
+        # translucent card would let the scene show through
+        hi.add_style_tag(content=r"div.absolute.bottom-\[16px\].right-\[16px\]{box-shadow:none !important;background:#ffffff !important}")
         th.panel("fig08_metrics_panel", "div.absolute.bottom-\\[16px\\].right-\\[16px\\]", scale=4)
         hi.close()
 
         print("[7] camera modes")
         t.window(WINDOW_16_9)
-        t.open(modelKey="qwen", projectionType="pca")
+        # axis-aligned presets use the parallel (orthographic) camera: no perspective foreshortening
+        t.open(modelKey="qwen", projectionType="pca", showPlaneBackground=False)  # words behind a plane would fade
+        t.page.locator("button", has_text="Parallel").first.click()
+        t.page.wait_for_timeout(600)
         for btn, name in [("Front (XY)", "fig11_front"), ("Top (XZ)", "fig12_top")]:
             t.preset(btn)
             t.shot(name)

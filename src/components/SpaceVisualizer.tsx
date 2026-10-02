@@ -41,6 +41,9 @@ const PROBE_TRUE = new THREE.Color("#16a34a");
 const PROBE_FALSE = new THREE.Color("#dc2626");
 const PROBE_MISSING = new THREE.Color("#3b82f6");
 const PROBE_SELECTED = new THREE.Color("#111111");
+// Tokens outside the probed neighbourhood stay opaque but neutral, so the cloud stays legible
+const PROBE_CONTEXT = new THREE.Color("#a1a1aa");
+const PROBE_CONTEXT_LABEL = "#52525b";
 
 export const heatColor = (b: number) => {
   const t = Math.max(-1, Math.min(1, b));
@@ -616,8 +619,14 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         // Synchronize positions/rotations between standard perspective and projection parallel
         if (currentModeRef.current === "parallel") {
           updateOrthoBoundsPrivate();
-          persp.position.copy(ortho.position);
-          persp.rotation.copy(ortho.rotation);
+          if (targetState?.active) {
+            // a preset transition drives the perspective camera; the orthographic one follows it
+            ortho.position.copy(persp.position);
+            ortho.rotation.copy(persp.rotation);
+          } else {
+            persp.position.copy(ortho.position);
+            persp.rotation.copy(ortho.rotation);
+          }
         } else {
           ortho.position.copy(persp.position);
           ortho.rotation.copy(persp.rotation);
@@ -1038,7 +1047,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     tokenPointsRef.current.forEach((h, idx) => {
       const node = h.userData as SemanticNode;
       let alpha = h.visible ? 1 : 0;
-      // On the thermal scale most values are near 0 (pale), so there the dot carries
+      // On the behaviour-map scale most values are near 0 (pale), so there the dot carries
       // the colour and the word stays dark for legibility, as in the TF Projector.
       let labelColor: string | null = null;
       if (layer === "heat" && node.b_nx_local && kKey in node.b_nx_local) {
@@ -1055,14 +1064,16 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         else if (probe.false.has(id)) tmp.copy(PROBE_FALSE);
         else if (probe.missing.has(id)) {
           tmp.copy(PROBE_MISSING);
-          alpha *= 0.45;
-        } else alpha *= 0.25;
-        if (probed) labelColor = null; // probing colours apply to the word too
+          alpha *= 0.6;
+        } else tmp.copy(PROBE_CONTEXT);
+        labelColor = probed ? null : PROBE_CONTEXT_LABEL; // probing colours apply to the word too
       }
       colorAttr.setXYZW(idx, tmp.r, tmp.g, tmp.b, alpha);
       const label = tokenLabelByIdRef.current.get(node.id!);
       if (label) {
         label.dom.style.color = labelColor ?? `#${tmp.getHexString()}`;
+        // the aimed word is drawn dark on a chip; this keeps the dot's colour on its stripe
+        label.dom.style.setProperty("--dot", `#${tmp.getHexString()}`);
         label.dom.dataset.dim = alpha < 0.5 && h.visible ? "1" : "0";
       }
     });
@@ -2268,7 +2279,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       }
     });
 
-    // Same colour as the dots of the active layer (category / thermal / probe)
+    // Same colour as the dots of the active layer (category / behaviour / probe)
     const colorAttr = cloudRef.current?.geometry.getAttribute("color") as THREE.BufferAttribute | undefined;
     const indexById = new Map<number, number>();
     tokenPointsRef.current.forEach((h, i) => indexById.set(h.userData.id, i));
@@ -2360,7 +2371,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         </div>
       )}
 
-      <div className="absolute top-3 left-3 z-40 pointer-events-none">
+      <div data-hud="minimap" className="absolute top-3 left-3 z-40 pointer-events-none">
         <div className="rounded-full">
           <canvas
             ref={minimapCanvasRef}

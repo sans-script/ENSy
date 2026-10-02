@@ -310,8 +310,7 @@ def postprocess_columns(html: str) -> str:
             attrs[m.group(1)] = m.group(2)
         return attrs
 
-    def replace_open(m: re.Match) -> str:
-        attrs  = parse_attrs(m.group(1))
+    def column_div(attrs: dict) -> str:
         count  = attrs.get('count', '2')
         space  = attrs.get('space', '8')          # mm
         sep    = attrs.get('separate', 'false').lower() == 'true'
@@ -321,9 +320,182 @@ def postprocess_columns(html: str) -> str:
             f'style="column-count:{count}; column-gap:{space}mm; {crule}">'
         )
 
-    html = open_pat.sub(replace_open, html)
-    html = close_pat.sub('</div>', html)
-    return html
+    # Walk the markers in order so each close knows whether its open was mode=auto;
+    # auto regions are left as comments and laid out at render time (layout_auto_columns).
+    stack: list[bool] = []
+
+    def replace(m: re.Match) -> str:
+        if m.group('open') is not None:
+            attrs = parse_attrs(m.group('open'))
+            auto = attrs.get('mode', '').lower() == 'auto'
+            stack.append(auto)
+            if auto:
+                return f'<!--AUTOCOL-OPEN {column_div(attrs)}-->'
+            return column_div(attrs)
+        auto = stack.pop() if stack else False
+        return _AUTO_CLOSE if auto else '</div>'
+
+    token_pat = re.compile(
+        r'(?:' + open_pat.pattern.replace(r'(.*?)', r'(?P<open>.*?)') + r')|(?:' + close_pat.pattern + r')',
+        re.DOTALL,
+    )
+    return token_pat.sub(replace, html)
+
+
+# ── Automatic column layout ────────────────────────────────────────────────
+# Inside ---columns{count=2 mode=auto}--- ... ---/columns--- the document is split
+# at every h2/h3. A run of consecutive sections without figures, tables or code
+# is set in columns when it is long enough; everything else uses the full text
+# width. The rendered PDF is then measured, and a run whose right column is left
+# empty on some page, or which ends in a short balanced tail followed by blank
+# space, is set full width instead. This repeats until the layout is stable.
+_AUTO_OPEN_RE = re.compile(r'<!--AUTOCOL-OPEN (.*?)-->(.*?)<!--AUTOCOL-CLOSE-->', re.DOTALL)
+_AUTO_CLOSE = '<!--AUTOCOL-CLOSE-->'
+AUTO_MIN_WORDS = 600            # shorter text runs stay full width
+AUTO_MAX_PASSES = 6
+_AUTO_SPANNER = re.compile(
+    r'<figure|<img|<table|<pre|<svg|class="[^"]*\b(?:academic-figure|plot-figure|mermaid|'
+    r'booktabs-wrapper|pagebreak|page-break-before|page-break-after)\b')
+_PROBE_STYLE = ('position:absolute;font-size:4px;line-height:1;color:#fefefe;'
+                'white-space:nowrap;pointer-events:none')
+
+
+def _auto_label(key) -> str:
+    return f'ACK{key}Q'
+
+
+def _with_probe(chunk: str, label: str, probe: bool) -> str:
+    """Attach an invisible, layout-neutral text marker to the start of a chunk."""
+    if not probe:
+        return chunk
+    span = f'<span style="{_PROBE_STYLE}">{label}</span>'
+    m = re.match(r'\s*<(?:h[1-6]|p|div|ul|ol|blockquote)\b[^>]*>', chunk)
+    if m:
+        return chunk[:m.end()] + span + chunk[m.end():]
+    return f'<div style="height:0;margin:0;padding:0">{span}</div>' + chunk
+
+
+def _words(fragment: str) -> int:
+    return len(re.sub(r'<[^>]+>', ' ', fragment).split())
+
+
+def layout_auto_columns(html: str, demoted: frozenset = frozenset(), probe: bool = False):
+    """
+    Lay out every auto region. Returns (html, groups), where each group is
+    (chunk_ids, next_label): the chunk ids set in columns and the label of the
+    first marker after them (used by the measurement step).
+    """
+    groups: list[tuple[list[int], str]] = []
+    next_id = 0
+    region = 0
+
+    def lay(m: re.Match) -> str:
+        nonlocal next_id, region
+        div_open, body = m.group(1), m.group(2)
+        chunks = [c for c in re.split(r'(?=<h[23][\s>])', body) if c.strip()]
+        ids = list(range(next_id, next_id + len(chunks)))
+        next_id += len(chunks)
+        end_label = _auto_label(f'E{region}')
+        region += 1
+
+        cand = [i not in demoted and not _AUTO_SPANNER.search(c) for i, c in zip(ids, chunks)]
+        two = [False] * len(chunks)
+        k = 0
+        while k < len(chunks):
+            if not cand[k]:
+                k += 1
+                continue
+            j = k
+            while j < len(chunks) and cand[j]:
+                j += 1
+            if sum(_words(c) for c in chunks[k:j]) >= AUTO_MIN_WORDS:
+                two[k:j] = [True] * (j - k)
+            k = j
+
+        out = []
+        k = 0
+        while k < len(chunks):
+            if not two[k]:
+                out.append(_with_probe(chunks[k], _auto_label(ids[k]), probe))
+                k += 1
+                continue
+            j = k
+            while j < len(chunks) and two[j]:
+                j += 1
+            nxt = _auto_label(ids[j]) if j < len(chunks) else end_label
+            groups.append((ids[k:j], nxt))
+            out.append(div_open)
+            out.extend(_with_probe(chunks[t], _auto_label(ids[t]), probe) for t in range(k, j))
+            out.append('</div>')
+            k = j
+        if probe:
+            out.append(f'<div style="height:0;margin:0;padding:0"><span style="{_PROBE_STYLE}">{end_label}</span></div>')
+        return ''.join(out)
+
+    return _AUTO_OPEN_RE.sub(lay, html), groups
+
+
+def _measure_auto_columns(pdf_path: str, groups) -> set:
+    """
+    Return the chunk ids to set full width: those of runs whose right column is
+    (nearly) empty on a page, and short runs ending in a balanced tail with blank
+    space below it.
+    """
+    import pypdfium2 as pdfium
+
+    pdf = pdfium.PdfDocument(pdf_path)
+    pages = []
+    for i in range(len(pdf)):
+        pg = pdf[i]
+        tp = pg.get_textpage()
+        w, h = pg.get_size()
+        rects = [tp.get_rect(k) for k in range(tp.count_rects())]
+        pages.append((tp, w, h, [r for r in rects if r[3] - r[1] > 4]))
+    margin = 22 / 25.4 * 72                         # top/bottom page margin, pt
+
+    def find(label: str):
+        for p, (tp, _, _, _) in enumerate(pages):
+            hit = tp.search(label, match_case=True).get_next()
+            if hit:
+                return p, tp.get_charbox(hit[0])[3]
+        return None
+
+    demote: set = set()
+    for ids, nxt in groups:
+        start, end = find(_auto_label(ids[0])), find(nxt)
+        if not start or not end:
+            continue
+        (p0, y0), (p1, y1) = start, end
+        for p in range(p0, p1 + 1):
+            _, w, h, rects = pages[p]
+            top = y0 + 2 if p == p0 else h - margin
+            bottom = y1 if p == p1 else margin
+            if top - bottom < 30:
+                continue
+            band = [r for r in rects if bottom < (r[1] + r[3]) / 2 < top]
+            mid = w / 2
+            left = sum(r[2] < mid - 6 for r in band)
+            right = sum(r[0] > mid + 6 for r in band)
+            if left >= 6 and right < 0.3 * left:
+                # this page and everything after it, plus the section flowing into it
+                starts = {i: find(_auto_label(i)) for i in ids}
+                before = [i for i in ids if starts[i] and starts[i][0] < p]
+                keep = set(before[:-1])
+                demote |= set(ids) - keep
+                print(f"[AUTO] p. {p + 1}: right column empty — sections from #{ids[0] + len(keep)} set full width")
+                break
+        else:
+            # short run whose last page holds only a balanced tail and blank space
+            _, w, h, rects = pages[p1]
+            tail = (h - margin) - y1 if p1 > p0 else y0 - y1
+            below = [r for r in rects if margin + 4 < (r[1] + r[3]) / 2 < y1 - 6]
+            if p1 - p0 <= 1 and p1 > p0 and tail < 0.4 * (h - 2 * margin) and not below:
+                demote |= set(ids)
+                print(f"[AUTO] p. {p1 + 1}: short two-column tail above blank space — run set full width")
+    for tp, *_ in pages:   # release the file (Windows keeps it locked otherwise)
+        tp.close()
+    pdf.close()
+    return demote
 
 
 def preprocess_figures(md_content: str) -> str:
@@ -1452,6 +1624,50 @@ def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
     print(f"[SUCCESS] PDF created: {pdf_path}")
 
 
+def render_pdf(html_path: str = TEMP_HTML_PATH,
+               pdf_path: str = OUTPUT_PDF_PATH,
+               cleanup: bool = True) -> None:
+    """
+    convert_to_pdf() plus the automatic column layout: draft renders with
+    invisible markers are measured until no column run needs to be set full
+    width, then the final PDF is rendered without markers.
+    """
+    with open(html_path, encoding="utf-8") as f:
+        source = f.read()
+    if not _AUTO_OPEN_RE.search(source):
+        convert_to_pdf(html_path, pdf_path, cleanup)
+        return
+
+    demoted: frozenset = frozenset()
+    try:
+        import pypdfium2  # noqa: F401  (measurement needs it)
+        measurable = True
+    except ImportError:
+        print("[WARN] pypdfium2 not installed — automatic columns are not verified.")
+        measurable = False
+
+    probe_html = html_path + ".probe.html"
+    probe_pdf = pdf_path + ".probe.pdf"
+    for n in range(AUTO_MAX_PASSES if measurable else 0):
+        html, groups = layout_auto_columns(source, demoted, probe=True)
+        with open(probe_html, "w", encoding="utf-8") as f:
+            f.write(html)
+        print(f"[AUTO] layout pass {n + 1}: {len(groups)} two-column run(s)")
+        convert_to_pdf(probe_html, probe_pdf, cleanup=True)
+        more = _measure_auto_columns(probe_pdf, groups)
+        if not more - demoted:
+            break
+        demoted = demoted | frozenset(more)
+    if os.path.exists(probe_pdf):
+        os.remove(probe_pdf)
+
+    html, groups = layout_auto_columns(source, demoted, probe=False)
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"[AUTO] final layout: {len(groups)} two-column run(s)")
+    convert_to_pdf(html_path, pdf_path, cleanup)
+
+
 def watch_mode(input_path: str, output_path: str, cleanup: bool = True) -> None:
     """
     Watch for file modifications in input_path, docs directory, scripts,
@@ -1492,7 +1708,7 @@ def watch_mode(input_path: str, output_path: str, cleanup: bool = True) -> None:
     # Initial build
     try:
         build_html(input_path=input_path, output_path=temp_html)
-        convert_to_pdf(html_path=temp_html, pdf_path=output_path, cleanup=cleanup)
+        render_pdf(html_path=temp_html, pdf_path=output_path, cleanup=cleanup)
     except Exception as exc:
         print(f"[ERROR] Initial compilation failed: {exc}")
 
@@ -1513,7 +1729,7 @@ def watch_mode(input_path: str, output_path: str, cleanup: bool = True) -> None:
                 time.sleep(0.3)  # Debounce
                 try:
                     build_html(input_path=input_path, output_path=temp_html)
-                    convert_to_pdf(html_path=temp_html, pdf_path=output_path, cleanup=cleanup)
+                    render_pdf(html_path=temp_html, pdf_path=output_path, cleanup=cleanup)
                     print(f"[{now_str}] [SUCCESS] PDF updated: {output_path}")
                 except Exception as exc:
                     print(f"[{now_str}] [ERROR] Rebuild failed: {exc}")
@@ -1564,7 +1780,7 @@ def main() -> None:
         temp_html  = os.path.join(input_dir, "temp_docs.html")
 
         build_html(input_path=args.input, output_path=temp_html)
-        convert_to_pdf(
+        render_pdf(
             html_path=temp_html,
             pdf_path=args.output,
             cleanup=not args.no_cleanup,

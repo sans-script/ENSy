@@ -14,7 +14,7 @@ Dimensionality reduction is the usual way to inspect the embedding spaces of lan
 
 ---
 
----columns{count=2}---
+---columns{count=2 mode=auto}---
 
 ## 1. Introduction
 
@@ -26,7 +26,7 @@ The guiding question is: *how do PCA, t-SNE, UMAP and Isomap preserve or distort
 
 1. **A validated co-ranking implementation** — trustworthiness/continuity identical to an independent implementation, the behaviour indicator $B_{NX}(K)$ checked against the primary source and anchored empirically, and an exact per-token decomposition $B_{NX,i}(K)$ (Section 3.6).
 2. **A frozen experimental protocol** — a hashed Penn-Treebank-derived lexical dataset, pinned model revisions, a fully explicit parameter table and a continuous-integration run that rebuilds the dataset and reproduces the results (Section 3).
-3. **An interactive instrument** — a WebGL viewer with a reference-partition colouring, a thermal camera for $B_{NX,i}(K)$ and neighbourhood probing (Section 4).
+3. **An interactive instrument** — a WebGL viewer with a reference-partition colouring, a behaviour map of $B_{NX,i}(K)$ and neighbourhood probing (Section 4).
 4. **Empirical results** for 4 models × 5 projection configurations, a seed/perplexity sensitivity analysis and a PCA centring ablation (Section 5).
 
 ## 2. Background
@@ -56,8 +56,6 @@ that is, Euclidean distance on the unit sphere is a monotone function of cosine 
 **UMAP** builds a fuzzy neighbourhood graph and optimises a low-dimensional layout by cross-entropy [9]; its number of neighbours sets "the local scale at which to approximate the manifold".
 
 **Isomap** estimates geodesic distances as shortest paths in a $k$-nearest-neighbour graph and embeds them with classical MDS [10]. Points disconnected from the graph's giant component have no finite geodesic distance; the original authors note they "can be deleted from further analysis" [10, note 19].
-
----/columns---
 
 ### 2.3 The co-ranking framework
 
@@ -111,11 +109,11 @@ $$
 B_{NX}(K) = \frac{1}{N}\sum_{i=1}^{N} B_{NX,i}(K),
 $$
 
-with $|B_{NX,i}(K)| \le (K-1)/K$. ENSy's thermal camera displays this quantity, which is the token's net contribution to intrusive or extrusive behaviour, not a general "local distortion".
+with $|B_{NX,i}(K)| \le (K-1)/K$. ENSy's behaviour map displays this quantity, which is the token's net contribution to intrusive or extrusive behaviour, not a general "local distortion".
 
 ### 2.4 Silhouette
 
-For the reference partition (Section 3.3), the Silhouette $s(i) = \frac{b(i)-a(i)}{\max(a(i),b(i))}$ [14] measures how well the categories are separated. It is computed in the projected space, in both 3D and 2D, and — as a reference — in the original space with the cosine metric. It measures separation, not its cause.
+For the reference partition (Section 3.3), the Silhouette $s(i) = \frac{b(i)-a(i)}{\max(a(i),b(i))}$ [14] measures how well the categories are separated. It is computed in the three-dimensional projected space and — as a reference — in the original space with the cosine metric. It measures separation, not its cause.
 
 ## 3. Materials and methods
 
@@ -178,7 +176,7 @@ PCA, t-SNE and Isomap use scikit-learn [22] and UMAP its reference implementatio
 | Isomap | 15 neighbours; cosine; giant component of the $k$-NN graph only |
 :::
 
-t-SNE is reported at both perplexities because the sensitivity analysis (Section 5.4) shows that the sign of its behaviour indicator depends on this choice. Each configuration is also run with two components to compute the 2D Silhouette.
+t-SNE is reported at both perplexities because the sensitivity analysis (Section 5.4) shows that the sign of its behaviour indicator depends on this choice.
 
 ### 3.5 Evaluation protocol
 
@@ -212,23 +210,23 @@ The rendered cloud is the projection itself: coordinates are placed with a singl
 
 ### 4.3 Colour layers and probing
 
-Three layers share the colour channel with a fixed precedence — probing > thermal camera > reference partition — and never mix on one token. The **reference partition** colours nouns, verbs and function words. The **thermal camera** maps $B_{NX,i}(K)$ onto a fixed bipolar scale on $[-1, 1]$ (cyan: extrusive; light grey: neutral; orange: intrusive), never normalised per frame, so equal values always receive equal colours across projections. In this layer the colour is carried by the dot and the word stays dark, because most local values are close to zero and would otherwise give pale, illegible words. **Probing** colours, for the token under the reticle, its true ($N_K \cap n_K$, green), false ($n_K \setminus N_K$, red) and missing ($N_K \setminus n_K$, translucent blue) neighbours.
+Three layers share the colour channel with a fixed precedence — probing > behaviour map > reference partition — and never mix on one token. The **reference partition** colours nouns, verbs and function words. The **behaviour map** places $B_{NX,i}(K)$ on a fixed bipolar scale on $[-1, 1]$ (cyan: extrusive; light grey: neutral; orange: intrusive), never normalised per frame, so equal values always receive equal colours across projections. In this layer the colour is carried by the dot and the word stays dark, because most local values are close to zero and would otherwise give pale, illegible words. **Probing** colours, for the token under the reticle, its true ($N_K \cap n_K$, green), false ($n_K \setminus N_K$, red) and missing ($N_K \setminus n_K$, translucent blue) neighbours.
 
-![Thermal camera](screenshots/fig04_thermal_k10.png)
+![Behaviour map](screenshots/fig04_behaviour_k10.png)
 
-_Figure 2: Thermal camera on Qwen 2.5 with t-SNE (perplexity 5), $K = 10$ (viewport only, grid planes off): each token's local contribution to $B_{NX}(10)$ on the fixed scale $[-1, 1]$._
+_Figure 2: Behaviour map on Qwen 2.5 with t-SNE (perplexity 5), $K = 10$ (viewport only, grid planes off): each token's local contribution to $B_{NX}(10)$ on the fixed scale $[-1, 1]$._
 
 ![Neighbourhood probing](screenshots/fig06_probing.png)
 
-_Figure 3: Neighbourhood probing after flying towards a token (BERT, UMAP, $K = 10$; viewport only, grid planes off). Green: genuine neighbours kept by the projection; red: false neighbours introduced by it; translucent blue: genuine neighbours it pushed away._
+_Figure 3: Neighbourhood probing after flying towards a token (BERT, UMAP, $K = 10$; viewport only, grid planes off). Green: genuine neighbours kept by the projection; red: false neighbours introduced by it; translucent blue: genuine neighbours it pushed away; all other tokens stay opaque in neutral grey._
 
 ### 4.4 Navigation and interface
 
-The viewer offers first-person 6-DOF flight (W/A/S/D, R/F, mouse look under pointer lock), perspective, parallel and two-point perspective cameras with LERP/SLERP transitions between front, top, side and isometric presets, an octant filter and a minimap. A central reticle selects the nearest token in screen space within 25 px.
+The viewer offers first-person 6-DOF flight (W/A/S/D, R/F, mouse look under pointer lock), perspective, parallel and two-point perspective cameras with LERP/SLERP transitions between front, top, side and isometric presets, an octant filter and a minimap. A central reticle selects the nearest token in screen space within 25 px; the selected word is drawn in dark type on a white label whose left edge keeps the colour of its dot, so it stays legible whatever its layer colour. The minimap is omitted from the figures of this paper.
 
 <figure class="academic-figure">
   <img src="screenshots/fig08_metrics_panel.png" alt="Figure 4" style="width:100%" />
-  <figcaption><strong class="caption-label">Fig. 4.</strong> Co-ranking panel for GPT-2 with Isomap: $M_T$, $M_C$, $Q_{NX}$ and $B_{NX}$ over $K$, and the 3D and 2D Silhouette scores.</figcaption>
+  <figcaption><strong class="caption-label">Fig. 4.</strong> Co-ranking panel for GPT-2 with Isomap: $M_T$, $M_C$, $Q_{NX}$ and $B_{NX}$ over $K$, and the Silhouette of the reference partition.</figcaption>
 </figure>
 
 ## 5. Results
@@ -241,35 +239,35 @@ The pipeline yields $N = 438$ word types (146 per category); the function words 
 
 <!-- BEGIN:main -->
 :::booktabs[wide]
-| Model | Algorithm | $M_T$ | $M_C$ | $Q_{NX}$ | $B_{NX}$ | $B_{TC}$ | $s_{3D}$ | $s_{2D}$ |
-|---|---|---|---|---|---|---|---|---|
-| Qwen 2.5 0.5B | PCA | 0.830 | 0.828 | 0.205 | −0.007 | −0.001 | +0.161 | +0.081 |
-| Qwen 2.5 0.5B | t-SNE ($p=5$) | 0.875 | 0.891 | 0.477 | +0.016 | +0.016 | +0.243 | +0.296 |
-| Qwen 2.5 0.5B | t-SNE ($p=30$) | 0.890 | 0.883 | 0.479 | −0.041 | −0.008 | +0.153 | +0.330 |
-| Qwen 2.5 0.5B | UMAP | 0.899 | 0.923 | 0.486 | +0.032 | +0.025 | +0.370 | +0.387 |
-| Qwen 2.5 0.5B | Isomap | 0.792 | 0.910 | 0.248 | +0.028 | +0.117 | +0.281 | +0.341 |
-| GPT-2 | PCA | 0.827 | 0.846 | 0.216 | −0.015 | +0.019 | +0.236 | +0.243 |
-| GPT-2 | t-SNE ($p=5$) | 0.896 | 0.914 | 0.457 | +0.027 | +0.017 | +0.254 | +0.312 |
-| GPT-2 | t-SNE ($p=30$) | 0.912 | 0.912 | 0.495 | −0.024 | +0.000 | +0.205 | +0.286 |
-| GPT-2 | UMAP | 0.917 | 0.938 | 0.474 | +0.012 | +0.021 | +0.363 | +0.402 |
-| GPT-2 | Isomap | 0.829 | 0.927 | 0.266 | +0.008 | +0.098 | +0.315 | +0.397 |
-| Gemma 2 2B | PCA | 0.867 | 0.802 | 0.189 | −0.010 | −0.065 | +0.240 | +0.157 |
-| Gemma 2 2B | t-SNE ($p=5$) | 0.884 | 0.879 | 0.438 | +0.013 | −0.005 | +0.234 | +0.292 |
-| Gemma 2 2B | t-SNE ($p=30$) | 0.901 | 0.909 | 0.432 | −0.027 | +0.008 | +0.238 | +0.283 |
-| Gemma 2 2B | UMAP | 0.911 | 0.934 | 0.428 | +0.005 | +0.022 | +0.345 | +0.363 |
-| Gemma 2 2B | Isomap | 0.864 | 0.920 | 0.238 | +0.012 | +0.057 | +0.298 | +0.336 |
-| BERT base | PCA | 0.819 | 0.810 | 0.182 | −0.005 | −0.008 | +0.159 | +0.089 |
-| BERT base | t-SNE ($p=5$) | 0.876 | 0.853 | 0.429 | +0.001 | −0.023 | +0.201 | +0.262 |
-| BERT base | t-SNE ($p=30$) | 0.874 | 0.847 | 0.405 | −0.039 | −0.027 | +0.181 | +0.222 |
-| BERT base | UMAP | 0.895 | 0.903 | 0.425 | +0.014 | +0.008 | +0.261 | +0.321 |
-| BERT base | Isomap | 0.794 | 0.860 | 0.201 | +0.012 | +0.066 | +0.166 | +0.056 |
+| Model | Algorithm | $M_T$ | $M_C$ | $Q_{NX}$ | $B_{NX}$ | $B_{TC}$ | $s$ |
+|---|---|---|---|---|---|---|---|
+| Qwen 2.5 0.5B | PCA | 0.830 | 0.828 | 0.205 | −0.007 | −0.001 | +0.161 |
+| Qwen 2.5 0.5B | t-SNE ($p=5$) | 0.875 | 0.891 | 0.477 | +0.016 | +0.016 | +0.243 |
+| Qwen 2.5 0.5B | t-SNE ($p=30$) | 0.890 | 0.883 | 0.479 | −0.041 | −0.008 | +0.153 |
+| Qwen 2.5 0.5B | UMAP | 0.899 | 0.923 | 0.486 | +0.032 | +0.025 | +0.370 |
+| Qwen 2.5 0.5B | Isomap | 0.792 | 0.910 | 0.248 | +0.028 | +0.117 | +0.281 |
+| GPT-2 | PCA | 0.827 | 0.846 | 0.216 | −0.015 | +0.019 | +0.236 |
+| GPT-2 | t-SNE ($p=5$) | 0.896 | 0.914 | 0.457 | +0.027 | +0.017 | +0.254 |
+| GPT-2 | t-SNE ($p=30$) | 0.912 | 0.912 | 0.495 | −0.024 | +0.000 | +0.205 |
+| GPT-2 | UMAP | 0.917 | 0.938 | 0.474 | +0.012 | +0.021 | +0.363 |
+| GPT-2 | Isomap | 0.829 | 0.927 | 0.266 | +0.008 | +0.098 | +0.315 |
+| Gemma 2 2B | PCA | 0.867 | 0.802 | 0.189 | −0.010 | −0.065 | +0.240 |
+| Gemma 2 2B | t-SNE ($p=5$) | 0.884 | 0.879 | 0.438 | +0.013 | −0.005 | +0.234 |
+| Gemma 2 2B | t-SNE ($p=30$) | 0.901 | 0.909 | 0.432 | −0.027 | +0.008 | +0.238 |
+| Gemma 2 2B | UMAP | 0.911 | 0.934 | 0.428 | +0.005 | +0.022 | +0.345 |
+| Gemma 2 2B | Isomap | 0.864 | 0.920 | 0.238 | +0.012 | +0.057 | +0.298 |
+| BERT base | PCA | 0.819 | 0.810 | 0.182 | −0.005 | −0.008 | +0.159 |
+| BERT base | t-SNE ($p=5$) | 0.876 | 0.853 | 0.429 | +0.001 | −0.023 | +0.201 |
+| BERT base | t-SNE ($p=30$) | 0.874 | 0.847 | 0.405 | −0.039 | −0.027 | +0.181 |
+| BERT base | UMAP | 0.895 | 0.903 | 0.425 | +0.014 | +0.008 | +0.261 |
+| BERT base | Isomap | 0.794 | 0.860 | 0.201 | +0.012 | +0.066 | +0.166 |
 :::
 
 *Source: `results/main_c2416895b599.json` — commit `e7f5a91f` (clean working tree), Python 3.12.14, scikit-learn 1.6.1, umap-learn 0.5.7, seed 42, extraction: HTTP Range rows.*
 
 <!-- END:main -->
 
-$s_{3D}$, $s_{2D}$: Silhouette of the reference partition in the 3D and 2D projections. For reference, the Silhouette in the original space and the variance captured by three principal components:
+$s$: Silhouette of the reference partition in the 3D projection. For reference, the Silhouette in the original space and the variance captured by three principal components:
 
 <!-- BEGIN:highdim -->
 :::booktabs[wide]
@@ -350,20 +348,20 @@ Figures 7–11 show the five projection configurations of the same model, and Fi
 
 <!-- BEGIN:sensitivity -->
 :::booktabs[wide]
-| Model | Configuration | $M_T(10)$ | $B_{NX}(10)$ | $s_{3D}$ | $s_{2D}$ |
-|---|---|---|---|---|---|
-| Qwen 2.5 0.5B | t-SNE $p=5$ | 0.878 ± 0.002 | +0.012 ± 0.003 | +0.249 ± 0.004 | +0.297 ± 0.004 |
-| Qwen 2.5 0.5B | t-SNE $p=30$ | 0.889 ± 0.005 | −0.031 ± 0.007 | +0.185 ± 0.028 | +0.315 ± 0.025 |
-| Qwen 2.5 0.5B | UMAP | 0.904 ± 0.004 | +0.028 ± 0.005 | +0.366 ± 0.008 | +0.378 ± 0.006 |
-| GPT-2 | t-SNE $p=5$ | 0.896 ± 0.002 | +0.022 ± 0.005 | +0.243 ± 0.009 | +0.312 ± 0.006 |
-| GPT-2 | t-SNE $p=30$ | 0.910 ± 0.004 | −0.039 ± 0.009 | +0.207 ± 0.022 | +0.301 ± 0.022 |
-| GPT-2 | UMAP | 0.917 ± 0.003 | +0.006 ± 0.009 | +0.365 ± 0.009 | +0.385 ± 0.018 |
-| Gemma 2 2B | t-SNE $p=5$ | 0.883 ± 0.004 | +0.018 ± 0.006 | +0.228 ± 0.019 | +0.289 ± 0.006 |
-| Gemma 2 2B | t-SNE $p=30$ | 0.897 ± 0.003 | −0.037 ± 0.006 | +0.221 ± 0.015 | +0.315 ± 0.027 |
-| Gemma 2 2B | UMAP | 0.914 ± 0.002 | +0.004 ± 0.011 | +0.356 ± 0.007 | +0.365 ± 0.011 |
-| BERT base | t-SNE $p=5$ | 0.879 ± 0.001 | −0.002 ± 0.003 | +0.203 ± 0.009 | +0.261 ± 0.008 |
-| BERT base | t-SNE $p=30$ | 0.874 ± 0.004 | −0.039 ± 0.005 | +0.181 ± 0.019 | +0.205 ± 0.036 |
-| BERT base | UMAP | 0.891 ± 0.004 | +0.017 ± 0.006 | +0.255 ± 0.011 | +0.295 ± 0.021 |
+| Model | Configuration | $M_T(10)$ | $B_{NX}(10)$ | $s$ |
+|---|---|---|---|---|
+| Qwen 2.5 0.5B | t-SNE $p=5$ | 0.878 ± 0.002 | +0.012 ± 0.003 | +0.249 ± 0.004 |
+| Qwen 2.5 0.5B | t-SNE $p=30$ | 0.889 ± 0.005 | −0.031 ± 0.007 | +0.185 ± 0.028 |
+| Qwen 2.5 0.5B | UMAP | 0.904 ± 0.004 | +0.028 ± 0.005 | +0.366 ± 0.008 |
+| GPT-2 | t-SNE $p=5$ | 0.896 ± 0.002 | +0.022 ± 0.005 | +0.243 ± 0.009 |
+| GPT-2 | t-SNE $p=30$ | 0.910 ± 0.004 | −0.039 ± 0.009 | +0.207 ± 0.022 |
+| GPT-2 | UMAP | 0.917 ± 0.003 | +0.006 ± 0.009 | +0.365 ± 0.009 |
+| Gemma 2 2B | t-SNE $p=5$ | 0.883 ± 0.004 | +0.018 ± 0.006 | +0.228 ± 0.019 |
+| Gemma 2 2B | t-SNE $p=30$ | 0.897 ± 0.003 | −0.037 ± 0.006 | +0.221 ± 0.015 |
+| Gemma 2 2B | UMAP | 0.914 ± 0.002 | +0.004 ± 0.011 | +0.356 ± 0.007 |
+| BERT base | t-SNE $p=5$ | 0.879 ± 0.001 | −0.002 ± 0.003 | +0.203 ± 0.009 |
+| BERT base | t-SNE $p=30$ | 0.874 ± 0.004 | −0.039 ± 0.005 | +0.181 ± 0.019 |
+| BERT base | UMAP | 0.891 ± 0.004 | +0.017 ± 0.006 | +0.255 ± 0.011 |
 :::
 
 *Mean ± sample standard deviation over seeds {0, 1, 2, 3, 42}.* *Source: `results/sensitivity_c2416895b599.json` — commit `e7f5a91f` (clean working tree), Python 3.12.14, scikit-learn 1.6.1, umap-learn 0.5.7, seed 42, extraction: HTTP Range rows.*
@@ -388,7 +386,7 @@ Figures 7–11 show the five projection configurations of the same model, and Fi
 
 **The sign of t-SNE's behaviour follows the perplexity.** With the frozen perplexity of 5, t-SNE is mildly intrusive in three models and neutral in BERT; with perplexity 30 it is extrusive in all four, and the gap is many times larger than the spread across five seeds (Section 5.4). A statement such as "t-SNE tears the embedding space" is therefore a statement about a hyperparameter as much as about the algorithm. Both values lie in the range recommended by the method's authors, so neither can be dismissed; the defensible report is the pair. Low perplexity also showed a numerical artefact: with perplexity 5 a single word was occasionally ejected far from the cloud, a different one depending on the seed, although the word was not isolated in the original space.
 
-**Projections inflate category separation.** In the original spaces the reference categories are barely separated (Silhouette 0.025–0.048), while every projection raises the score above its original-space value, in most configurations to 0.15–0.40. The dimension of the display matters too: for the non-linear methods the 2D Silhouette exceeds the 3D one in all but one or two of the 16 configurations, whereas for PCA it is lower in three of the four models. A visually clean separation of nouns, verbs and function words in a projection is thus weak evidence about the embedding space itself; the co-ranking metrics are the appropriate check, and Silhouette values from 2D and 3D displays should not be compared directly.
+**Projections inflate category separation.** In the original spaces the reference categories are barely separated (Silhouette 0.025–0.048), while every projection raises the score above its original-space value, in most configurations to 0.15–0.40. A visually clean separation of nouns, verbs and function words in a projection is thus weak evidence about the embedding space itself; the co-ranking metrics are the appropriate check.
 
 **Neighbourhood preservation depends on the algorithm.** UMAP reaches the highest trustworthiness in every model. Isomap has the lowest or near-lowest trustworthiness — below PCA, whose three components capture only 8–11% of the variance, in three of the four models — but continuity well above it in every model, which $B_{TC}$ reports as clearly intrusive ($+0.057$ to $+0.117$).
 
@@ -409,6 +407,8 @@ Figures 7–11 show the five projection configurations of the same model, and Fi
 
 ENSy turns the projection of an embedding matrix from a picture into a measurement. Its co-ranking implementation is validated against an independent library, synthetic permutations and the primary source, and its results are regenerated from a frozen dataset by a pinned pipeline. Applied to four language models, it shows that the visual impressions most often drawn from such projections — whether a method crowds or tears the space, and whether linguistic categories form clusters — depend strongly on the projection and its hyperparameters. Projections of embedding spaces should therefore be reported with their neighbourhood-preservation metrics and their hyperparameters, never alone. Natural extensions are contextual representations, larger and multilingual samples, and inferential statistics over seeds and samples.
 
+---/columns---
+
 :::pagebreak
 
 ## Appendix A: Reproducing the results
@@ -428,17 +428,17 @@ python docs/md_to_pdf.py                  # build this PDF
 
 ## Appendix B: Additional views
 
-![Thermal K20](screenshots/fig05_thermal_k20.png)
+![Behaviour map K20](screenshots/fig05_behaviour_k20.png)
 
-_Figure 16: Thermal camera for the same projection as Figure 2 at $K = 20$._
+_Figure 16: Behaviour map for the same projection as Figure 2 at $K = 20$._
 
 ![Front view](screenshots/fig11_front.png)
 
-_Figure 17: Front (XY) camera preset on the PCA projection of Qwen 2.5._
+_Figure 17: Front (XY) camera preset with the parallel (orthographic) camera on the PCA projection of Qwen 2.5; grid-plane backgrounds off._
 
 ![Top view](screenshots/fig12_top.png)
 
-_Figure 18: Top (XZ) camera preset on the PCA projection of Qwen 2.5._
+_Figure 18: Top (XZ) camera preset with the parallel (orthographic) camera on the PCA projection of Qwen 2.5; grid-plane backgrounds off._
 
 ## Appendix C: API
 
@@ -449,7 +449,7 @@ _Figure 18: Top (XZ) camera preset on the PCA projection of Qwen 2.5._
 | `GET /api/models` | models, gating, whether the dataset covers them |
 | `GET /api/dataset` | dataset metadata and items |
 | `POST /api/dataset` | rebuild the dataset (refuses to overwrite a frozen one without `force`) |
-| `GET /api/projection/{model}/{algorithm}` | coordinates, metric curves, $B_{NX,i}(K)$, neighbour lists, Silhouette (3D, 2D) |
+| `GET /api/projection/{model}/{algorithm}` | coordinates, metric curves, $B_{NX,i}(K)$, neighbour lists, Silhouette (3D; a 2D value is also served) |
 | `GET /api/compare` | metric curves of every configuration of the main matrix |
 :::
 

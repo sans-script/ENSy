@@ -47,14 +47,14 @@ def provenance(r: dict) -> str:
 
 
 def table_main(r: dict) -> str:
-    rows = ["| Model | Algorithm | $M_T$ | $M_C$ | $Q_{NX}$ | $B_{NX}$ | $B_{TC}$ | $s_{3D}$ | $s_{2D}$ |",
-            "|---|---|---|---|---|---|---|---|---|"]
+    rows = ["| Model | Algorithm | $M_T$ | $M_C$ | $Q_{NX}$ | $B_{NX}$ | $B_{TC}$ | $s$ |",
+            "|---|---|---|---|---|---|---|---|"]
     for c in r["configs"]:
         m = at_k(c["curves"], K_MAIN)
         rows.append(
             f"| {MODELS[c['model']]} | {ALGOS[c['algorithm']]} | {num(m['trustworthiness'])} | "
             f"{num(m['continuity'])} | {num(m['Q_NX'])} | {num(m['B_NX'], True)} | {num(m['B_TC'], True)} | "
-            f"{num(c['silhouette_projected'], True)} | {num(c['silhouette_projected_2d'], True)} |")
+            f"{num(c['silhouette_projected'], True)} |")
     return ":::booktabs[wide]\n" + "\n".join(rows) + "\n:::\n\n" + provenance(r)
 
 
@@ -92,6 +92,7 @@ def figure_curves(r: dict, metric: str, ylabel: str, name: str, caption: str, nu
                     color=COLORS[c["algorithm"]], label=ALGO_PLAIN[c["algorithm"]])
         ax.set_title(mname, fontsize=10, fontweight="bold")
         ax.set_xticks([5, 10, 15, 20])
+        ax.tick_params(labelbottom=True)  # sharex hides the top row's tick labels otherwise
         ax.set_xlabel("$K$") if ax in axes[2:] else None
         if metric == "B_NX":
             ax.axhline(0, color="#555555", linewidth=0.7)
@@ -110,15 +111,14 @@ def figure_curves(r: dict, metric: str, ylabel: str, name: str, caption: str, nu
 def table_sensitivity(s: dict) -> str:
     label = {(a, json.dumps(o, sort_keys=True)): n for a, o, n in [
         ("tsne", {"perplexity": 5.0}, "t-SNE $p=5$"), ("tsne", {"perplexity": 30.0}, "t-SNE $p=30$"), ("umap", {}, "UMAP")]}
-    rows = ["| Model | Configuration | $M_T(10)$ | $B_{NX}(10)$ | $s_{3D}$ | $s_{2D}$ |", "|---|---|---|---|---|---|"]
+    rows = ["| Model | Configuration | $M_T(10)$ | $B_{NX}(10)$ | $s$ |", "|---|---|---|---|---|"]
     for c in s["configs"]:
         m = at_k(c["curves"], K_MAIN)
         name = label[(c["algorithm"], json.dumps(c["overrides"], sort_keys=True))]
         rows.append(
             f"| {MODELS[c['model']]} | {name} | {num(m['trustworthiness']['mean'])} ± {num(m['trustworthiness']['sd'])} | "
             f"{num(m['B_NX']['mean'], True)} ± {num(m['B_NX']['sd'])} | "
-            f"{num(c['silhouette_projected']['mean'], True)} ± {num(c['silhouette_projected']['sd'])} | "
-            f"{num(c['silhouette_projected_2d']['mean'], True)} ± {num(c['silhouette_projected_2d']['sd'])} |")
+            f"{num(c['silhouette_projected']['mean'], True)} ± {num(c['silhouette_projected']['sd'])} |")
     seeds = ", ".join(map(str, s["seeds"]))
     return (":::booktabs[wide]\n" + "\n".join(rows) + "\n:::\n\n"
             f"*Mean ± sample standard deviation over seeds {{{seeds}}}.* " + provenance(s))

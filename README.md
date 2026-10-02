@@ -78,7 +78,7 @@ Given the rank $r_{ij}$ of point $j$ relative to $i$ in high dimension and $\hat
 | **Preservation** $Q_{NX}(K)$ | Overall K-ary neighborhood preservation |
 | **Silhouette** | Separation of the reference linguistic partition in the projected space |
 
-The sign convention of $B_{NX}$ follows the primary source (Lee & Verleysen, 2009, Eq. 22–23). A **per-token decomposition** $B_{NX,i}(K)$ drives the thermal camera, and satisfies the consistency property $B_{NX}(K) = \frac{1}{N}\sum_i B_{NX,i}(K)$, which is checked as an automated test.
+The sign convention of $B_{NX}$ follows the primary source (Lee & Verleysen, 2009, Eq. 22–23). A **per-token decomposition** $B_{NX,i}(K)$ drives the behaviour map, and satisfies the consistency property $B_{NX}(K) = \frac{1}{N}\sum_i B_{NX,i}(K)$, which is checked as an automated test.
 
 ---
 
@@ -100,12 +100,12 @@ The final $N$ is reported as it comes out of the pipeline — it is not inflated
 
 ### Three-layer color system
 
-Precedence: **Probing (3) > Thermal Camera (2) > Reference Partition (1)**.
+Precedence: **Probing (3) > Behaviour Map (2) > Reference Partition (1)**.
 
 | Layer | Colors |
 |---|---|
 | **1 — Reference partition** (default) | Blue = noun · Orange = verb · Teal = function word |
-| **2 — Thermal camera**, local contribution to $B_{NX}(K)$ | Blue/cyan = extrusive · Light grey = neutral · Red/orange = intrusive (fixed global scale $[-1, 1]$) |
+| **2 — Behaviour map**, local contribution to $B_{NX}(K)$ | Blue/cyan = extrusive · Light grey = neutral · Red/orange = intrusive (fixed global scale $[-1, 1]$) |
 | **3 — Neighborhood probing** (selected token only) | Green = true neighbors $T_K$ · Red = false $F_K$ · Translucent blue = missing $M_K$ |
 
 ### Navigation and inspection
@@ -130,7 +130,7 @@ Precedence: **Probing (3) > Thermal Camera (2) > Reference Partition (1)**.
 | **`R` / `F`** | Ascend / descend |
 | **Mouse** | Pitch / yaw |
 | **Scroll** | Zoom |
-| **`T`** | Toggle thermal camera layer *(planned)* |
+| **`T`** | Toggle behaviour map layer *(planned)* |
 | **`H`** | Toggle navigation HUD |
 | **`P`** | Dump diagnostics to the console |
 | **`Esc`** | Release pointer lock |
@@ -208,8 +208,8 @@ The thesis specification is ENSy v2 (see the [implementation plan](docs/ENSy_v2.
 | 0 | Penn Treebank dataset pipeline (`dataset_builder.py`, `POST /api/dataset`) | ⏳ Pending |
 | 0 | Single `BufferGeometry` and canvas-sprite labels | ⏳ Pending |
 | 1 | Co-ranking matrix, Trustworthiness/Continuity (`metrics.py`) | ⏳ Pending |
-| 1 | Synthetic validation of $B_{NX}(K)$ and $B_{NX,i}(K)$ (blocks the thermal camera) | ⏳ Pending |
-| 2 | Thermal camera and neighborhood probing | ⏳ Pending |
+| 1 | Synthetic validation of $B_{NX}(K)$ and $B_{NX,i}(K)$ (blocks the behaviour map) | ⏳ Pending |
+| 2 | Behaviour map and neighborhood probing | ⏳ Pending |
 | 3 | Silhouette and 12-configuration comparison panel | ⏳ Pending |
 
 ---

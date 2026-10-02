@@ -56,17 +56,10 @@ def main():
     sil_hi = [cfg[(m, "pca")]["silhouette_high_dim_cosine"] for m in MODELS]
     print(f"       original-space Silhouette range: {min(sil_hi):.3f}–{max(sil_hi):.3f}  (text: 0.025–0.048)")
     check("original-space range matches text", f"{min(sil_hi):.3f}" == "0.025" and f"{max(sil_hi):.3f}" == "0.048")
-    raised = all(c[f"silhouette_projected{s}"] > c["silhouette_high_dim_cosine"]
-                 for c in main_r["configs"] for s in ("", "_2d"))
-    check("every projection raises the Silhouette (3D and 2D)", raised)
+    raised = all(c["silhouette_projected"] > c["silhouette_high_dim_cosine"] for c in main_r["configs"])
+    check("every projection raises the Silhouette (3D)", raised)
     in_band = sum(0.15 <= c["silhouette_projected"] <= 0.40 for c in main_r["configs"])
     check("most configurations in 0.15–0.40 (3D)", in_band > len(main_r["configs"]) / 2, f"{in_band}/{len(main_r['configs'])}")
-    nl = [(m, a) for m in MODELS for a in NONLINEAR]
-    up = sum(cfg[x]["silhouette_projected_2d"] > cfg[x]["silhouette_projected"] for x in nl)
-    pca_down = sum(cfg[(m, "pca")]["silhouette_projected_2d"] < cfg[(m, "pca")]["silhouette_projected"] for m in MODELS)
-    print(f"       2D > 3D in {up}/16 non-linear configurations (text: 14 of 16); PCA 2D < 3D in {pca_down}/4 (text: 3)")
-    check("2D>3D in all but one or two of 16", up >= 14)
-    check("PCA 2D<3D count matches text", pca_down == 3)
 
     # Neighbourhood preservation by algorithm
     for m in MODELS:

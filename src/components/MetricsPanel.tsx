@@ -23,6 +23,10 @@ export const fmt = (v: number, signed = false) =>
 
 // Same frame as the navigation HUD (BottomHUD): ivory card, black rule, 4px radius, hard shadow.
 const CARD = 'absolute bottom-[16px] right-[16px] z-40 bg-white/95 border border-[#111111] rounded-[4px] shadow-[3px_3px_0px_rgba(0,0,0,1)] font-sans text-[#111111]';
+// The 2D Silhouette is still computed and served (silhouette_projected_2d); the panel reports only
+// the 3D value, which matches the space being viewed. Set to true to show both.
+const SHOW_SILHOUETTE_2D = false;
+
 const NOTE = 'mb-2 border border-[#b45309] bg-[#fffbeb] rounded-[3px] px-2 py-1 text-[11px] text-[#78350f]';
 
 const Swatch: React.FC<{ color: string; label: string; opacity?: number }> = ({ color, label, opacity = 1 }) => (
@@ -69,7 +73,8 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
         <span>Co-ranking (Lee &amp; Verleysen, 2009)</span>
         <Tex className="normal-case font-normal" tex={`N = ${meta.total_tokens}`} />
       </div>
-      <table className="w-full font-times-numbers text-[12.5px]">
+      {/* first/last cells are padded so the highlighted K row has breathing room */}
+      <table className="w-full font-times-numbers text-[12.5px] [&_td]:py-px [&_td:first-child]:pl-1.5 [&_th:first-child]:pl-1.5 [&_td:last-child]:pr-1.5 [&_th:last-child]:pr-1.5">
         <thead>
           <tr className="text-left text-[#555]">
             <th className="font-normal"><Tex tex="K" /></th>
@@ -91,13 +96,16 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
           ))}
         </tbody>
       </table>
-      {[
-        ['3D projection', meta.silhouette_projected],
-        ['2D projection', meta.silhouette_projected_2d],
-      ].map(([label, value]) => (
+      {(SHOW_SILHOUETTE_2D
+        ? [
+            ['Silhouette, reference partition — 3D projection', meta.silhouette_projected],
+            ['Silhouette, reference partition — 2D projection', meta.silhouette_projected_2d],
+          ]
+        : [['Silhouette, reference partition', meta.silhouette_projected]]
+      ).map(([label, value]) => (
         <div key={label as string} className="mt-1 flex justify-between text-[11px]">
           <span title="Complementary measure of class separation in the projected space (Rousseeuw, 1987)">
-            Silhouette, reference partition — {label}
+            {label}
           </span>
           <span className="font-times-numbers">{typeof value === 'number' ? fmt(value, true) : '—'}</span>
         </div>
@@ -111,7 +119,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
       <div className="mt-2 pt-1.5 border-t border-dashed border-[#cccccc] text-[11px] flex flex-col gap-1">
         {colorLayer === 'heat' ? (
           <>
-            <span className="font-bold">Thermal camera — local contribution to <Tex tex={`B_{NX}\\ (K = ${metricK})`} /></span>
+            <span className="font-bold">Behaviour map — local contribution to <Tex tex={`B_{NX}\\ (K = ${metricK})`} /></span>
             <div className="h-2 w-full" style={{ background: 'linear-gradient(to right, #0891b2, #d4d4d8, #ea580c)' }} />
             <div className="flex justify-between font-times-numbers text-[11px]">
               <span>− 1 extrusive</span><span>0</span><span>intrusive + 1</span>
@@ -128,7 +136,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
           <div className="flex gap-3 flex-wrap">
             <Swatch color="#16a34a" label="true" />
             <Swatch color="#dc2626" label="false" />
-            <Swatch color="#3b82f6" label="missing" opacity={0.45} />
+            <Swatch color="#3b82f6" label="missing" opacity={0.6} />
             <span className="text-[#555]"><Tex tex={`K = ${metricK}`} /> neighbours of target</span>
           </div>
         )}

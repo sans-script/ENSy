@@ -22,6 +22,8 @@ body {
   font-style: italic;
   font-size: 13px;
   color: #111111;
+  /* white halo: a word stays legible over dots of its own colour */
+  text-shadow: 0 0 2px #ffffff, 0 0 2px #ffffff, 0 0 1px #ffffff;
   transition: opacity 0.08s ease, font-size 0.08s ease;
 }
 
@@ -29,8 +31,15 @@ body {
 .highlighted-acad {
   font-size: 18px !important;
   font-weight: bold !important;
-  text-decoration: underline !important;
   z-index: 10000 !important;
+  /* the aimed word: dark text on a white chip, its dot's colour kept on the stripe */
+  color: #111111 !important;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #111111;
+  border-left: 4px solid var(--dot, #111111);
+  border-radius: 3px;
+  padding: 0 5px 1px 4px;
+  text-shadow: none;
 }
 
 /* Absolute math axes labels */

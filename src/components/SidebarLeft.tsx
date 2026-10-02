@@ -223,8 +223,8 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                 { value: 'category', label: 'Reference partition', text: 'Reference partition' },
                 {
                   value: 'heat',
-                  label: <>Thermal <Tex tex="B_{NX,i}\ (K)" /></>,
-                  text: 'Thermal camera B_NX,i(K)',
+                  label: <>Behaviour <Tex tex="B_{NX,i}\ (K)" /></>,
+                  text: 'Behaviour map B_NX,i(K)',
                 },
               ]}
             />
