@@ -472,7 +472,7 @@ values of Section~\ref{sec:results} (see Section~\ref{sec:limitations}).
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig01_workspace.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig01_workspace.png}
 \caption{The ENSy workspace (Qwen 2.5, UMAP, isometric view). Left: model,
 projection, colour layer and K selectors, camera optics and live
 profiling. Centre: the 438 tokens, coloured by the reference partition.
@@ -513,7 +513,7 @@ translucent blue) neighbours.
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig04_behaviour_k10.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig04_behaviour_k10.png}
 \caption{Behaviour map on Qwen 2.5 with t-SNE (perplexity 5), \(K = 10\)
 (viewport only, grid planes off): each token's local contribution to
 \(B_{NX}(10)\) on the fixed scale \([-1, 1]\).}
@@ -522,7 +522,7 @@ translucent blue) neighbours.
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig06_probing.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig06_probing.png}
 \caption{Neighbourhood probing after flying towards a token (BERT, UMAP,
 \(K = 10\); viewport only, grid planes off). Green: genuine neighbours
 kept by the projection; red: false neighbours introduced by it;
@@ -544,7 +544,7 @@ omitted from the figures of this paper.
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig08_metrics_panel.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig08_metrics_panel.png}
 \caption{Co-ranking panel for GPT-2 with Isomap: \(M_T\), \(M_C\), \(Q_{NX}\) and
 \(B_{NX}\) over \(K\), and the Silhouette of the reference partition.}
 \label{fig:metrics-panel}
@@ -621,7 +621,7 @@ BERT base & 768 & $+0.025$ & 11.0\% \\
 % BEGIN:curves_mt
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{figures/curves_trustworthiness.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{figures/curves_trustworthiness.png}
 \caption{Trustworthiness $M_T(K)$ over $K$ for every model and projection configuration.}\label{fig:curves-trustworthiness}
 \end{figure*}
 % END:curves_mt
@@ -629,7 +629,7 @@ BERT base & 768 & $+0.025$ & 11.0\% \\
 % BEGIN:curves_bnx
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{figures/curves_bnx.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{figures/curves_bnx.png}
 \caption{Behaviour indicator $B_{NX}(K)$ over $K$ (positive: intrusive; negative: extrusive). With perplexity 30, t-SNE is below zero at every $K$ in all four models; with perplexity 5 it is above zero for Qwen, Gemma 2 and GPT-2 and close to zero for BERT.}\label{fig:curves-bnx}
 \end{figure*}
 % END:curves_bnx
@@ -644,63 +644,63 @@ Colours: indigo nouns, ochre verbs, magenta function words.
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig02_pca.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig02_pca.png}
 \caption{Gemma 2 2B --- PCA (centred).}
 \label{fig:pca}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig02_tsne.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig02_tsne.png}
 \caption{Gemma 2 2B --- t-SNE, perplexity 5.}
 \label{fig:tsne}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig02_tsne_p30.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig02_tsne_p30.png}
 \caption{Gemma 2 2B --- t-SNE, perplexity 30.}
 \label{fig:tsne-p30}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig02_umap.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig02_umap.png}
 \caption{Gemma 2 2B --- UMAP.}
 \label{fig:umap}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig02_isomap.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig02_isomap.png}
 \caption{Gemma 2 2B --- Isomap.}
 \label{fig:isomap}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig03_qwen.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig03_qwen.png}
 \caption{Qwen 2.5 0.5B-Instruct --- UMAP.}
 \label{fig:qwen}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig03_gemma2.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig03_gemma2.png}
 \caption{Gemma 2 2B --- UMAP.}
 \label{fig:gemma2}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig03_gpt2.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig03_gpt2.png}
 \caption{GPT-2 --- UMAP.}
 \label{fig:gpt2}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig03_bert.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig03_bert.png}
 \caption{BERT base uncased --- UMAP.}
 \label{fig:bert}
 \end{figure*}
@@ -871,14 +871,14 @@ hash prefix.
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig05_behaviour_k20.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig05_behaviour_k20.png}
 \caption{Behaviour map for the same projection as Fig.~\ref{fig:behaviour-k10} at \(K = 20\).}
 \label{fig:behaviour-k20}
 \end{figure*}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig11_front.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig11_front.png}
 \caption{Front (XY) camera preset with the parallel (orthographic) camera on the
 PCA projection of Qwen 2.5; grid-plane backgrounds off.}
 \label{fig:front}
@@ -886,7 +886,7 @@ PCA projection of Qwen 2.5; grid-plane backgrounds off.}
 
 \begin{figure*}[tp]
 \centering
-\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{screenshots/fig12_top.png}
+\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig12_top.png}
 \caption{Top (XZ) camera preset with the parallel (orthographic) camera on the
 PCA projection of Qwen 2.5; grid-plane backgrounds off.}
 \label{fig:top}

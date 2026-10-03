@@ -135,7 +135,7 @@ def figure_curves(r: dict, metric: str, ylabel: str, name: str, caption: str) ->
     fig.savefig(out, dpi=200)  # keep the exact 16:9 canvas
     plt.close(fig)
     return "\n".join([r"\begin{figure*}[tp]", r"\centering",
-                      rf"\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio,frame]{{figures/{name}.png}}",
+                      rf"\includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{{figures/{name}.png}}",
                       rf"\caption{{{caption}}}\label{{fig:{name.replace('_', '-')}}}", r"\end{figure*}"])
 
 
