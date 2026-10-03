@@ -183,21 +183,27 @@ python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 ```
 
-> **Gemma 2B is a gated model.** Accept its license on Hugging Face and authenticate (`huggingface-cli login`) before starting the server.
+> **Gemma 2 is a gated model.** Accept its licence at
+> [huggingface.co/google/gemma-2-2b](https://huggingface.co/google/gemma-2-2b), copy `.env.example`
+> to `.env` (git-ignored) and set `HF_TOKEN=hf_...` there.
 
 ```bash
-# Frontend (Vite, http://localhost:5173) + backend (FastAPI, http://127.0.0.1:3000)
-npm run dev:all
+# Backend (FastAPI, http://localhost:3000) + frontend (Vite, http://localhost:5173)
+python start.py            # or: npm start
+python start.py --backend-only   # the backend alone also serves the built frontend (npm run build)
 ```
 
-Or separately: `npm run dev` and `npm run dev:backend`.
+`start.py` loads `.env`, checks that ports 3000 and 5173 are free, waits for the backend to be
+healthy before starting Vite, prefixes each server's log with `[backend]` / `[frontend]`, and stops
+both (child processes included) on Ctrl+C. Separately: `npm run dev:backend` and `npm run dev`.
 
 | Script | Purpose |
 |---|---|
 | `npm run lint` | TypeScript type check |
 | `npm test` | Full Pytest suite |
 | `npm run test:api` | API contract tests |
-| `npm run docs:pdf` | Regenerate `docs/DOCS.pdf` |
+| `npm start` | Start the backend and the frontend (`start.py`) |
+| `npm run docs:pdf` | Rebuild `docs/DOCS.pdf` from `docs/DOCS.tex` |
 
 ---
 

@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "start": ".venv\\Scripts\\python.exe start.py",
     "dev": "vite --host 0.0.0.0",
     "dev:backend": ".venv\\Scripts\\python.exe app.py",
-    "dev:all": "concurrently -k -r \".venv\\Scripts\\python.exe app.py\" \"vite --host 0.0.0.0\"",
     "preview": ".venv\\Scripts\\python.exe app.py",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
