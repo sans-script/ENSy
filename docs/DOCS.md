@@ -41,7 +41,7 @@ $$
 \cos\theta = \frac{u^\top v}{\|u\|\,\|v\|},
 $$
 
-and cosine distance is $1 - \cos\theta$. All vectors are $L_2$-normalised, $\hat u = u/\|u\|$, so that
+and cosine distance is $1 - \cos\theta$. All vectors are $L_2$-normalised, $\hat u = \frac{u}{\|u\|}$, so that
 
 $$
 \|\hat u - \hat v\|^2 = 2\,(1 - \cos\theta),
@@ -83,7 +83,7 @@ $$
 M_C(K) = 1 - \frac{2}{G_K}\sum_{(k,l)\in UR_K}(l-K)\,q_{kl},
 $$
 
-with $G_K = NK(2N-3K-1)$ for $K < N/2$.
+with $G_K = NK(2N-3K-1)$ for $K < \frac{N}{2}$.
 
 **Overall quality and behaviour.** Following Lee and Verleysen [1, Eqs. 22–25],
 
@@ -99,7 +99,7 @@ $$
 B_{NX}(K) = U_X(K) - U_N(K).
 $$
 
-$Q_{NX}(K)$ is the average fraction of shared $K$-neighbours and equals the local continuity meta-criterion of Chen and Buja [12] up to the baseline $K/(N-1)$. An earlier conference version of the framework [13] attaches the names $U_N$ and $U_X$ to the opposite triangles while yielding the same value of $B_{NX}$; the definitions above follow the journal version. $B_{NX}(K)$ is, in the authors' words, "positive for intrusive embeddings and negative for extrusive ones" [1, p. 1434]. The sign looks inverted only at first sight: a single hard intrusion pushes every subsequent genuine neighbour one rank down, producing $(K - r_{ij})$ mild extrusions, so the number of mild extrusions measures the severity of the intrusions [1, Fig. 2]. The same paper defines a second behaviour indicator, $B_{TC}(K) = M_C(K) - M_T(K)$ (Eq. 27), which weights hard events instead of counting mild ones; both are reported.
+$Q_{NX}(K)$ is the average fraction of shared $K$-neighbours and equals the local continuity meta-criterion of Chen and Buja [12] up to the baseline $\frac{K}{N-1}$. An earlier conference version of the framework [13] attaches the names $U_N$ and $U_X$ to the opposite triangles while yielding the same value of $B_{NX}$; the definitions above follow the journal version. $B_{NX}(K)$ is, in the authors' words, "positive for intrusive embeddings and negative for extrusive ones" [1, p. 1434]. The sign looks inverted only at first sight: a single hard intrusion pushes every subsequent genuine neighbour one rank down, producing $(K - r_{ij})$ mild extrusions, so the number of mild extrusions measures the severity of the intrusions [1, Fig. 2]. The same paper defines a second behaviour indicator, $B_{TC}(K) = M_C(K) - M_T(K)$ (Eq. 27), which weights hard events instead of counting mild ones; both are reported.
 
 **Per-token decomposition.** Since $q_{kl} = \sum_i q_{kl}^{(i)}$, applying the same masks to the counts of a single point $i$ gives
 
@@ -111,7 +111,7 @@ $$
 B_{NX}(K) = \frac{1}{N}\sum_{i=1}^{N} B_{NX,i}(K),
 $$
 
-with $|B_{NX,i}(K)| \le (K-1)/K$. ENSy's behaviour map displays this quantity, which is the token's net contribution to intrusive or extrusive behaviour, not a general "local distortion".
+with $|B_{NX,i}(K)| \le \frac{K-1}{K}$. ENSy's behaviour map displays this quantity, which is the token's net contribution to intrusive or extrusive behaviour, not a general "local distortion".
 
 ### 2.4 Silhouette
 
@@ -198,9 +198,9 @@ Before any result was produced, the metric code was validated by an automated su
 
 - $M_T$ and $M_C$ coincide with `sklearn.manifold.trustworthiness` [22] (applied in both directions) to $10^{-12}$ for every $K$;
 - every row and column of $Q$ sums to $N$, and hard intrusions equal hard extrusions;
-- **synthetic rank permutations**: identity gives $B_{NX}=0$ and $M_T=M_C=Q_{NX}=1$; promoting one item from rank $m$ to rank 1 gives exactly $B_{NX,i} = (m-2)/K > 0$; demoting rank 1 to $m$ gives $-(m-2)/K$; a single swap gives $U_N = U_X = 1/(KN)$;
+- **synthetic rank permutations**: identity gives $B_{NX}=0$ and $M_T=M_C=Q_{NX}=1$; promoting one item from rank $m$ to rank 1 gives exactly $B_{NX,i} = \frac{m-2}{K} > 0$; demoting rank 1 to $m$ gives $-\frac{m-2}{K}$; a single swap gives $U_N = U_X = \frac{1}{KN}$;
 - **sign anchor**: a sphere crushed by orthographic projection (a textbook intrusive map) yields $B_{TC} > 0$ and $B_{NX} > 0$; a sphere torn open yields both negative;
-- the mean of $B_{NX,i}(K)$ equals $B_{NX}(K)$ to $10^{-12}$, and $|B_{NX,i}| \le (K-1)/K$.
+- the mean of $B_{NX,i}(K)$ equals $B_{NX}(K)$ to $10^{-12}$, and $|B_{NX,i}| \le \frac{K-1}{K}$.
 
 ## 4. The ENSy instrument
 
