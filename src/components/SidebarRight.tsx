@@ -26,8 +26,9 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, m
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <aside className="w-[340px] h-full border-l border-[#111111] bg-[#fcfcfc] flex flex-col justify-between p-[18px] overflow-y-auto shrink-0 select-none font-sans text-[#111111]">
-      <div className="flex flex-col h-full overflow-hidden" ref={containerRef}>
+    <aside className="w-[340px] h-full border-l border-[#111111] bg-[#fcfcfc] flex flex-col p-[18px] overflow-hidden shrink-0 select-none font-sans text-[#111111]">
+      {/* the inspector scrolls; the Projector export and the footer stay pinned below it */}
+      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto pr-1 -mr-1" ref={containerRef}>
         <span className="block font-serif text-[14px] font-bold uppercase tracking-[0.5px] border-b border-[#111111] pb-[4px] mb-[12px] text-black shrink-0">
           Manifold Vector Analysis
         </span>
@@ -38,7 +39,7 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, m
             Align the central mathematical reticle with a vector point to map its local neighbors.
           </div>
         ) : (
-          <div className="flex-1 flex flex-col gap-3.5 min-h-0">
+          <div className="flex flex-col gap-3.5">
             {/* Vector Equation and Matrix */}
             <div className="matrix-math flex flex-col items-center justify-center text-[22px] text-black my-1 shrink-0 min-h-[110px]">
               <Tex
@@ -85,12 +86,12 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, m
             </div>
 
             {/* Nearest Neighbors section */}
-            <div className="mt-1 flex-1 flex flex-col min-h-0">
+            <div className="mt-1 flex flex-col">
               <span className="block font-serif text-[13px] font-bold uppercase tracking-[0.3px] border-b border-dashed border-[#cccccc] pb-[4px] mb-[10px] text-black shrink-0">
                 Nearest Neighbours (cosine, <Tex className="normal-case" tex="\mathbb{R}^n" />)
               </span>
               
-              <div className="flex-1 overflow-y-auto mb-2 pr-1">
+              <div className="mb-2">
                 <table className="w-full border-collapse">
                   <tbody>
                     {activeNode.top5_neighbors.map((neighbor, index) => (

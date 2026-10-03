@@ -1175,8 +1175,6 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       const label = tokenLabelByIdRef.current.get(node.id!);
       if (label) {
         label.dom.style.color = labelColor ?? `#${tmp.getHexString()}`;
-        // the aimed word is drawn dark; this keeps the dot's colour on its underline
-        label.dom.style.setProperty("--dot", `#${tmp.getHexString()}`);
         label.dom.dataset.dim = alpha < 0.5 && h.visible ? "1" : "0";
       }
     });
@@ -2156,13 +2154,9 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = LABEL_HALO;
         ctx.strokeText(text, x, p.y);
-        // the aimed word is dark so it never matches its dot; its underline keeps the dot's colour
+        // the aimed word is bold and dark so it never matches its dot
         ctx.fillStyle = aimed ? "#111111" : p.dom.style.color || "#111111";
         ctx.fillText(text, x, p.y);
-        if (aimed) {
-          ctx.fillStyle = p.dom.style.getPropertyValue("--dot") || "#111111";
-          ctx.fillRect(x, p.y + size * 0.55, unitWidth(text, true) * size, 2);
-        }
       }
       ctx.globalAlpha = 1;
     }
