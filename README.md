@@ -150,7 +150,7 @@ React 19 + TypeScript + Three.js  ──HTTP──▶  FastAPI + Uvicorn (port 3
 - **Frontend:** React 19, TypeScript, Vite, Three.js, Tailwind CSS, Motion, Lucide React, MathJax 3
 - **Backend:** FastAPI, Uvicorn, PyTorch, Transformers, scikit-learn, umap-learn, NumPy, SciPy
 - **Testing:** Pytest, Playwright (API contract and screenshot tests)
-- **Docs:** Markdown → PDF with Playwright + MathJax (`docs/md_to_pdf.py`)
+- **Docs:** Markdown → PDF (`docs/md_to_pdf.py`): IEEE style via pandoc + the IEEEtran LaTeX class + Tectonic (downloaded into `.tools/` on first use); `--style default` / `ieee-html` use Playwright + MathJax
 
 Models load in a background thread at startup. If the backend is unreachable, the frontend falls back to the static dataset in `src/data/semanticSpace.ts`.
 

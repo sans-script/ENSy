@@ -708,15 +708,19 @@ def postprocess_heading_hyphens(html: str) -> str:
 
 # ── Document styles ─────────────────────────────────────────────────────────
 # "default": the ENSy look (EB Garamond, running header, automatic columns).
-# "ieee":    the IEEE conference template for A4 — Times (Tinos), margins
-#            19/43/14.32 mm, the whole body in two columns 4.22 mm apart, Roman
-#            level-1 and lettered level-2 headings, "Abstract—" / "Keywords—",
-#            TABLE I captions above tables, numbered equations, 8 pt captions
-#            and references, and no headers, footers or page numbers.
+# "ieee":    typeset by LaTeX with the official IEEEtran class (conference,
+#            A4): the markdown is converted by pandoc with docs/ieee/ieee.lua
+#            and docs/ieee/template.tex, then compiled by Tectonic. Floats go
+#            to the top of pages and columns fill top to bottom, as in IEEE.
+# "ieee-html": an approximation of the same template in the HTML pipeline —
+#            Times (Tinos), margins 19/43/14.32 mm, two columns 4.22 mm apart,
+#            Roman / lettered headings, "Abstract—" / "Keywords—", TABLE I
+#            captions, numbered equations, no headers, footers or page numbers.
+#            Browsers have no floats, so full-width figures stay in the flow.
 # A document picks its style with a line <!-- md_to_pdf: style=ieee -->;
 # --style on the command line overrides it.
-STYLES = ("default", "ieee")
-_STYLE_DIRECTIVE = re.compile(r'<!--\s*md_to_pdf:\s*style\s*=\s*(\w+)\s*-->')
+STYLES = ("default", "ieee", "ieee-html")
+_STYLE_DIRECTIVE = re.compile(r'<!--\s*md_to_pdf:\s*style\s*=\s*([\w-]+)\s*-->')
 CURRENT_STYLE = "default"   # set by build_html(), read by convert_to_pdf()
 
 _ROMAN_NUMERALS = [(1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"), (90, "XC"),
@@ -893,7 +897,7 @@ def postprocess_table_captions(html: str, style: str) -> str:
     def caption(m: re.Match) -> str:
         nonlocal count
         count += 1
-        if style == "ieee":
+        if style == "ieee-html":
             label = f'<span class="table-label">Table {_roman(count)}</span>'
         else:
             label = f'<strong class="table-label">Table {count}.</strong> '
@@ -1021,7 +1025,7 @@ def build_html(input_path: str = DOCS_MD_PATH,
         raise ValueError(f"unknown style '{style}' (choose from {', '.join(STYLES)})")
     CURRENT_STYLE = style
     print(f"[OK] Style: {style}")
-    if style == "ieee":
+    if style == "ieee-html":
         md_content = ieee_preprocess(md_content)
 
     # --- Pre-processing pipeline (order matters) ---
@@ -1075,7 +1079,7 @@ def build_html(input_path: str = DOCS_MD_PATH,
 
     # Post-process: numbered captions above tables ("Table: ..." paragraphs)
     html_body = postprocess_table_captions(html_body, style)
-    if style == "ieee":
+    if style == "ieee-html":
         html_body = ieee_postprocess(html_body)
 
     html_template = f"""<!DOCTYPE html>
@@ -1088,7 +1092,7 @@ def build_html(input_path: str = DOCS_MD_PATH,
 <script>
 window.MathJax = {{
   tex: {{
-    tags: '{"all" if style == "ieee" else "ams"}',
+    tags: '{"all" if style == "ieee-html" else "ams"}',
     tagSide: 'right',
     tagIndent: '0.8em',
     inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
@@ -1814,10 +1818,10 @@ p.reference {{
   break-inside: avoid;
   page-break-inside: avoid;
 }}
-{IEEE_CSS.format() if style == "ieee" else ""}
+{IEEE_CSS.format() if style == "ieee-html" else ""}
 </style>
 </head>
-<body{' class="ieee"' if style == "ieee" else ''}>
+<body{' class="ieee"' if style == "ieee-html" else ''}>
 {html_body}
 </body>
 </html>
@@ -1988,10 +1992,10 @@ def convert_to_pdf(html_path: str = TEMP_HTML_PATH,
             # IEEE: A4 conference margins; page numbers, headers and footers are not used
             margin=(
                 {"top": "19mm", "bottom": "43mm", "left": "14.32mm", "right": "14.32mm"}
-                if CURRENT_STYLE == "ieee" else
+                if CURRENT_STYLE == "ieee-html" else
                 {"top": "22mm", "bottom": "22mm", "left": "20mm", "right": "20mm"}
             ),
-            display_header_footer=CURRENT_STYLE != "ieee",
+            display_header_footer=CURRENT_STYLE != "ieee-html",
             header_template=f"""
             {header_font_style}
             <div style="width:100%; font-family:'EB Garamond',Georgia,serif;
@@ -2091,6 +2095,218 @@ def render_pdf(html_path: str = TEMP_HTML_PATH,
     convert_to_pdf(html_path, pdf_path, cleanup)
 
 
+# ── IEEE via LaTeX ──────────────────────────────────────────────────────────
+IEEE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ieee")
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TECTONIC_VERSION = "0.17.0"
+
+
+def ensure_tectonic() -> str:
+    """Path to a Tectonic binary: on PATH, or downloaded once into <repo>/.tools/."""
+    import shutil
+    found = shutil.which("tectonic")
+    if found:
+        return found
+    exe = "tectonic.exe" if os.name == "nt" else "tectonic"
+    local = os.path.join(REPO_DIR, ".tools", "tectonic", exe)
+    if os.path.exists(local):
+        return local
+    import platform
+    import urllib.request
+    import zipfile
+    import tarfile
+    import io
+    machine = platform.machine().lower()
+    arch = "aarch64" if machine in ("arm64", "aarch64") else "x86_64"
+    if os.name == "nt":
+        asset = f"tectonic-{TECTONIC_VERSION}-{arch}-pc-windows-msvc.zip"
+    elif sys.platform == "darwin":
+        asset = f"tectonic-{TECTONIC_VERSION}-{arch}-apple-darwin.tar.gz"
+    else:
+        asset = f"tectonic-{TECTONIC_VERSION}-{arch}-unknown-linux-musl.tar.gz"
+    url = ("https://github.com/tectonic-typesetting/tectonic/releases/download/"
+           f"tectonic%40{TECTONIC_VERSION}/{asset}")
+    print(f"[*] Downloading Tectonic {TECTONIC_VERSION} into .tools/ ...")
+    data = urllib.request.urlopen(url, timeout=120).read()
+    os.makedirs(os.path.dirname(local), exist_ok=True)
+    if asset.endswith(".zip"):
+        zipfile.ZipFile(io.BytesIO(data)).extractall(os.path.dirname(local))
+    else:
+        tarfile.open(fileobj=io.BytesIO(data)).extractall(os.path.dirname(local))
+    os.chmod(local, 0o755)
+    return local
+
+
+def _pandoc_path() -> str:
+    import shutil
+    found = shutil.which("pandoc")
+    if found:
+        return found
+    try:
+        import pypandoc
+        return pypandoc.get_pandoc_path()
+    except Exception as exc:  # pragma: no cover - environment dependent
+        raise RuntimeError("pandoc not found: pip install pypandoc_binary") from exc
+
+
+def _yaml_block(key: str, value) -> str:
+    def scalar(v: str, indent: str) -> str:
+        return "|\n" + "\n".join(indent + line for line in v.strip().splitlines())
+    if isinstance(value, list):
+        return f"{key}:\n" + "\n".join(f"  - {scalar(v, '    ')}" for v in value)
+    return f"{key}: {scalar(value, '  ')}"
+
+
+def ieee_latex_markdown(md: str) -> str:
+    """
+    Rewrite ENSy markdown into plain pandoc markdown for the IEEEtran route:
+    front matter into metadata, numbered headings into labelled ones, figures
+    into implicit figures, booktabs blocks into captioned table divs, [n]
+    citations into \\cite and "Section 5.4" into \\ref.
+    """
+    md = _STYLE_DIRECTIVE.sub("", md)
+    md = re.sub(r'---columns\{[^}]*\}---|---/columns---', '', md)
+    md = re.sub(r'(?im)^[ \t]*(?::::+page-?break|---page-?break---|<!--\s*page-?break\s*-->)[ \t]*$', '', md)
+    md = re.sub(r'<!--\s*(?:BEGIN|END):[^>]*-->[ \t]*\n?', '', md)
+    md = re.sub(r'(?m)^---[ \t]*$', '', md)
+
+    meta: dict = {}
+    m = re.search(r'(?m)^# (.+)$', md)
+    if m:
+        meta["title"] = m.group(1).strip()
+        md = md[:m.start()] + md[m.end():]
+    m = re.search(r'(?m)^(?:\*\*[^*\n]+:\*\*[^\n]*\n?)+', md)
+    if m and m.start() < md.find("## "):
+        pairs = re.findall(r'\*\*([^*:]+):\*\*\s*(.*?)\s*$', m.group(0), re.M)
+        fields = {k.strip().lower(): v.strip() for k, v in pairs}
+        meta["author"] = fields.pop("author", fields.pop("authors", ""))
+        affil = [fields.pop(k) for k in ("program", "department", "institution", "affiliation") if k in fields]
+        rest = " · ".join((v if k == "date" else f"{k.title()} {v}") for k, v in fields.items() if v)
+        meta["affiliation"] = affil + ([rest] if rest else [])
+        md = md[:m.start()] + md[m.end():]
+    m = re.search(r'(?ms)^## Abstract[ \t]*\n+(.*?)\n\s*\n', md)
+    if m:
+        meta["abstract"] = m.group(1).strip()
+        md = md[:m.start()] + md[m.end():]
+    m = re.search(r'(?m)^\*\*(?:Keywords|Index Terms):?\*\*:?\s*(.+)$', md)
+    if m:
+        meta["keywords"] = m.group(1).strip().rstrip(".")
+        md = md[:m.start()] + md[m.end():]
+
+    # headings: drop manual numbers, keep them as labels for \\ref
+    md = re.sub(r'(?m)^## (\d+)\.\s+(.+?)\s*$', lambda h: f'## {h[2]} {{#sec:{h[1]}}}', md)
+    md = re.sub(r'(?m)^### (\d+)\.(\d+)\.?\s+(.+?)\s*$', lambda h: f'### {h[3]} {{#sec:{h[1]}.{h[2]}}}', md)
+    first = True
+
+    def appendix(h: re.Match) -> str:
+        nonlocal first
+        prefix = "```{=latex}\n\\appendices\n```\n\n" if first else ""
+        first = False
+        return f"{prefix}## {h[1]}"
+    md = re.sub(r'(?m)^## Appendix [A-Z]:\s*(.+?)\s*$', appendix, md)
+
+    # figures (raw HTML and markdown + italic caption) become implicit figures
+    md = re.sub(
+        r'<figure[^>]*>\s*<img src="([^"]+)"[^>]*>\s*<figcaption>\s*(?:<strong[^>]*>[^<]*</strong>)?\s*(.*?)\s*</figcaption>\s*</figure>',
+        lambda f: f'\n\n![{f[2]}]({f[1]})\n\n', md, flags=re.S)
+    md = re.sub(
+        r'!\[[^\]]*\]\((?P<src>[^)]+)\)\s*\n+_(?:Figure|Fig\.?)\s*\d+\s*:\s*(?P<cap>.+?)_\s*(?=\n\n|\n[#!\-\*\d]|\Z)',
+        lambda f: f'\n\n![{f["cap"].strip()}]({f["src"]})\n\n', md, flags=re.S)
+
+    # tables: caption above, italic note after -> inside one div
+    def table(t: re.Match) -> str:
+        cls = ".booktabs .wide" if (t["mode"] or "").lower() == "wide" else ".booktabs"
+        cap = f'Table: {t["cap"].strip()}\n\n' if t["cap"] else ""
+        note = f'\n\n{t["note"].strip()}' if t["note"] else ""
+        return f'::: {{{cls}}}\n{cap}{t["body"].strip()}{note}\n:::\n'
+    md = re.sub(
+        r'(?:Table:[ \t]*(?P<cap>[^\n]+)\n\s*\n)?:::booktabs(?:\[(?P<mode>\w+)\])?[ \t]*\n(?P<body>.*?)\n:::[ \t]*\n'
+        r'(?:\s*\n(?P<note>[*_](?![*_]\s)[^\n]*(?:\n(?!\n)[^\n]*)*))?',
+        table, md, flags=re.S)
+
+    # references: "[n] ..." entries after "## References" become a bibliography div
+    head, sep, refs = md.partition("\n## References")
+    if sep:
+        entries = [e.strip() for e in re.split(r'\n\s*\n', refs) if re.match(r'\s*\[\d+\]', e)]
+        md = head + '\n\n::: {#ieee-refs}\n' + "\n\n".join(entries) + '\n:::\n'
+        body_end = len(head)
+    else:
+        body_end = len(md)
+
+    # citations and section references in the body, outside code and math
+    def rewrite(text: str) -> str:
+        text = re.sub(r'\[(\d+)((?:,\s*[^\]\d\s][^\]]*)?)\]',
+                      lambda c: (f'`\\cite[{c[2].lstrip(", ").strip()}]{{r{c[1]}}}`{{=latex}}' if c[2]
+                                 else f'`\\cite{{r{c[1]}}}`{{=latex}}'), text)
+        text = re.sub(r'\bSection(s?) (\d+(?:\.\d+)?)\b(?!\.\d)',
+                      lambda r: f'`Section{r[1]}~\\ref{{sec:{r[2]}}}`{{=latex}}', text)
+        return text
+    parts = re.split(r'(```.*?```|`[^`\n]*`|\$\$.*?\$\$|\$[^$\n]*\$|\{#sec:[^}]*\})', md[:body_end], flags=re.S)
+    for i in range(0, len(parts), 2):
+        parts[i] = rewrite(parts[i])
+    md = "".join(parts) + md[body_end:]
+
+    yaml = "---\n" + "\n".join(_yaml_block(k, v) for k, v in meta.items() if v) + "\n---\n\n"
+    return yaml + md
+
+
+def build_ieee_pdf(input_path: str, output_path: str, keep: bool = False) -> None:
+    """Markdown -> pandoc (IEEEtran template + filter) -> LaTeX -> Tectonic -> PDF."""
+    import subprocess
+    import shutil
+    with open(input_path, encoding="utf-8") as f:
+        md = f.read()
+    docs_dir = os.path.dirname(os.path.abspath(input_path))
+    build_dir = os.path.join(docs_dir, ".ieee-build")
+    os.makedirs(build_dir, exist_ok=True)
+    stem = os.path.splitext(os.path.basename(output_path))[0]
+    md_path = os.path.join(build_dir, stem + ".md")
+    tex_path = os.path.join(build_dir, stem + ".tex")
+    with open(md_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(ieee_latex_markdown(md))
+
+    subprocess.run([
+        _pandoc_path(), md_path, "-f", "markdown", "-t", "latex",
+        "--template", os.path.join(IEEE_DIR, "template.tex"),
+        "--lua-filter", os.path.join(IEEE_DIR, "ieee.lua"),
+        "--shift-heading-level-by=-1",
+        "-V", "resource-dir=" + docs_dir.replace("\\", "/"),
+        "-o", tex_path,
+    ], check=True)
+    print(f"[OK] LaTeX generated: {tex_path}")
+
+    result = subprocess.run([ensure_tectonic(), "-X", "compile", "--keep-logs", "--outdir", build_dir, tex_path],
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if result.returncode != 0:
+        print(result.stdout[-4000:], result.stderr[-4000:])
+        raise RuntimeError(f"Tectonic failed; see {os.path.join(build_dir, stem + '.log')}")
+    shutil.copyfile(os.path.join(build_dir, stem + ".pdf"), output_path)
+    if not keep:
+        for ext in (".md", ".tex", ".log", ".pdf"):
+            try:
+                os.remove(os.path.join(build_dir, stem + ext))
+            except OSError:
+                pass
+    print(f"[SUCCESS] PDF created: {output_path}")
+
+
+def build_document(input_path: str, output_path: str, temp_html: str,
+                   cleanup: bool = True, style: str | None = None) -> None:
+    """Build the PDF in the requested style (or the one the document declares)."""
+    global CURRENT_STYLE
+    if style is None:
+        with open(input_path, encoding="utf-8") as f:
+            directive = _STYLE_DIRECTIVE.search(f.read())
+        style = directive.group(1).lower() if directive else "default"
+    if style == "ieee":
+        CURRENT_STYLE = style
+        print("[OK] Style: ieee (LaTeX / IEEEtran)")
+        build_ieee_pdf(input_path, output_path, keep=not cleanup)
+        return
+    build_html(input_path=input_path, output_path=temp_html, style=style)
+    render_pdf(html_path=temp_html, pdf_path=output_path, cleanup=cleanup)
+
+
 def watch_mode(input_path: str, output_path: str, cleanup: bool = True) -> None:
     """
     Watch for file modifications in input_path, docs directory, scripts,
@@ -2130,8 +2346,7 @@ def watch_mode(input_path: str, output_path: str, cleanup: bool = True) -> None:
 
     # Initial build
     try:
-        build_html(input_path=input_path, output_path=temp_html)
-        render_pdf(html_path=temp_html, pdf_path=output_path, cleanup=cleanup)
+        build_document(input_path, output_path, temp_html, cleanup)
     except Exception as exc:
         print(f"[ERROR] Initial compilation failed: {exc}")
 
@@ -2151,8 +2366,7 @@ def watch_mode(input_path: str, output_path: str, cleanup: bool = True) -> None:
                 print(f"\n[{now_str}] [WATCH] Change detected in {changed_names} — Rebuilding PDF...")
                 time.sleep(0.3)  # Debounce
                 try:
-                    build_html(input_path=input_path, output_path=temp_html)
-                    render_pdf(html_path=temp_html, pdf_path=output_path, cleanup=cleanup)
+                    build_document(input_path, output_path, temp_html, cleanup)
                     print(f"[{now_str}] [SUCCESS] PDF updated: {output_path}")
                 except Exception as exc:
                     print(f"[{now_str}] [ERROR] Rebuild failed: {exc}")
@@ -2208,12 +2422,8 @@ def main() -> None:
         input_dir  = os.path.dirname(os.path.abspath(args.input))
         temp_html  = os.path.join(input_dir, "temp_docs.html")
 
-        build_html(input_path=args.input, output_path=temp_html, style=args.style)
-        render_pdf(
-            html_path=temp_html,
-            pdf_path=args.output,
-            cleanup=not args.no_cleanup,
-        )
+        build_document(args.input, args.output, temp_html,
+                       cleanup=not args.no_cleanup, style=args.style)
 
 
 if __name__ == "__main__":

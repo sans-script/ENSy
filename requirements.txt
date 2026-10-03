@@ -20,3 +20,6 @@ pytest-asyncio==0.24.0
 playwright==1.48.0
 Pillow==11.0.0
 pixelmatch==0.3.0
+# ─── Documentation (docs/md_to_pdf.py --style ieee) ──────────
+# pandoc binary; Tectonic is downloaded into .tools/ on first use
+pypandoc_binary==1.17

@@ -21,3 +21,7 @@ notebooks/manifold/
 
 # embedding rows cached by the server (app.py)
 .cache/
+
+# local toolchain downloaded by docs/md_to_pdf.py (Tectonic)
+.tools/
+docs/.ieee-build/
