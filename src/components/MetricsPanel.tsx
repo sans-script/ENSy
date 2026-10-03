@@ -80,7 +80,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
     <div className={`${CARD} w-[360px] px-4 py-2.5 text-[12px] pointer-events-auto`}>
       {meta.dataset_frozen === false && (
         <div className={NOTE}>
-          Provisional dataset — {meta.dataset_note ?? 'not frozen'}.
+          {meta.model_key?.startsWith('ext-') ? 'Imported dataset' : 'Provisional dataset'} — {meta.dataset_note ?? 'not frozen'}.
         </div>
       )}
       {meta.reduced_sample && (

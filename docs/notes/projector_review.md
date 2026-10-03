@@ -368,3 +368,32 @@ which is the question the paper argues every projection should be asked.
 Items 1–3 change the viewer only. Items 4–5 add an API surface that should get
 tests, a round trip ENSy → Projector state → ENSy that reproduces the same
 coordinates and metrics, before it is documented in the paper.
+
+## 8. Status (2026-10-03)
+
+All six items are implemented.
+
+- **1–3, 6:** behaviour-map palette, canvas labels, the K = 1…50 slider and
+  fog are in the viewer. Implementing the fog surfaced an older bug: the dots
+  did not write depth, so in some views the semi-opaque grid planes painted
+  over them. The dots now write depth and are drawn first.
+- **4–5:** `ensy/projector.py` (formats), `GET /api/export/projector`,
+  `POST /api/import/projector` and `GET /api/external`, with an export button
+  and an import dialog in the viewer. Imported data live in memory only and
+  are never mixed with the paper's frozen dataset.
+- **Tests:** `tests/test_projector.py` covers the formats.
+  `tests/test_interop_api.py` covers the round trip, which exports ENSy's five
+  layouts and imports the files back. Each bookmark reproduces ENSy's
+  co-ranking metrics to 10⁻⁹.
+- **Live check.** The exported zip was loaded into projector.tensorflow.org:
+  438 points × 768 dimensions, labels by `word`, colours by `category`, and
+  five bookmarks.
+  - Selecting a bookmark there fails in current Chrome, Edge and Firefox. The
+    page's `getParentDataIndex` reads the removed, non-standard `Event.path`,
+    so this affects every bookmark, the Projector's own demos included.
+  - With `Event.path` supplied from `composedPath()`, ENSy's UMAP bookmark
+    loads and shows ENSy's exact layout.
+  - The exported `README.txt` gives that one-line workaround.
+- **Format detail.** An empty `shuffledDataIndices` must be omitted, not sent
+  as `[]`: it is truthy in JavaScript, and `loadState` would replace the
+  Projector's own index list with it.

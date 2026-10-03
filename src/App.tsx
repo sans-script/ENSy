@@ -4,7 +4,8 @@ import { SidebarRight } from './components/SidebarRight';
 import { PerfSample, SpaceVisualizer } from './components/SpaceVisualizer';
 import { BottomHUD } from './components/BottomHUD';
 import { MetricsPanel } from './components/MetricsPanel';
-import { Algorithm, ColorLayer, ModelKey, SemanticNode, SemanticSpace } from './types';
+import { Algorithm, ColorLayer, ExternalDataset, ModelKey, SemanticNode, SemanticSpace } from './types';
+import { ImportDialog } from './components/ImportDialog';
 
 export default function App() {
   const [activeNode, setActiveNode] = useState<SemanticNode | null>(null);
@@ -32,6 +33,34 @@ export default function App() {
   const [isReady, setIsReady] = useState(false);
   const [semanticSpace, setSemanticSpace] = useState<SemanticSpace | null>(null);
   const [status, setStatus] = useState<'STABLE' | 'COMPUTING' | 'LOADING' | 'OFFLINE'>('STABLE');
+  // datasets imported from the TF Embedding Projector (kept by the server until it restarts)
+  const [externals, setExternals] = useState<ExternalDataset[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/external')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: ExternalDataset[]) => {
+        setExternals(list);
+        // a restored session may point at an import the server no longer has
+        setModelKey((k) => (k.startsWith('ext-') && !list.some((e) => e.key === k) ? 'qwen' : k));
+        setProjectionType((a) => (a.startsWith('bm') ? 'umap' : a));
+      })
+      .catch(() => setExternals([]));
+  }, []);
+
+  const changeModel = useCallback((key: ModelKey) => {
+    setModelKey(key);
+    // bookmarks belong to one imported dataset
+    setProjectionType((a) => (a.startsWith('bm') ? 'umap' : a));
+  }, []);
+
+  const handleImported = useCallback((ds: ExternalDataset) => {
+    setExternals((list) => [...list.filter((e) => e.key !== ds.key), ds]);
+    setModelKey(ds.key);
+    setProjectionType(ds.bookmarks.length > 0 ? ds.bookmarks[0].id : 'umap');
+    setImportOpen(false);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -220,7 +249,9 @@ export default function App() {
       <SidebarLeft
         modelName={semanticSpace?.meta?.model ?? '—'}
         modelKey={modelKey}
-        onModelKeyChange={setModelKey}
+        onModelKeyChange={changeModel}
+        externals={externals}
+        onImportClick={() => setImportOpen(true)}
         projectionType={projectionType}
         onProjectionTypeChange={setProjectionType}
         colorLayer={colorLayer}
@@ -308,7 +339,10 @@ export default function App() {
         nodes={semanticSpace?.nodes ?? null}
         metricK={metricK}
         probeEnabled={probeEnabled}
+        modelKey={modelKey}
       />
+
+      {importOpen && <ImportDialog onClose={() => setImportOpen(false)} onImported={handleImported} />}
       
     </div>
   );

@@ -557,6 +557,19 @@ word is drawn larger, in dark type, and underlined in the colour of its
 dot, so it stays legible whatever its layer colour. The minimap is
 omitted from the figures of this paper.
 
+\textbf{Interoperability with the TensorFlow Embedding Projector.} ENSy
+exports, for any model, the vectors and metadata in the Projector's TSV
+formats together with one bookmark per projection that holds ENSy's
+coordinates, so the Projector displays ENSy's exact layouts rather than
+its own re-runs. In the other direction, ENSy imports the Projector's
+vectors, metadata and bookmark files as a separate, non-frozen dataset,
+projects the vectors with its own algorithms, and measures each
+bookmarked layout as given; it thereby reports trustworthiness,
+continuity, \(B_{NX}\) and the behaviour map for layouts produced in the
+Projector. A round trip (export, then import of the exported files)
+reproduces ENSy's co-ranking metrics to \(10^{-9}\) and is part of the
+test suite. Imported data never enter the results of this paper.
+
 \begin{figure*}[tp]
 \centering
 \includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig08_metrics_panel.png}
@@ -925,6 +938,8 @@ Endpoint & Description \\
 \path|GET /api/projection/{model}/{algorithm}| & coordinates, metric curves, \(B_{NX,i}(K)\), neighbour lists, Silhouette
 (3D; a 2D value is also served) \\
 \path|GET /api/compare| & metric curves of every configuration of the main matrix \\
+\path|GET /api/export/projector| & zip for the TF Embedding Projector: vectors, metadata, one bookmark per projection, config \\
+\path|POST /api/import/projector| & import the Projector's vectors, metadata and bookmarks as a non-frozen dataset \\
 \bottomrule
 \end{tabularx}
 \end{table}

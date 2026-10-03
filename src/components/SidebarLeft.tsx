@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sliders } from 'lucide-react';
-import { Algorithm, ColorLayer, ModelKey } from '../types';
+import { Algorithm, ColorLayer, ExternalDataset, ModelKey } from '../types';
 import type { PerfSample } from './SpaceVisualizer';
 import { Dropdown } from './Dropdown';
 import { Tex } from './Tex';
@@ -10,6 +10,9 @@ interface SidebarLeftProps {
   modelName: string;
   modelKey: ModelKey;
   onModelKeyChange: (key: ModelKey) => void;
+  /** datasets imported from the TF Embedding Projector */
+  externals: ExternalDataset[];
+  onImportClick: () => void;
   projectionType: Algorithm;
   onProjectionTypeChange: (type: Algorithm) => void;
   colorLayer: ColorLayer;
@@ -53,6 +56,8 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
   modelName,
   modelKey,
   onModelKeyChange,
+  externals,
+  onImportClick,
   projectionType,
   onProjectionTypeChange,
   colorLayer,
@@ -195,6 +200,11 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                 { value: 'gemma2', label: 'Gemma 2 2B', text: 'Gemma 2 2B — google/gemma-2-2b' },
                 { value: 'gpt2', label: 'GPT-2 (124M)', text: 'GPT-2 124M — openai-community/gpt2' },
                 { value: 'bert', label: 'BERT base uncased', text: 'BERT base uncased' },
+                ...externals.map((e) => ({
+                  value: e.key,
+                  label: `Imported: ${e.name}`,
+                  text: `Imported: ${e.name} — ${e.N} × ${e.dim}`,
+                })),
               ]}
             />
           </div>
@@ -212,9 +222,21 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                 { value: 'pca', label: 'PCA (centered)', text: 'PCA (centered)' },
                 { value: 'isomap', label: 'Isomap', text: 'Isomap' },
                 { value: 'pca_nc', label: 'PCA-NC (ablation)', text: 'PCA-NC (ablation)' },
+                ...(externals.find((e) => e.key === modelKey)?.bookmarks ?? []).map((b) => ({
+                  value: b.id,
+                  label: `Bookmark: ${b.label}`,
+                  text: `Projector bookmark — ${b.label} (${b.kind}, ${b.dims}D, measured as given)`,
+                })),
               ]}
             />
           </div>
+          <button
+            type="button"
+            onClick={onImportClick}
+            className="col-span-2 bg-white border border-[#111111] rounded-sm py-1.5 px-1 text-center cursor-pointer font-medium transition-all duration-75 text-[10px] text-[#111111] hover:bg-slate-50 shadow-[0_1.5px_0_0_#111111] active:translate-y-[1.5px] active:shadow-none"
+          >
+            Import from TF Embedding Projector…
+          </button>
           <div className="col-span-2 min-w-0">
             <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5">Colour Layer:</span>
             <Dropdown

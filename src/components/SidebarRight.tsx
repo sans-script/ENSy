@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { SemanticNode, probeSets } from '../types';
+import { ModelKey, SemanticNode, probeSets } from '../types';
 import { Tex } from './Tex';
 import { fmt } from './MetricsPanel';
 
@@ -8,6 +8,7 @@ interface SidebarRightProps {
   nodes: SemanticNode[] | null;
   metricK: number;
   probeEnabled: boolean;
+  modelKey: ModelKey;
 }
 
 const ProbeList: React.FC<{ title: string; color: string; ids: Set<number>; nodes: SemanticNode[] }> = ({ title, color, ids, nodes }) => (
@@ -19,7 +20,7 @@ const ProbeList: React.FC<{ title: string; color: string; ids: Set<number>; node
   </div>
 );
 
-export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, metricK, probeEnabled }) => {
+export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, metricK, probeEnabled, modelKey }) => {
   const probe = activeNode && probeEnabled ? probeSets(activeNode, metricK) : null;
   const localB = activeNode?.b_nx_local?.[String(metricK)];
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,6 +134,16 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ activeNode, nodes, m
           </div>
         )}
       </div>
+
+      {/* vectors, metadata and a bookmark per projection, for projector.tensorflow.org */}
+      <a
+        href={`/api/export/projector?model=${modelKey}`}
+        download
+        title="vectors.tsv, metadata.tsv, state.txt (a bookmark with ENSy's exact layout per projection) and projector_config.json"
+        className="shrink-0 mt-[14px] w-full flex items-center justify-center bg-white border border-[#111111] hover:bg-[#111111] hover:text-white rounded-sm py-2 px-1 text-center cursor-pointer transition-all duration-75 text-[10.5px] text-black uppercase font-bold tracking-wider"
+      >
+        Export to TF Projector
+      </a>
 
       <div className="text-[12px] font-serif italic text-slate-700 text-center border-t border-dashed border-[#cccccc] pt-[12px] mt-[14px] shrink-0">
         ENSy v2.1.2 — projected coordinates y<sub>i</sub> ∈ ℝ³

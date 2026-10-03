@@ -11,8 +11,22 @@ export interface Neighbor {
   cosine_similarity: number;
 }
 
-export type ModelKey = 'qwen' | 'gemma2' | 'gpt2' | 'bert';
-export type Algorithm = 'umap' | 'tsne' | 'tsne_p30' | 'pca' | 'isomap' | 'pca_nc';
+/** The four models of the paper, or a dataset imported from the TF Embedding Projector. */
+export type ModelKey = 'qwen' | 'gemma2' | 'gpt2' | 'bert' | `ext-${string}`;
+/** ENSy's projections, or a Projector bookmark of an imported dataset (measured as given). */
+export type Algorithm = 'umap' | 'tsne' | 'tsne_p30' | 'pca' | 'isomap' | 'pca_nc' | `bm${number}`;
+
+/** A dataset imported from the TF Embedding Projector (GET /api/external). */
+export interface ExternalDataset {
+  key: `ext-${string}`;
+  name: string;
+  N: number;
+  dim: number;
+  label_column: string | null;
+  partition_column: string | null;
+  categories: string[];
+  bookmarks: { id: `bm${number}`; label: string; kind: string; dims: number }[];
+}
 export type ColorLayer = 'category' | 'heat';
 
 export interface SemanticNode {
