@@ -1,6 +1,0 @@
-{
-  "name": "Topological Manifold Latent Space Visualizer",
-  "description": "An academic and interactive workbench to visualizes high-dimensional semantic embeddings in a 3D topological manifold.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scripted tour of ENSy that captures the figures used in DOCS.md.
+"""Scripted tour of ENSy that captures the figures used in DOCS.tex.
 
 The tour drives the real UI like a user would: it opens the custom dropdowns,
 presses the camera-preset buttons, engages pointer lock by clicking the

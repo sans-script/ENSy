@@ -10,15 +10,15 @@
     "preview": ".venv\\Scripts\\python.exe app.py",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": ".venv/Scripts/pytest tests/ -v -m \"not api and not screenshot\"",
+    "test": ".venv/Scripts/pytest tests/ -v -m \"not api\"",
     "test:science": ".venv/Scripts/pytest tests/test_coranking.py tests/test_dataset.py tests/test_models.py -v",
     "dataset": ".venv\\Scripts\\python.exe -m ensy.dataset",
     "experiment": ".venv\\Scripts\\python.exe -m ensy.experiment",
     "test:api": ".venv/Scripts/pytest tests/test_api.py -v -m api",
-    "test:screenshots": ".venv/Scripts/pytest tests/screenshots.py -v --headed",
-    "test:screenshots:headless": ".venv/Scripts/pytest tests/screenshots.py -v",
-    "docs:pdf": "python docs/md_to_pdf.py",
-    "docs:watch": "python docs/md_to_pdf.py --watch"
+    "docs:pdf": "python docs/build_pdf.py",
+    "docs:results": "python docs/update_results.py",
+    "docs:figures": "python docs/capture_screenshots.py",
+    "docs:claims": "python docs/check_claims.py"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
