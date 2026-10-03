@@ -226,6 +226,7 @@ export default function App() {
         colorLayer={colorLayer}
         onColorLayerChange={setColorLayer}
         metricK={metricK}
+        kMax={semanticSpace?.meta?.K_slider_max ?? 20}
         onMetricKChange={setMetricK}
         probeEnabled={probeEnabled}
         onProbeEnabledChange={setProbeEnabled}

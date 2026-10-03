@@ -173,11 +173,19 @@ class TestResearchAPI:
             assert 0 <= c["trustworthiness"] <= 1 and 0 <= c["continuity"] <= 1
             local = [n["b_nx_local"][str(c["K"])] for n in data["nodes"]]
             assert math.isclose(sum(local) / len(local), c["B_NX"], abs_tol=1e-9)
+        # the slider's curves agree with the reported ones
+        all_k = {c["K"]: c for c in data["meta"]["metrics_all"]}
+        for c in curves:
+            assert math.isclose(all_k[c["K"]]["B_NX"], c["B_NX"], abs_tol=1e-12)
 
     def test_probe_neighbour_lists(self) -> None:
-        nodes = fetch_json(f"{BACKEND_URL}/api/projection/qwen/tsne")["nodes"]
-        for n in nodes[:10]:
-            assert len(n["hd_neighbors"]) == len(n["ld_neighbors"]) == 20
+        data = fetch_json(f"{BACKEND_URL}/api/projection/qwen/tsne")
+        k_max = data["meta"]["K_slider_max"]
+        assert data["meta"]["K_curve"] == [5, 10, 15, 20] and k_max >= 20
+        for n in data["nodes"][:10]:
+            # the probe needs the k_max nearest neighbours in both spaces (K slider)
+            assert len(n["hd_neighbors"]) == len(n["ld_neighbors"]) == k_max
+            assert set(n["b_nx_local"]) == {str(k) for k in range(1, k_max + 1)}
             assert n["id"] not in n["hd_neighbors"]
 
     def test_unknown_model_is_400(self) -> None:

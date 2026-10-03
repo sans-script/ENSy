@@ -62,6 +62,9 @@ export interface SemanticMeta {
   K_main?: number;
   K_curve?: number[];
   metrics?: CorankingCurvePoint[];
+  /** Every K from 1 to K_slider_max (the viewer's K slider). */
+  K_slider_max?: number;
+  metrics_all?: CorankingCurvePoint[];
   silhouette_projected?: number;
   silhouette_projected_2d?: number;
   category_colors?: Record<string, string>;

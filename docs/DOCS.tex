@@ -460,9 +460,13 @@ automated suite:
 
 A FastAPI server loads the frozen dataset, extracts and caches the
 normalised rows per model, and serves, for each (model, algorithm) pair,
-the projected coordinates, the metric curves, \(B_{NX,i}(K)\) for every
-token and \(K\), the 20 nearest neighbours of every token in both
-spaces, and both Silhouette scores. A React/TypeScript client renders
+the projected coordinates, the metric curves and \(B_{NX,i}(K)\) for
+every token and every \(K\) from 1 to 50, the 50 nearest neighbours of
+every token in both spaces, and the Silhouette score. With every \(K\)
+precomputed (about 0.25 s per projection), the viewer's \(K\) slider
+updates the behaviour map, the probe and the metrics panel while it is
+dragged; it snaps to the reported values 5, 10, 15 and 20, and all
+results in this paper use those values. A React/TypeScript client renders
 the projection with Three.js. No placeholder data is ever displayed:
 when a projection is being computed the viewer says so, and when data
 are unavailable it shows the reason. The screenshots in this manuscript
@@ -474,8 +478,8 @@ values of Section~\ref{sec:results} (see Section~\ref{sec:limitations}).
 \centering
 \includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig01_workspace.png}
 \caption{The ENSy workspace (Qwen 2.5, UMAP, isometric view). Left: model,
-projection, colour layer and K selectors, camera optics and live
-profiling. Centre: the 438 tokens, coloured by the reference partition.
+projection and colour layer selectors, the \(K\) slider, camera optics
+and live profiling. Centre: the 438 tokens, coloured by the reference partition.
 Bottom right: the co-ranking curves of the current projection. Right:
 the inspector for the token under the reticle, with its true, false and
 missing neighbours.}
@@ -489,24 +493,34 @@ a single isotropic similarity transform (median centre, one scale for
 all axes, set by the 99th-percentile radius), which preserves all ratios
 of distances. All tokens live in one \texttt{BufferGeometry} with
 per-vertex RGBA colour (one draw call for the cloud regardless of
-\(N\)). Every token is drawn as a dot. Words are placed as in the
-TensorFlow Embedding Projector: each frame, labels are written to the
+\(N\)). The dots write depth and are drawn before the semi-opaque grid
+planes, so a plane dims the dots behind it but never hides those in
+front. Every token is drawn as a dot, and a fog in the background colour
+from the nearest to the farthest dot gives a depth cue, as in the
+TensorFlow Embedding Projector. Words follow the same tool's strategy:
+each frame they are drawn on one 2D canvas over the 3D view, to the
 right of their dots, nearest tokens first, wherever they do not overlap
-a label already placed; a token whose word does not fit keeps only its
-dot, and flying closer spreads the points so that more words fit.
+a word already placed, each with a white outline that separates it from
+the dots behind it. A token whose word does not fit keeps only its dot,
+and flying closer spreads the points so that more words fit.
 
 \subsection{Colour layers and probing}\label{sec:colour-layers-probing}
 
 Three layers share the colour channel with a fixed precedence ---
 probing \textgreater{} behaviour map \textgreater{} reference partition
 --- and never mix on one token. The \textbf{reference partition} colours
-nouns, verbs and function words. The \textbf{behaviour map} places
-\(B_{NX,i}(K)\) on a fixed bipolar scale on \([-1, 1]\) (cyan:
-extrusive; light grey: neutral; orange: intrusive), never normalised per
-frame, so equal values always receive equal colours across projections.
-In this layer the colour is carried by the dot and the word stays dark,
-because most local values are close to zero and would otherwise give
-pale, illegible words. \textbf{Probing} colours, for the token under the
+nouns, verbs and function words. The \textbf{behaviour map} rounds
+\(B_{NX,i}(K)\) to the nearest multiple of 0.1, capped at \(\pm 0.3\),
+and draws each of the seven steps in a colour-blind-safe diverging
+palette (blue: extrusive; mid-grey: neutral; red: intrusive), with dots
+up to 1.6 times larger as \(|B_{NX,i}|\) grows. The scale is fixed, never
+normalised per frame, so equal values receive equal colours across
+projections; it covers \(\pm 0.3\) rather than the theoretical range
+\(\pm 1\) because the local values concentrate there: over the 20
+configurations and \(K \in \{5, 10, 15, 20\}\), a median of 98\% of the
+tokens (at least 86\%, at \(K = 5\)) have \(|B_{NX,i}(K)| \le 0.3\), and
+a continuous ramp over \(\pm 1\) left almost every token pale. In this layer the colour is carried by the dot and the word
+stays dark for legibility. \textbf{Probing} colours, for the token under the
 reticle, its true (\(N_K \cap n_K\), green), false
 (\(n_K \setminus N_K\), red) and missing (\(N_K \setminus n_K\),
 translucent blue) neighbours.
@@ -516,7 +530,8 @@ translucent blue) neighbours.
 \includegraphics[width=\dimexpr\textwidth-2\fboxrule\relax,frame]{screenshots/fig04_behaviour_k10.png}
 \caption{Behaviour map on Qwen 2.5 with t-SNE (perplexity 5), \(K = 10\)
 (viewport only, grid planes off): each token's local contribution to
-\(B_{NX}(10)\) on the fixed scale \([-1, 1]\).}
+\(B_{NX}(10)\) on the fixed seven-step scale; larger dots mark larger
+\(|B_{NX,i}|\).}
 \label{fig:behaviour-k10}
 \end{figure*}
 

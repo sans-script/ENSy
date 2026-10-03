@@ -201,7 +201,7 @@ def main():
         t.preset("Isometric")
         t.approach(APPROACH_MS)
         t.view("fig04_behaviour_k10")
-        t.choose("Neighbourhood K", "20")
+        t.page.locator("input[aria-label='Neighbourhood K']").fill("20")  # the K slider
         t.page.wait_for_timeout(800)
         t.view("fig05_behaviour_k20")
 

@@ -28,18 +28,6 @@ body {
 }
 
 /* Hover/Selection Scientific visual highlight */
-.highlighted-acad {
-  font-size: 18px !important;
-  font-weight: bold !important;
-  text-decoration: underline !important;
-  z-index: 10000 !important;
-  /* the aimed word is drawn dark so it never matches its dot; the underline keeps the dot's colour */
-  color: #111111 !important;
-  text-decoration-color: var(--dot, #111111) !important;
-  text-decoration-thickness: 2px !important;
-  text-underline-offset: 3px;
-}
-
 /* Absolute math axes labels */
 .latex-axis-label {
   pointer-events: none;

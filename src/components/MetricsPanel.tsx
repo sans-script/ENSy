@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ColorLayer, SemanticMeta } from '../types';
 import { Tex } from './Tex';
+import { HEAT_STEPS } from './SpaceVisualizer';
 
 interface MetricsPanelProps {
   meta: SemanticMeta | null;
@@ -65,6 +66,14 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
   }
   if (!meta?.metrics) return null;
 
+  // The reported K values, plus the slider's K when it is not one of them
+  const rows = [...meta.metrics];
+  if (!rows.some((m) => m.K === metricK)) {
+    const extra = meta.metrics_all?.find((m) => m.K === metricK);
+    if (extra) rows.push(extra);
+    rows.sort((a, b) => a.K - b.K);
+  }
+
   const isomapComponents = meta.diagnostics?.knn_graph_components as number | undefined;
 
   return (
@@ -96,7 +105,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
           </tr>
         </thead>
         <tbody>
-          {meta.metrics.map((m) => (
+          {rows.map((m) => (
             <tr key={m.K} className={m.K === metricK ? 'font-bold bg-[#f4f4f5]' : ''}>
               <td>{m.K}</td>
               <td className="text-right">{fmt(m.trustworthiness)}</td>
@@ -131,9 +140,17 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ meta, metricK, color
         {colorLayer === 'heat' ? (
           <>
             <span className="font-bold">Behaviour map — local contribution to <Tex tex={`B_{NX}\\ (K = ${metricK})`} /></span>
-            <div className="h-2 w-full" style={{ background: 'linear-gradient(to right, #0891b2, #d4d4d8, #ea580c)' }} />
-            <div className="flex justify-between font-times-numbers text-[11px]">
-              <span>− 1 extrusive</span><span>0</span><span>intrusive + 1</span>
+            {/* the 7 steps of the map; larger |value| also draws a larger dot */}
+            <div className="grid grid-cols-7 gap-px">
+              {HEAT_STEPS.map((step) => (
+                <div key={step.color} className="h-2.5" style={{ background: step.color }} />
+              ))}
+            </div>
+            <div className="grid grid-cols-7 text-center font-times-numbers text-[10px]">
+              {HEAT_STEPS.map((step) => <span key={step.color}>{step.label}</span>)}
+            </div>
+            <div className="flex justify-between text-[10px] text-[#555]">
+              <span>extrusive</span><span>neutral</span><span>intrusive</span>
             </div>
           </>
         ) : (

@@ -30,12 +30,29 @@ interface LabelEntry {
 }
 
 const LABEL_GAP = 5; // px between a token's dot and its word
+// Token words are drawn on one 2D canvas over the WebGL view, as in the TF Projector:
+// a white stroke under each word keeps it legible over dots of its own colour.
+const LABEL_FONT = '"Times New Roman", Times, Georgia, serif';
+const LABEL_SIZE = 13; // px at scale 1
+const LABEL_SIZE_AIMED = 18;
+const LABEL_HALO = 3; // px, white stroke width
 const MAX_TOKEN_LABELS = 450; // upper bound; in practice set by screen-space collisions (plan 8.2)
 
-// Layer 2 (plan 9.7): fixed global bipolar scale on [-1, 1]; neutral is light grey, never green.
-const HEAT_NEG = new THREE.Color("#0891b2"); // extrusive (tearing)
-const HEAT_MID = new THREE.Color("#d4d4d8");
-const HEAT_POS = new THREE.Color("#ea580c"); // intrusive (crowding)
+// Layer 2 (plan 9.7): behaviour map. A fixed scale (same value, same colour in every
+// projection) in 7 steps of 0.1 centred on 0. Most B_NX,i lie within ±0.3, so a
+// continuous ramp over [-1, 1] left nearly every token pale. Colour-blind-safe
+// diverging palette (ColorBrewer RdBu without its near-white centre); the neutral
+// step is mid-grey so neutral tokens stay visible on white. Never green (probing).
+export const HEAT_STEPS: { max: number; color: string; label: string }[] = [
+  { max: -0.25, color: "#2166ac", label: "≤ −0.3" },
+  { max: -0.15, color: "#4393c3", label: "−0.2" },
+  { max: -0.05, color: "#92c5de", label: "−0.1" },
+  { max: 0.05, color: "#bababa", label: "0" },
+  { max: 0.15, color: "#f4a582", label: "+0.1" },
+  { max: 0.25, color: "#d6604d", label: "+0.2" },
+  { max: Infinity, color: "#b2182b", label: "≥ +0.3" },
+];
+const HEAT_STEP_COLORS = HEAT_STEPS.map((s) => new THREE.Color(s.color));
 // Layer 3 (plan 9.7): probing.
 const PROBE_TRUE = new THREE.Color("#16a34a");
 const PROBE_FALSE = new THREE.Color("#dc2626");
@@ -45,12 +62,13 @@ const PROBE_SELECTED = new THREE.Color("#111111");
 const PROBE_CONTEXT = new THREE.Color("#a1a1aa");
 const PROBE_CONTEXT_LABEL = "#52525b";
 
-export const heatColor = (b: number) => {
-  const t = Math.max(-1, Math.min(1, b));
-  return t < 0
-    ? HEAT_MID.clone().lerp(HEAT_NEG, -t)
-    : HEAT_MID.clone().lerp(HEAT_POS, t);
-};
+/** Behaviour-map step of a local value: the nearest multiple of 0.1, capped at ±0.3
+ *  (boundaries at ±0.05, ±0.15, ±0.25; a value on a boundary goes to the smaller |step|). */
+export const heatStep = (b: number) =>
+  3 + Math.sign(b) * Math.min(3, Math.round(Math.abs(b) / 0.1 - 1e-9));
+export const heatColor = (b: number) => HEAT_STEP_COLORS[heatStep(b)].clone();
+/** Dot size in the behaviour map: 1.0 at 0, 1.6 at |b| ≥ 0.3, so extremes stand out by size too. */
+export const heatScale = (b: number) => 1 + 0.6 * Math.min(1, Math.abs(b) / 0.3);
 
 interface SpaceVisualizerProps {
   colorLayer: ColorLayer;
@@ -117,6 +135,10 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const labelsContainerRef = useRef<HTMLDivElement>(null);
+  const tokenCanvasRef = useRef<HTMLCanvasElement>(null);
+  // screen boxes (CSS px) of the words drawn in the last frame, for click-to-pin
+  const placedBoxesRef = useRef<{ id: number; x0: number; y0: number; x1: number; y1: number }[]>([]);
+  const labelWidthRef = useRef<Map<string, number>>(new Map());
   const gridNumbersContainerRef = useRef<HTMLDivElement>(null);
   const minimapCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -684,6 +706,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
 
         drawMinimapPrivate(activeCamera, dt);
 
+        updateFogPrivate(scene, activeCamera);
         renderer.render(scene, activeCamera);
 
         // Profiling (plan 8.4): engineering telemetry, not a scientific result
@@ -756,7 +779,76 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     };
   }, []);
 
-  const handleContainerClick = () => {
+  /**
+   * Depth cue as in the TF Embedding Projector: fog in the background colour from the
+   * nearest dot to farthest × (2 − min(N, 5000)/5000), so small clouds get little fog.
+   * Only the token dots are fogged (grid, axes and labels stay crisp); none in the
+   * parallel camera, where depth has no perspective meaning.
+   */
+  const fogTmp = useRef(new THREE.Vector3());
+  const updateFogPrivate = (scene: THREE.Scene, camera: THREE.Camera) => {
+    const cloud = cloudRef.current;
+    if (!cloud || !(camera instanceof THREE.PerspectiveCamera)) {
+      scene.fog = null;
+      return;
+    }
+    let near = Infinity, far = 0;
+    const v = fogTmp.current;
+    for (const h of tokenPointsRef.current) {
+      if (!h.visible) continue;
+      const d = -v.copy(h.position).applyMatrix4(camera.matrixWorldInverse).z;
+      if (d <= 0) continue;
+      if (d < near) near = d;
+      if (d > far) far = d;
+    }
+    if (!isFinite(near) || far <= near) {
+      scene.fog = null;
+      return;
+    }
+    const n = tokenPointsRef.current.length;
+    if (!(scene.fog instanceof THREE.Fog)) scene.fog = new THREE.Fog(0xfcfcfc, near, far);
+    scene.fog.near = near;
+    scene.fog.far = far * (2 - Math.min(n, 5000) / 5000);
+    // fog applies to every material with fog enabled: switch it off for all but the dots
+    scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (!m || o === cloud) return;
+      for (const mat of Array.isArray(m) ? m : [m]) {
+        if ((mat as THREE.Material & { fog?: boolean }).fog) {
+          (mat as THREE.Material & { fog?: boolean }).fog = false;
+          mat.needsUpdate = true;
+        }
+      }
+    });
+  };
+
+  /** The token whose drawn word is under a viewport point (CSS px), if any. */
+  const wordAt = (clientX: number, clientY: number) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    const x = clientX - rect.left, y = clientY - rect.top;
+    // last drawn on top: search from the end
+    for (let i = placedBoxesRef.current.length - 1; i >= 0; i--) {
+      const b = placedBoxesRef.current[i];
+      if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) return b.id;
+    }
+    return null;
+  };
+
+  const handleContainerMouseMove = (e: React.MouseEvent) => {
+    if (document.pointerLockElement === containerRef.current || !containerRef.current) return;
+    containerRef.current.style.cursor = wordAt(e.clientX, e.clientY) !== null ? "pointer" : "";
+  };
+
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // clicking a word (cursor free) pins that token instead of starting flight
+    if (document.pointerLockElement !== containerRef.current) {
+      const id = wordAt(e.clientX, e.clientY);
+      if (id !== null) {
+        pinnedIdRef.current = id;
+        return;
+      }
+    }
     if (document.pointerLockElement !== containerRef.current) {
       try {
         const promise = containerRef.current?.requestPointerLock();
@@ -954,6 +1046,11 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       "color",
       new THREE.BufferAttribute(new Float32Array(nodes.length * 4).fill(1), 4),
     );
+    // per-dot size factor (behaviour map: larger dots for larger |B_NX,i|)
+    geometry.setAttribute(
+      "aScale",
+      new THREE.BufferAttribute(new Float32Array(nodes.length).fill(1), 1),
+    );
     // Round sprite (PointsMaterial draws squares by default). Every token is drawn as
     // a dot; its word is shown beside the dot when there is room (updateOverlayLabels).
     const disc = document.createElement("canvas");
@@ -968,12 +1065,20 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       sizeAttenuation: true,
       vertexColors: true,
       transparent: true,
-      depthWrite: false,
+      // The dots write depth and are drawn before the semi-opaque grid planes
+      // (renderOrder below), so a plane dims the dots behind it but never paints over
+      // dots in front of it. alphaTest discards the disc's corners, so depth stays round.
+      depthWrite: true,
       map: new THREE.CanvasTexture(disc),
       alphaTest: 0.05,
     });
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = "attribute float aScale;\n" +
+        shader.vertexShader.replace("gl_PointSize = size;", "gl_PointSize = size * aScale;");
+    };
     const cloud = new THREE.Points(geometry, material);
     cloud.frustumCulled = false;
+    cloud.renderOrder = -1;
     sceneRef.current.add(cloud);
     cloudRef.current = cloud;
 
@@ -985,17 +1090,11 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       };
       tokenPointsRef.current.push(handle);
 
+      // A detached element: never in the DOM, it only carries the word's colour and
+      // state (dim, filtered, aimed) for the canvas pass in updateOverlayLabels.
       const dom = document.createElement("div");
-      dom.className =
-        "spatial-label absolute select-none pointer-events-auto cursor-pointer transition-opacity duration-75 text-xs font-serif font-normal italic tracking-wide hover:underline";
-      dom.setAttribute("data-token-label", node.label);
       dom.style.color = getNodeDisplayColor(node.color);
       dom.textContent = node.label;
-      dom.onclick = (e) => {
-        e.stopPropagation();
-        pinnedIdRef.current = node.id ?? null;
-      };
-      container.appendChild(dom);
 
       const entry: LabelEntry = {
         dom,
@@ -1034,6 +1133,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     const cloud = cloudRef.current;
     if (!cloud) return;
     const colorAttr = cloud.geometry.getAttribute("color") as THREE.BufferAttribute;
+    const scaleAttr = cloud.geometry.getAttribute("aScale") as THREE.BufferAttribute;
     const layer = colorLayerRef.current;
     const kKey = String(heatKRef.current);
 
@@ -1050,8 +1150,10 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       // On the behaviour-map scale most values are near 0 (pale), so there the dot carries
       // the colour and the word stays dark for legibility, as in the TF Projector.
       let labelColor: string | null = null;
+      let dotScale = 1;
       if (layer === "heat" && node.b_nx_local && kKey in node.b_nx_local) {
         tmp.copy(heatColor(node.b_nx_local[kKey]));
+        dotScale = heatScale(node.b_nx_local[kKey]);
         labelColor = "#3f3f46";
       } else {
         tmp.set(getNodeDisplayColor(node.color));
@@ -1069,6 +1171,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         labelColor = probed ? null : PROBE_CONTEXT_LABEL; // probing colours apply to the word too
       }
       colorAttr.setXYZW(idx, tmp.r, tmp.g, tmp.b, alpha);
+      scaleAttr?.setX(idx, probe ? 1 : dotScale);
       const label = tokenLabelByIdRef.current.get(node.id!);
       if (label) {
         label.dom.style.color = labelColor ?? `#${tmp.getHexString()}`;
@@ -1078,6 +1181,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       }
     });
     colorAttr.needsUpdate = true;
+    if (scaleAttr) scaleAttr.needsUpdate = true;
   };
 
   const syncProjectionDataPrivate = () => {
@@ -1968,17 +2072,37 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       .sort((a, b) =>
         (a.id === hoveredIdRef.current ? -1 : 0) - (b.id === hoveredIdRef.current ? -1 : 0) || a.dist - b.dist);
     const placed = new Set<HTMLDivElement>();
+    const canvas = tokenCanvasRef.current;
+    const ctx = canvas?.getContext("2d") ?? null;
+    const fontOf = (aimed: boolean, size: number) =>
+      `italic ${aimed ? "bold " : ""}${size.toFixed(2)}px ${LABEL_FONT}`;
+    /** text width at 1 px font size (scales linearly with the size) */
+    const unitWidth = (text: string, aimed: boolean) => {
+      const key = (aimed ? "b:" : "r:") + text;
+      let w = labelWidthRef.current.get(key);
+      if (w === undefined) {
+        if (ctx) {
+          ctx.font = fontOf(aimed, 100);
+          w = ctx.measureText(text).width / 100;
+        } else w = text.length * 0.5;
+        labelWidthRef.current.set(key, w);
+      }
+      return w;
+    };
+    const sizeOf = (p: { scale: number; dom: HTMLDivElement }) =>
+      p.dom.classList.contains("highlighted-acad")
+        ? Math.max(14, LABEL_SIZE_AIMED * p.scale)
+        : LABEL_SIZE * p.scale;
+    const boxes: { id: number; x0: number; y0: number; x1: number; y1: number }[] = [];
     for (const p of tokens) {
       if (placed.size >= MAX_TOKEN_LABELS) break;
-      let w = Number(p.dom.dataset.w);
-      if (!w) {
-        w = p.dom.offsetWidth || p.dom.textContent!.length * 7;
-        p.dom.dataset.w = String(w);
-      }
-      const halfH = 8 * p.scale + 1;
+      const aimed = p.dom.classList.contains("highlighted-acad");
+      const size = sizeOf(p);
+      const w = unitWidth(p.dom.textContent!, aimed) * size;
+      const halfH = size * 0.6 + 1;
       // box of a label written to the right of its dot (LABEL_GAP px away)
       const x0 = Math.floor((p.x + LABEL_GAP - 1) / CELL);
-      const x1 = Math.floor((p.x + LABEL_GAP + w * p.scale + 2) / CELL);
+      const x1 = Math.floor((p.x + LABEL_GAP + w + 2) / CELL);
       const y0 = Math.floor((p.y - halfH) / CELL), y1 = Math.floor((p.y + halfH) / CELL);
       let free = true;
       for (let cy = y0; cy <= y1 && free; cy++)
@@ -1987,7 +2111,10 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       if (!free && p.id !== hoveredIdRef.current) continue;
       for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) occupied.add(cy * cols + cx);
       placed.add(p.dom);
+      if (p.id !== undefined)
+        boxes.push({ id: p.id, x0: p.x - 4, y0: p.y - halfH, x1: p.x + LABEL_GAP + w, y1: p.y + halfH });
     }
+    placedBoxesRef.current = boxes;
     perfRef.current.visibleLabels = placed.size;
 
     // Occlusion by the semi-opaque plane backgrounds (raycast for placed labels only)
@@ -2001,20 +2128,51 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       });
     }
 
-    // Apply computed styles
-    projectedLabels.forEach((p) => {
-      if (p.type === "token" && !placed.has(p.dom)) {
-        if (p.dom.style.opacity !== "0") p.dom.style.opacity = "0";
-        return;
+    // Token words: one canvas pass, far words first so nearer ones (and the aimed
+    // word, drawn last) sit on top. Each word gets a white stroke, then its fill.
+    if (canvas && ctx) {
+      const dpr = window.devicePixelRatio || 1;
+      const cw = Math.round(width * dpr), ch = Math.round(height * dpr);
+      if (canvas.width !== cw || canvas.height !== ch) {
+        canvas.width = cw;
+        canvas.height = ch;
       }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      ctx.textBaseline = "middle";
+      ctx.lineJoin = "round";
+      const drawn = projectedLabels
+        .filter((p) => p.type === "token" && placed.has(p.dom))
+        .sort((a, b) =>
+          (a.dom.classList.contains("highlighted-acad") ? 1 : 0) - (b.dom.classList.contains("highlighted-acad") ? 1 : 0)
+          || b.dist - a.dist);
+      for (const p of drawn) {
+        const aimed = p.dom.classList.contains("highlighted-acad");
+        const size = sizeOf(p);
+        const text = p.dom.textContent!;
+        const x = p.x + LABEL_GAP;
+        ctx.font = fontOf(aimed, size);
+        ctx.globalAlpha = aimed ? 1 : p.fade;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = LABEL_HALO;
+        ctx.strokeText(text, x, p.y);
+        // the aimed word is dark so it never matches its dot; its underline keeps the dot's colour
+        ctx.fillStyle = aimed ? "#111111" : p.dom.style.color || "#111111";
+        ctx.fillText(text, x, p.y);
+        if (aimed) {
+          ctx.fillStyle = p.dom.style.getPropertyValue("--dot") || "#111111";
+          ctx.fillRect(x, p.y + size * 0.55, unitWidth(text, true) * size, 2);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Axis labels stay DOM elements
+    projectedLabels.forEach((p) => {
+      if (p.type === "token") return;
       p.dom.style.left = `${p.x}px`;
       p.dom.style.top = `${p.y}px`;
-      if (p.type === "token") {
-        p.dom.style.transformOrigin = "0 50%";
-        p.dom.style.transform = `translate(${LABEL_GAP}px, -50%) scale(${p.scale})`;
-      } else {
-        p.dom.style.transform = `translate(-50%, -50%) scale(${p.scale})`;
-      }
+      p.dom.style.transform = `translate(-50%, -50%) scale(${p.scale})`;
       p.dom.style.opacity = p.fade.toFixed(2);
       p.dom.style.zIndex = Math.max(1, Math.floor(1000 - p.dist)).toString();
     });
@@ -2340,6 +2498,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       ref={containerRef}
       className="relative w-full h-full select-none outline-none overflow-hidden"
       onClick={handleContainerClick}
+      onMouseMove={handleContainerMouseMove}
     >
       {/* Target Reticle Crosshair HUD */}
       <div
@@ -2348,7 +2507,11 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
           after:content-[''] after:absolute after:bg-black/25 after:w-[6px] after:h-[1px] after:top-1/2 after:-left-[8px] after:-translate-y-1/2"
       />
 
-      {/* Absolutely overlayed CSS layers targeting projected nodes coordinates */}
+      {/* Token words (one canvas) and axis labels (DOM) over the WebGL view */}
+      <canvas
+        ref={tokenCanvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none select-none z-10"
+      />
       <div
         ref={labelsContainerRef}
         className="absolute inset-0 w-full h-full pointer-events-none select-none z-10"

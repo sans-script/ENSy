@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -24,7 +25,12 @@ from ensy.experiment import CATEGORY_INDEX, K_CURVE, K_MAIN, silhouette
 
 ROOT = Path(__file__).resolve().parent
 DATASET_PATHS = (ROOT / "data" / "dataset.json", ROOT / "data" / "dataset.provisional.json")
-K_PROBE_MAX = max(K_CURVE)
+# The viewer's K slider: every quantity is precomputed for K = 1..K_SLIDER_MAX
+# (about 0.25 s per projection), so the slider never waits on the server. The
+# paper reports only K_CURVE; the slider is an exploration aid.
+K_SLIDER_MAX = 50
+K_SLIDER = tuple(range(1, K_SLIDER_MAX + 1))
+K_PROBE_MAX = K_SLIDER_MAX
 REDUCED_SAMPLE_N = 100  # engineering convention, not a statistical threshold (plan 9.6)
 
 # Layer 1 (plan 9.7): reference partition. Green is reserved for probing.
@@ -37,6 +43,8 @@ CATEGORY_COLORS = {
 app = FastAPI(title="ENSy — Embedding Navigation System")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
                    allow_methods=["*"], allow_headers=["*"])
+# projections carry every K from 1 to 50 (~0.9 MB of JSON); gzip shrinks them several-fold
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 _lock = threading.Lock()
 # extracted rows are kept on disk: a model is fetched from the Hub once, not on every start
@@ -114,10 +122,13 @@ def _compute(model: str, algorithm: str, ds: dict) -> dict:
         kept = np.asarray(diag.pop("kept", np.arange(len(X))))
         if diag.get("removed"):
             diag["removed_words"] = [ds["items"][i]["word"] for i in diag["removed"]]
-        ev = coranking.evaluate(X[kept], Y, K_CURVE, high_metric="cosine")
+        ev = coranking.evaluate(X[kept], Y, K_SLIDER, high_metric="cosine")
         rho, r = ev["rho"], ev["r"]
         out = {
-            "X": X, "Y": Y, "kept": kept, "diag": diag, "curves": ev["curves"],
+            "X": X, "Y": Y, "kept": kept, "diag": diag,
+            "curves": [c for c in ev["curves"] if c["K"] in K_CURVE],
+            "curves_all": ev["curves"],
+            # full precision: the mean of B_NX,i(K) must equal B_NX(K) exactly
             "local": {K: v.tolist() for K, v in ev["local_b_nx"].items()},
             "hd_order": kept[np.argsort(rho, axis=1)[:, 1:K_PROBE_MAX + 1]],
             "ld_order": kept[np.argsort(r, axis=1)[:, 1:K_PROBE_MAX + 1]],
@@ -150,7 +161,7 @@ def _payload(model: str, algorithm: str, ds: dict, silhouette_2d: bool = False) 
             "top5_neighbors": top5,
             "hd_neighbors": hd.tolist(),
             "ld_neighbors": res["ld_order"][row].tolist(),
-            "b_nx_local": {str(K): res["local"][K][row] for K in K_CURVE},
+            "b_nx_local": {str(K): res["local"][K][row] for K in K_SLIDER},
         })
     return {
         "status": "STABLE",
@@ -169,6 +180,8 @@ def _payload(model: str, algorithm: str, ds: dict, silhouette_2d: bool = False) 
             "K_main": K_MAIN,
             "K_curve": list(K_CURVE),
             "metrics": res["curves"],
+            "K_slider_max": K_SLIDER_MAX,
+            "metrics_all": res["curves_all"],
             "silhouette_projected": res["silhouette"],
             "silhouette_projected_2d": sil_2d,
             "category_colors": CATEGORY_COLORS,

@@ -4,8 +4,7 @@ import { Algorithm, ColorLayer, ModelKey } from '../types';
 import type { PerfSample } from './SpaceVisualizer';
 import { Dropdown } from './Dropdown';
 import { Tex } from './Tex';
-
-const K_OPTIONS = [5, 10, 15, 20];
+import { KSlider } from './KSlider';
 
 interface SidebarLeftProps {
   modelName: string;
@@ -16,6 +15,8 @@ interface SidebarLeftProps {
   colorLayer: ColorLayer;
   onColorLayerChange: (layer: ColorLayer) => void;
   metricK: number;
+  /** largest K the server precomputed (the slider's upper bound) */
+  kMax: number;
   onMetricKChange: (k: number) => void;
   probeEnabled: boolean;
   onProbeEnabledChange: (val: boolean) => void;
@@ -57,6 +58,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
   colorLayer,
   onColorLayerChange,
   metricK,
+  kMax,
   onMetricKChange,
   probeEnabled,
   onProbeEnabledChange,
@@ -213,7 +215,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
               ]}
             />
           </div>
-          <div className="min-w-0">
+          <div className="col-span-2 min-w-0">
             <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5">Colour Layer:</span>
             <Dropdown
               ariaLabel="Colour layer"
@@ -229,21 +231,8 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
               ]}
             />
           </div>
-          <div className="min-w-0">
-            <span className="block text-xs font-bold text-[#111111] tracking-wide mb-1.5">
-              Neighbourhood <Tex tex="K" />:
-            </span>
-            <Dropdown
-              ariaLabel="Neighbourhood K"
-              align="right"
-              value={metricK}
-              onChange={onMetricKChange}
-              options={K_OPTIONS.map((k) => ({
-                value: k,
-                label: <><Tex tex={`K = ${k}`} />{k === 10 ? ' (main)' : ''}</>,
-                text: `K = ${k}${k === 10 ? ' (main)' : ''}`,
-              }))}
-            />
+          <div className="col-span-2 min-w-0">
+            <KSlider value={metricK} max={kMax} onChange={onMetricKChange} />
           </div>
           <button
             type="button"
