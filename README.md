@@ -96,7 +96,7 @@ The thesis plan extends the prototype into a controlled comparison of static inp
 - Compare Qwen 2.5 0.5B-Instruct, Gemma 2B, and BERT base uncased.
 - Build and freeze a balanced lexical dataset derived from the Penn Treebank, retaining forms that tokenize to exactly one token in all three models.
 - Compare PCA, t-SNE, UMAP, and Isomap across 12 model/algorithm configurations.
-- Implement co-ranking-based Trustworthiness, Continuity, (B_{NX}(K)), and (Q_{NX}(K)), plus Silhouette as a complementary measure.
+- Implement co-ranking-based Trustworthiness, Continuity, $B_{NX}(K)$, and $Q_{NX}(K)$, plus Silhouette as a complementary measure.
 - Add token-level neighborhood probing and a thermal visualization of local projection behavior.
 - Freeze dataset, parameters, and random seeds to support reproducibility.
 
