@@ -1,242 +1,116 @@
 # ENSy — Embedding Navigation System
 
-**Design, Implementation, and Application of an Interactive Embedding Navigation System for Large Language Models**
+**An interactive 3D browser-based instrument for exploring static language-model embeddings.**
 
-Undergraduate thesis (TCC) · B.Sc. in Science and Technology – Computer Engineering · Federal University of Maranhão (UFMA), 2026
-Author: Alexandre da Silva Santos
+ENSy is an undergraduate thesis project (TCC) in Science and Technology / Computer Engineering at the Federal University of Maranhão (UFMA), 2026.
 
-![ENSy 3D Workspace](docs/screenshots/01_isometric_full_workspace.png)
+![ENSy workspace](docs/screenshots/01_isometric_full_workspace.png)
 
----
+> **Project status:** the current repository contains the v1 prototype and its interactive visualizer. The broader v2 research design—three-model comparison, a Penn Treebank-derived lexical dataset, co-ranking metrics, and token-level neighborhood diagnostics—is documented as the target implementation, but is not yet implemented end to end. This README distinguishes working prototype behavior from planned research features.
 
-## Overview
+## What works in the current prototype
 
-**ENSy** is a browser-based research instrument for navigating and quantitatively analyzing the geometry of large language model embedding spaces. It extracts the **static input embedding matrices** of three architectures, projects them onto a navigable 3D manifold with four dimensionality reduction algorithms, and measures how much each projection distorts the original neighborhood structure using the **rank-based co-ranking framework** of Lee & Verleysen (2009).
+- A React 19, TypeScript, Vite, and Three.js interface for exploring a 3D point cloud.
+- A local FastAPI backend that can load the Qwen 2.5 0.5B-Instruct input embedding matrix.
+- Four projection engines: **UMAP, PCA, t-SNE, and Isomap**.
+- Token selection and inspection, including token metadata and the five nearest neighbors ranked by cosine similarity.
+- Perspective, orthographic/parallel, and two-point camera modes; camera presets; axis and grid controls; keyboard flight navigation.
+- CSV export of the selected token's nearest-neighbor list.
+- A static frontend dataset as a fallback when the local API is unavailable.
 
-The research question is not just "what do embeddings look like", but *how each dimensionality reduction algorithm transforms the geometry of the embedding space, for each model architecture* — and how to make those distortions inspectable, token by token.
+### Important interpretation note
 
-> ENSy is the instrument that produces the thesis evidence; it is not the object of study itself. It is a local laboratory tool (browser + local FastAPI), not a distributed application.
+The current prototype starts from a hard-coded set of candidate words in three illustrative clusters. Before the Qwen model finishes loading, the backend uses deterministic pseudo-vectors so the interface can start without waiting for a model download. If the model loads successfully, candidate words that tokenize to more than one token are excluded.
 
-### Research objectives
+**A projection shown during bootstrap or in the static fallback is not a measured result from the language model.** The current prototype also does not yet calculate the co-ranking metrics described in the thesis plan.
 
-| | Objective |
-|---|---|
-| **O1** | Full-stack rendering of LLM embeddings as navigable 3D manifold approximations |
-| **O2** | Comparative analysis across 4 algorithms × 3 models = **12 experimental configurations** |
-| **O3** | Quantitative projection quality via co-ranking: $M_T(K)$, $M_C(K)$, $B_{NX}(K)$, $Q_{NX}(K)$, plus Silhouette |
-| **O4** | Topological neighborhood inspection through a three-layer color system |
-| **O5** | Reproducible protocol: frozen Penn Treebank–derived dataset, frozen hyperparameters, fixed seeds |
+## Screenshots
 
----
-
-## Models
-
-Only the input embedding matrix is extracted (`get_input_embeddings().weight` for decoder-only models, `word_embeddings.weight` for BERT) — the token-to-vector lookup before any attention layer, which keeps the three architectures directly comparable. All vectors are cast to `float32` and **L2-normalized**, so cosine similarity and Euclidean distance on the unit hypersphere are equivalent.
-
-| Model | Architecture | Embedding dim $d$ | Vocabulary size |
-|---|---|---|---|
-| Qwen 2.5 0.5B-Instruct | Decoder-only | 896 | 151,936 |
-| Gemma 2B | Decoder-only | 2,048 | 256,000 |
-| BERT base uncased | Encoder-only | 768 | 30,522 |
-
-> Because the models differ in architecture, dimension, tokenizer, corpus and training recipe at once, ENSy observes whether distortion patterns *hold or vary* across models — it does not attribute causality to architecture alone.
-
----
-
-## Dimensionality Reduction
-
-| **UMAP** | **PCA** |
-|:---:|:---:|
-| ![UMAP Projection](docs/screenshots/02_projection_umap_isometric.png) | ![PCA Projection](docs/screenshots/03_projection_pca_isometric.png) |
-| *Fuzzy topological graph; local + global structure* | *Linear, maximum variance (SVD of centered data)* |
-
-| **t-SNE** | **Isomap** |
-|:---:|:---:|
-| ![t-SNE Projection](docs/screenshots/04_projection_tsne_isometric.png) | ![Isomap Projection](docs/screenshots/05_projection_isomap_isometric.png) |
-| *Probabilistic; local neighborhoods, not global distances* | *Geodesic distances over a k-NN graph* |
-
-### Frozen parameter table
-
-All parameters are fixed before data collection. Library defaults are used where possible, so hyperparameters cannot be accused of being tuned after the fact to favor a result.
-
-| Algorithm | Parameter | Value |
-|---|---|---|
-| PCA | n_components / centering | 3 / yes — **PCA-NC** (non-centered) is an explicit ablation only |
-| t-SNE | perplexity / random_state / metric | 5 (small sample) / 42 / cosine |
-| UMAP | n_neighbors / min_dist / metric / random_state | 15 / 0.1 / cosine / 42 |
-| Isomap | n_neighbors / metric | 15 (comparable to UMAP) / cosine |
-
-High-dimensional neighborhoods use $D_X = D_{\cos}(X)$; evaluation in the projected space uses $D_Y = D_{\text{euclidean}}(Y)$.
-
----
-
-## Projection Quality — Co-ranking Framework
-
-Given the rank $r_{ij}$ of point $j$ relative to $i$ in high dimension and $\hat r_{ij}$ in the projection, the co-ranking matrix $Q = [q_{kl}]$ counts pairs with $r_{ij}=k$ and $\hat r_{ij}=l$. All metrics are computed as **curves over $K \in \{5, 10, 15, 20\}$** (primary $K = 10$):
-
-| Metric | Meaning |
-|---|---|
-| **Trustworthiness** $M_T(K)$ | Penalizes false neighbors (severe intrusions) |
-| **Continuity** $M_C(K)$ | Penalizes lost neighbors (severe extrusions) |
-| **Behavior** $B_{NX}(K) = U_X(K) - U_N(K)$ | $> 0$ intrusive (crowding) · $< 0$ extrusive (tearing) · $\approx 0$ balanced |
-| **Preservation** $Q_{NX}(K)$ | Overall K-ary neighborhood preservation |
-| **Silhouette** | Separation of the reference linguistic partition in the projected space |
-
-The sign convention of $B_{NX}$ follows the primary source (Lee & Verleysen, 2009, Eq. 22–23). A **per-token decomposition** $B_{NX,i}(K)$ drives the thermal camera, and satisfies the consistency property $B_{NX}(K) = \frac{1}{N}\sum_i B_{NX,i}(K)$, which is checked as an automated test.
-
----
-
-## Lexical Dataset
-
-The vocabulary is a **lexical dataset derived from the Penn Treebank** (types, not occurrences), with a **reference linguistic partition**: `content_noun` / `content_verb` / `function_word`.
-
-1. Extract PTB tokens → lexical types; normalize case and punctuation
-2. Assign reference category; resolve homographs by highest corpus frequency (ambiguous forms are excluded)
-3. Tokenize independently with the Qwen, Gemma and BERT tokenizers
-4. Keep only forms that map to **exactly one token ID in all three** tokenizers
-5. Deduplicate, balance categories, freeze `dataset.json` with its **SHA-256 hash**
-
-The final $N$ is reported as it comes out of the pipeline — it is not inflated to a target (expected range: 150–200 tokens).
-
----
-
-## Interface
-
-### Three-layer color system
-
-Precedence: **Probing (3) > Thermal Camera (2) > Reference Partition (1)**.
-
-| Layer | Colors |
-|---|---|
-| **1 — Reference partition** (default) | Blue = noun · Orange = verb · Teal = function word |
-| **2 — Thermal camera**, local contribution to $B_{NX}(K)$ | Blue/cyan = extrusive · Light grey = neutral · Red/orange = intrusive (fixed global scale $[-1, 1]$) |
-| **3 — Neighborhood probing** (selected token only) | Green = true neighbors $T_K$ · Red = false $F_K$ · Translucent blue = missing $M_K$ |
-
-### Navigation and inspection
-
-- **6-DOF flight camera** using pointer lock; LERP/SLERP transitions to Front, Top, Side and Isometric presets
-- **Perspective, orthographic and two-point perspective** camera modes; adaptive grid and minimap
-- **Central reticle selection**: the token nearest the screen center (25 px radius) is selected and inspected in the right sidebar — coordinates, category, $B_{NX,i}(K)$, true/false/missing neighbors with cosine similarity, CSV export
-- **Comparative metrics panel**: the 12-configuration matrix with co-ranking curves
-- Rendering uses a single `BufferGeometry` (one draw call) and canvas-sprite labels; settings persist to `localStorage`
-
-| **Front (XY)** | **Top (XZ)** |
-|:---:|:---:|
-| ![Front View](docs/screenshots/front_xy.png) | ![Top View](docs/screenshots/top_xz.png) |
-
-### Controls
-
-| Input | Action |
-|---|---|
-| **Click viewport** | Engage pointer lock (flight mode) |
-| **`W` / `S`** | Forward / backward |
-| **`A` / `D`** | Strafe left / right |
-| **`R` / `F`** | Ascend / descend |
-| **Mouse** | Pitch / yaw |
-| **Scroll** | Zoom |
-| **`T`** | Toggle thermal camera layer *(planned)* |
-| **`H`** | Toggle navigation HUD |
-| **`P`** | Dump diagnostics to the console |
-| **`Esc`** | Release pointer lock |
-
----
+| PCA | t-SNE | Isomap |
+|:---:|:---:|:---:|
+| ![PCA view](docs/screenshots/03_projection_pca_isometric.png) | ![t-SNE view](docs/screenshots/04_projection_tsne_isometric.png) | ![Isomap view](docs/screenshots/05_projection_isomap_isometric.png) |
 
 ## Architecture
 
+```text
+React 19 + TypeScript + Three.js
+             |
+             | HTTP: GET /api/projection/{engine_type}
+             v
+       Local FastAPI + Uvicorn
+             |
+             +-- Qwen 2.5 0.5B input embeddings (when loaded)
+             +-- UMAP / PCA / t-SNE / Isomap
+             +-- cosine-similarity nearest neighbors
 ```
-React 19 + TypeScript + Three.js  ──HTTP──▶  FastAPI + Uvicorn (port 3000)
-  App.tsx (state orchestration)                 embedding extraction (PyTorch / Transformers)
-  SpaceVisualizer.tsx (WebGL, camera, colors)   in-memory embedding cache
-  SidebarLeft / SidebarRight / BottomHUD        PCA · t-SNE · UMAP · Isomap
-                                                co-ranking metrics
-```
 
-- **Frontend:** React 19, TypeScript, Vite, Three.js, Tailwind CSS, Motion, Lucide React, MathJax 3
-- **Backend:** FastAPI, Uvicorn, PyTorch, Transformers, scikit-learn, umap-learn, NumPy, SciPy
-- **Testing:** Pytest, Playwright (API contract and screenshot tests)
-- **Docs:** Markdown → PDF with Playwright + MathJax (`docs/md_to_pdf.py`)
+**Frontend:** React, TypeScript, Vite, Three.js, Tailwind CSS, Motion, Lucide React, MathJax.
 
-Models load in a background thread at startup. If the backend is unreachable, the frontend falls back to the static dataset in `src/data/semanticSpace.ts`.
+**Backend:** FastAPI, Uvicorn, PyTorch, Transformers, scikit-learn, umap-learn, NumPy, SciPy.
 
-### API
+### Current API
 
-| Endpoint | Description |
+| Endpoint | Behavior |
 |---|---|
-| `GET /api/projection/{model_id}/{engine_type}` | `model_id` ∈ `qwen`, `gemma`, `bert`; `engine_type` ∈ `umap`, `pca`, `pca_nc`, `tsne`, `isomap`. Returns 3D coordinates, per-token neighbors and $B_{NX,i}(K)$, and global co-ranking metrics |
-| `POST /api/dataset` | Runs the Penn Treebank dataset pipeline; returns `dataset.json` and its SHA-256 hash |
+| `GET /api/projection/umap` | Compute a UMAP projection |
+| `GET /api/projection/pca` | Compute a PCA projection |
+| `GET /api/projection/tsne` | Compute a t-SNE projection |
+| `GET /api/projection/isomap` | Compute an Isomap projection |
 
-The full response schema is in [Appendix B of the documentation](docs/DOCS.md#appendix-b-api-reference).
+The response contains status and model metadata, projected coordinates, token/cluster information, and up to five nearest neighbors with cosine similarity. The current backend does **not** expose the planned `/api/projection/{model_id}/{engine_type}` or `POST /api/dataset` endpoints.
 
----
+## Run locally
 
-## Quick Start
+The npm scripts currently use Windows virtual-environment paths. The steps below target **Windows PowerShell**, Node.js, and Python 3.12.
 
-Requires Node.js and Python 3.12. The npm scripts expect a virtual environment at `.venv/` (Windows paths).
-
-```bash
-# Frontend
+```powershell
 npm install
-
-# Backend
 python -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
-```
-
-> **Gemma 2B is a gated model.** Accept its license on Hugging Face and authenticate (`huggingface-cli login`) before starting the server.
-
-```bash
-# Frontend (Vite, http://localhost:5173) + backend (FastAPI, http://127.0.0.1:3000)
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 npm run dev:all
 ```
 
-Or separately: `npm run dev` and `npm run dev:backend`.
+The Vite frontend is available at [http://localhost:5173](http://localhost:5173), and the FastAPI backend listens on [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
-| Script | Purpose |
+The backend attempts to download Qwen 2.5 0.5B-Instruct from Hugging Face at startup. The first run therefore requires network access and enough local memory to load the model. If loading fails, the server logs the error and continues with bootstrap pseudo-vectors.
+
+### Useful commands
+
+| Command | Purpose |
 |---|---|
-| `npm run lint` | TypeScript type check |
-| `npm test` | Full Pytest suite |
-| `npm run test:api` | API contract tests |
-| `npm run test:screenshots` | Playwright screenshot tests |
-| `npm run docs:pdf` | Regenerate `docs/DOCS.pdf` |
+| `npm run dev` | Start the Vite frontend |
+| `npm run dev:backend` | Start the FastAPI backend |
+| `npm run dev:all` | Start frontend and backend together |
+| `npm run lint` | Run the TypeScript type check |
+| `npm test` | Run API and screenshot tests |
+| `npm run test:api` | Run backend API contract tests |
+| `npm run test:screenshots` | Run headed Playwright screenshot tests |
+| `npm run test:screenshots:headless` | Run Playwright screenshot tests headlessly |
 
----
+The API tests require the backend to be running. Screenshot tests require the frontend and Playwright's browser dependencies. API tests skip individual requests if the backend is unreachable; a skipped test is not a passing verification of the endpoint.
 
-## Implementation Status
+## Research direction: ENSy v2
 
-The thesis specification is ENSy v2 (see the [implementation plan](docs/ENSy_v2.1.2_plano_implementacao.md)). The current codebase is still partway through the migration from the v1 prototype:
+The thesis plan extends the prototype into a controlled comparison of static input embedding spaces. These are **planned research features**, not claims about the current implementation:
 
-| Phase | Item | Status |
-|---|---|---|
-| 0 | Single-model (Qwen 2.5) pipeline, 4 projection engines, 3D navigation, reticle selection | ✅ Implemented (`GET /api/projection/{engine_type}`) |
-| 0 | Remove hard-coded `CLUSTER_MAP`; model abstraction layer for Qwen / Gemma / BERT | ⏳ Pending |
-| 0 | Penn Treebank dataset pipeline (`dataset_builder.py`, `POST /api/dataset`) | ⏳ Pending |
-| 0 | Single `BufferGeometry` and canvas-sprite labels | ⏳ Pending |
-| 1 | Co-ranking matrix, Trustworthiness/Continuity (`metrics.py`) | ⏳ Pending |
-| 1 | Synthetic validation of $B_{NX}(K)$ and $B_{NX,i}(K)$ (blocks the thermal camera) | ⏳ Pending |
-| 2 | Thermal camera and neighborhood probing | ⏳ Pending |
-| 3 | Silhouette and 12-configuration comparison panel | ⏳ Pending |
+- Compare Qwen 2.5 0.5B-Instruct, Gemma 2B, and BERT base uncased.
+- Build and freeze a balanced lexical dataset derived from the Penn Treebank, retaining forms that tokenize to exactly one token in all three models.
+- Compare PCA, t-SNE, UMAP, and Isomap across 12 model/algorithm configurations.
+- Implement co-ranking-based Trustworthiness, Continuity, (B_{NX}(K)), and (Q_{NX}(K)), plus Silhouette as a complementary measure.
+- Add token-level neighborhood probing and a thermal visualization of local projection behavior.
+- Freeze dataset, parameters, and random seeds to support reproducibility.
 
----
-
-## Limitations
-
-- **Context-free embeddings** by design — contextual hidden states are future work
-- **No causal attribution** across models (they differ in many factors at once)
-- **Small $N$** — co-ranking indicators may vary more than with larger samples
-- **Single-machine** local deployment; tuned for $N$ ≈ 150–200 tokens
-
----
+The research design explicitly avoids attributing observed differences to architecture alone: the models also differ in embedding dimension, tokenizer, training corpus, and training objective.
 
 ## Documentation
 
-- [`docs/DOCS.md`](docs/DOCS.md) / [`docs/DOCS.pdf`](docs/DOCS.pdf) — full thesis document: theory, architecture, implementation, appendices
-- [`docs/ENSy_v2.1.2_plano_implementacao.md`](docs/ENSy_v2.1.2_plano_implementacao.md) — consolidated development plan (Portuguese)
+- [Full thesis documentation](docs/DOCS.md) · [PDF version](docs/DOCS.pdf)
+- [ENSy v2.1.2 implementation plan](docs/ENSy_v2.1.2_plano_implementacao.md) (Portuguese)
 
-## Key References
+## References
 
 - Lee, J. A.; Verleysen, M. *Quality assessment of dimensionality reduction: Rank-based criteria.* Neurocomputing, 72, 2009.
-- McInnes, L. et al. *UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction.* arXiv, 2018.
+- McInnes, L. et al. *UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction.* 2018.
 - van der Maaten, L.; Hinton, G. *Visualizing data using t-SNE.* JMLR, 2008.
 - Tenenbaum, J. B. et al. *A global geometric framework for nonlinear dimensionality reduction.* Science, 2000.
-- Venna, J.; Kaski, S. *Local multidimensional scaling.* Neural Networks, 2006.
-- Rousseeuw, P. J. *Silhouettes.* J. Comput. Appl. Math., 1987.
+- Rousseeuw, P. J. *Silhouettes.* Journal of Computational and Applied Mathematics, 1987.
