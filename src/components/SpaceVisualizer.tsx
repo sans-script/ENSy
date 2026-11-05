@@ -70,6 +70,60 @@ export const heatColor = (b: number) => HEAT_STEP_COLORS[heatStep(b)].clone();
 /** Dot size in the behaviour map: 1.0 at 0, 1.6 at |b| ≥ 0.3, so extremes stand out by size too. */
 export const heatScale = (b: number) => 1 + 0.6 * Math.min(1, Math.abs(b) / 0.3);
 
+/**
+ * Symmetric 3x3 eigendecomposition via cyclic Jacobi rotations. Used for the local-PCA
+ * camera auto-framing (see __focusCamera): the covariance of a focus token's immediate
+ * scene-space neighbourhood is small (3x3) and well-conditioned, so a handful of sweeps
+ * is both sufficient and cheap enough to run on every programmatic focus call.
+ */
+function jacobiEigenSymmetric3x3(m: number[][]): { values: number[]; vectors: THREE.Vector3[] } {
+  const a = [m[0].slice(), m[1].slice(), m[2].slice()];
+  const v = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+  ];
+  const pairs: [number, number][] = [[0, 1], [0, 2], [1, 2]];
+  for (let sweep = 0; sweep < 50; sweep++) {
+    const off = Math.abs(a[0][1]) + Math.abs(a[0][2]) + Math.abs(a[1][2]);
+    if (off < 1e-12) break;
+    for (const [p, q] of pairs) {
+      const apq = a[p][q];
+      if (Math.abs(apq) < 1e-15) continue;
+      const app = a[p][p];
+      const aqq = a[q][q];
+      const phi = 0.5 * Math.atan2(2 * apq, aqq - app);
+      const c = Math.cos(phi);
+      const s = Math.sin(phi);
+      for (let k = 0; k < 3; k++) {
+        const akp = a[k][p];
+        const akq = a[k][q];
+        a[k][p] = c * akp - s * akq;
+        a[k][q] = s * akp + c * akq;
+      }
+      for (let k = 0; k < 3; k++) {
+        const apk = a[p][k];
+        const aqk = a[q][k];
+        a[p][k] = c * apk - s * aqk;
+        a[q][k] = s * apk + c * aqk;
+      }
+      for (let k = 0; k < 3; k++) {
+        const vkp = v[k][p];
+        const vkq = v[k][q];
+        v[k][p] = c * vkp - s * vkq;
+        v[k][q] = s * vkp + c * vkq;
+      }
+    }
+  }
+  const values = [a[0][0], a[1][1], a[2][2]];
+  const vectors = [
+    new THREE.Vector3(v[0][0], v[1][0], v[2][0]),
+    new THREE.Vector3(v[0][1], v[1][1], v[2][1]),
+    new THREE.Vector3(v[0][2], v[1][2], v[2][2]),
+  ];
+  return { values, vectors };
+}
+
 interface SpaceVisualizerProps {
   colorLayer: ColorLayer;
   heatK: number;
@@ -98,6 +152,12 @@ interface SpaceVisualizerProps {
   showGridPlanes: boolean;
   showPlaneBackground: boolean;
   mouseSensitivity: number;
+  /** Whether the left/right analog sticks of a connected gamepad drive free flight
+   *  (move/look), same as WASD/mouse-look but without needing Pointer Lock. Set to
+   *  false while a presentation walkthrough (PresentationRemote) is stepping through
+   *  saved views with the shoulder buttons, so the two controls don't fight over the
+   *  camera. Defaults to true. */
+  gamepadFreeFlyEnabled?: boolean;
   initialCameraState?: {
     x: number;
     y: number;
@@ -130,6 +190,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   showGridPlanes,
   showPlaneBackground,
   mouseSensitivity,
+  gamepadFreeFlyEnabled = true,
   initialCameraState,
   data,
 }) => {
@@ -203,6 +264,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   const showGridPlanesRef = useRef(showGridPlanes);
   const showPlaneBackgroundRef = useRef(showPlaneBackground);
   const mouseSensitivityRef = useRef(mouseSensitivity);
+  const gamepadFreeFlyRef = useRef(gamepadFreeFlyEnabled);
 
   const SIZE = 60; // CONSTANT SIZE OF THE COORDINATE BOX
 
@@ -236,6 +298,10 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
   useEffect(() => {
     mouseSensitivityRef.current = mouseSensitivity;
   }, [mouseSensitivity]);
+
+  useEffect(() => {
+    gamepadFreeFlyRef.current = gamepadFreeFlyEnabled;
+  }, [gamepadFreeFlyEnabled]);
 
   useEffect(() => {
     showXAxisRef.current = showXAxis;
@@ -605,6 +671,7 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
       const dt = (now - lastTimeRef.current) / 1000;
       lastTimeRef.current = now;
 
+      applyGamepadInputPrivate(dt);
       applyFlightPrivate(dt);
 
       const activeCamera = activeCameraRef.current;
@@ -897,6 +964,85 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
     if (fly.D) activeCamera.position.y -= vel;
   };
 
+  // Gamepad free flight: left stick drives flyRef (same booleans WASD sets, so
+  // applyFlightPrivate's movement code is shared unchanged), right stick drives
+  // look directly on the camera (mirrors onMouseMove's yaw/pitch + clamp). Unlike
+  // Pointer Lock, the Gamepad API needs no trusted gesture and isn't blocked by
+  // remote-debugging Permissions Policy (see the critical report's "Nota adicional"),
+  // so this also works as a practical substitute for flight during a live demo.
+  // Disabled while a presentation walkthrough (PresentationRemote) owns the camera
+  // via gamepadFreeFlyEnabled=false, so the two controls don't fight.
+  // NOTE: tuned by eye from the implementation only, not yet tried against a real
+  // physical controller -- GAMEPAD_LOOK_SPEED below is the first constant to adjust
+  // if look feels too fast/slow on actual hardware.
+  const GAMEPAD_DEADZONE = 0.18;
+  const GAMEPAD_LOOK_SPEED = 2.2; // radians/sec at full stick deflection, before mouseSensitivity scaling
+  const applyGamepadInputPrivate = (dt: number) => {
+    const camera = activeCameraRef.current;
+    if (!camera) return;
+
+    const pads = typeof navigator !== "undefined" && navigator.getGamepads
+      ? navigator.getGamepads()
+      : [];
+    const pad = Array.from(pads ?? []).find((p) => p && p.connected);
+
+    if (!pad) return;
+
+    if (!gamepadFreeFlyRef.current) {
+      // Presentation mode just took over the camera (or just started): make sure a
+      // stick that was deflected the moment control switched doesn't leave movement
+      // stuck on.
+      const fly = flyRef.current;
+      fly.F = fly.B = fly.L = fly.R = fly.U = fly.D = false;
+      return;
+    }
+
+    const axis = (i: number) => {
+      const v = pad.axes[i] ?? 0;
+      return Math.abs(v) < GAMEPAD_DEADZONE ? 0 : v;
+    };
+    const buttonValue = (i: number) => {
+      const b = pad.buttons[i];
+      if (!b) return 0;
+      return typeof b.value === "number" ? b.value : (b.pressed ? 1 : 0);
+    };
+
+    const moveX = axis(0); // left stick X: strafe
+    const moveY = axis(1); // left stick Y: forward (-1) / back (+1)
+    const lookX = axis(2); // right stick X: yaw
+    const lookY = axis(3); // right stick Y: pitch
+    const ascend = buttonValue(7); // right trigger (R2/RT)
+    const descend = buttonValue(6); // left trigger (L2/LT)
+
+    const hasInput =
+      moveX !== 0 || moveY !== 0 || lookX !== 0 || lookY !== 0 || ascend > 0.1 || descend > 0.1;
+
+    const fly = flyRef.current;
+    fly.F = moveY < 0;
+    fly.B = moveY > 0;
+    fly.R = moveX > 0;
+    fly.L = moveX < 0;
+    fly.U = ascend > 0.1;
+    fly.D = descend > 0.1;
+
+    if (!hasInput) return;
+
+    targetLerpStateRef.current = null; // Interrupt lerp on gamepad input, like keyboard/mouse
+
+    if (lookX !== 0 || lookY !== 0) {
+      // mouseSensitivityRef is tuned for per-pixel mouse deltas (~0.001-0.004); a full
+      // stick deflection is treated as a steady turn rate, scaled by dt instead.
+      const turnScale = GAMEPAD_LOOK_SPEED * (mouseSensitivityRef.current / 0.002);
+      camera.rotation.order = "YXZ";
+      camera.rotation.y -= lookX * turnScale * dt;
+      camera.rotation.x -= lookY * turnScale * dt;
+      camera.rotation.x = Math.max(
+        -Math.PI / 2 + 0.05,
+        Math.min(Math.PI / 2 - 0.05, camera.rotation.x),
+      );
+    }
+  };
+
   // Helper: Arrow mesh constructor
   const buildVectorArrow = (
     direction: THREE.Vector3,
@@ -1125,6 +1271,143 @@ export const SpaceVisualizer: React.FC<SpaceVisualizerProps> = ({
         return true;
       }
       return false;
+    };
+
+    // Camera auto-framing: aim the camera so a token's K-neighbourhood (by both
+    // hd_neighbors and ld_neighbors, so true and false neighbours alike fall in
+    // view) fills the frame, via local PCA over the focus token + its neighbours'
+    // scene positions -- the lowest-variance axis becomes the viewing direction,
+    // maximizing the on-screen spread of the neighbourhood. Exposed on window so
+    // URL-driven navigation (?focus=&k=&animate=) can reach views that pointer-lock
+    // flight cannot script for automated testing. Reuses the preset LERP/SLERP
+    // machinery (targetLerpStateRef) for the animated case.
+    (window as any).__focusCamera = (
+      target: string | number,
+      k?: number,
+      animate = true,
+      zoom?: number,
+    ) => {
+      const zoomFactor = Number.isFinite(zoom) && (zoom as number) > 0 ? (zoom as number) : 1;
+      const nodesList = currentNodes();
+      const targetNode = nodesList.find(
+        (n) => n.label === target || n.token_id === target || n.id === target,
+      );
+      if (!targetNode || targetNode.id === undefined) return false;
+
+      const persp = perspCameraRef.current;
+      if (!persp) return false;
+
+      const byId = new Map<number, TokenHandle>();
+      tokenPointsRef.current.forEach((h) => {
+        const id = (h.userData as SemanticNode).id;
+        if (id !== undefined) byId.set(id, h);
+      });
+      const focusHandle = byId.get(targetNode.id);
+      if (!focusHandle) return false;
+
+      const K = Math.max(1, Math.floor(k ?? probeKRef.current ?? 10));
+      const neighbourIds = new Set<number>();
+      (targetNode.hd_neighbors ?? []).slice(0, K).forEach((id) => neighbourIds.add(id));
+      (targetNode.ld_neighbors ?? []).slice(0, K).forEach((id) => neighbourIds.add(id));
+      neighbourIds.delete(targetNode.id);
+
+      const points: THREE.Vector3[] = [focusHandle.position.clone()];
+      neighbourIds.forEach((id) => {
+        const h = byId.get(id);
+        if (h) points.push(h.position.clone());
+      });
+
+      let camPos: THREE.Vector3;
+      let camRot: THREE.Euler;
+
+      if (points.length < 2) {
+        // No resolvable neighbours (e.g. an imported dataset with no co-ranking
+        // data): dolly toward the token along the current viewing direction
+        // instead of guessing an orientation.
+        const dir = new THREE.Vector3().subVectors(persp.position, focusHandle.position);
+        if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1);
+        dir.normalize();
+        camPos = focusHandle.position.clone().add(dir.multiplyScalar(10 * zoomFactor));
+        const lookMatrix = new THREE.Matrix4().lookAt(
+          camPos,
+          focusHandle.position,
+          new THREE.Vector3(0, 1, 0),
+        );
+        camRot = new THREE.Euler().setFromRotationMatrix(lookMatrix, "YXZ");
+      } else {
+        const centroid = new THREE.Vector3();
+        points.forEach((p) => centroid.add(p));
+        centroid.divideScalar(points.length);
+
+        let xx = 0, yy = 0, zz = 0, xy = 0, xz = 0, yz = 0;
+        points.forEach((p) => {
+          const dx = p.x - centroid.x;
+          const dy = p.y - centroid.y;
+          const dz = p.z - centroid.z;
+          xx += dx * dx; yy += dy * dy; zz += dz * dz;
+          xy += dx * dy; xz += dx * dz; yz += dy * dz;
+        });
+        const n = points.length;
+        xx /= n; yy /= n; zz /= n; xy /= n; xz /= n; yz /= n;
+
+        const { values, vectors } = jacobiEigenSymmetric3x3([
+          [xx, xy, xz],
+          [xy, yy, yz],
+          [xz, yz, zz],
+        ]);
+        const order = [0, 1, 2].sort((a, b) => values[b] - values[a]);
+        const viewAxis = vectors[order[2]].clone();
+        const upAxis = vectors[order[1]].clone();
+        if (!Number.isFinite(viewAxis.x) || viewAxis.lengthSq() < 1e-8) viewAxis.set(0, 0, 1);
+        if (!Number.isFinite(upAxis.x) || upAxis.lengthSq() < 1e-8) upAxis.set(0, 1, 0);
+        viewAxis.normalize();
+        upAxis.normalize();
+
+        // Frame around the bulk of the neighbourhood rather than its single
+        // farthest point: with a larger K, one outlier neighbour used to pull
+        // the camera back far enough that the focus token's own label (and
+        // its closer neighbours) became too small to read. The 75th
+        // percentile keeps the common case tight while still giving most of
+        // the neighbourhood room in frame; a few outliers may fall outside
+        // the initial view, which is the right trade for legibility.
+        const distancesToCentroid = points
+          .map((p) => p.distanceTo(centroid))
+          .sort((a, b) => a - b);
+        const pIdx = Math.max(
+          0,
+          Math.min(distancesToCentroid.length - 1, Math.ceil(distancesToCentroid.length * 0.75) - 1),
+        );
+        const typicalRadius = distancesToCentroid[pIdx];
+        const radius = Math.max(typicalRadius, 1.5);
+        const fovRad = THREE.MathUtils.degToRad(currentFovRef.current || 30);
+        const distance = (radius / Math.tan(fovRad / 2)) * 1.15 * zoomFactor; // headroom so the focus token's label isn't clipped
+
+        // Aim at the focus token itself, not the neighbourhood centroid: the
+        // reticle/probe inspector (runNodeSelectionInspector) picks whichever
+        // token is nearest the screen centre, so centring on the centroid can
+        // leave a *different* neighbour under the crosshair and silently steal
+        // the pin set just below. The PCA direction/scale still come from the
+        // whole local neighbourhood; only the look-at point is the focus token.
+        const lookTarget = focusHandle.position;
+        camPos = lookTarget.clone().add(viewAxis.multiplyScalar(distance));
+        const lookMatrix = new THREE.Matrix4().lookAt(camPos, lookTarget, upAxis);
+        camRot = new THREE.Euler().setFromRotationMatrix(lookMatrix, "YXZ");
+      }
+
+      pinnedIdRef.current = targetNode.id ?? null;
+      if (document.pointerLockElement) document.exitPointerLock();
+
+      if (animate) {
+        targetLerpStateRef.current = { active: true, position: camPos, rotation: camRot };
+      } else {
+        persp.position.copy(camPos);
+        persp.rotation.copy(camRot);
+        targetLerpStateRef.current = null;
+      }
+      if (currentModeRef.current === "parallel") {
+        switchCameraModePrivate("parallel");
+      }
+      return true;
     };
   };
 

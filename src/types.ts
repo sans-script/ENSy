@@ -29,6 +29,19 @@ export interface ExternalDataset {
 }
 export type ColorLayer = 'category' | 'heat';
 
+/** One step of a prepared camera walkthrough (see PresentationRemote.tsx). Drives the
+ *  same __focusCamera auto-framing the ?focus= URL parameter uses, so a presenter can
+ *  step through a scripted sequence of tokens with a gamepad instead of typing URLs.
+ *  Scoped to the model/algorithm active when it was captured -- it is not applied if a
+ *  different dataset is loaded when the step is reached. */
+export interface PresentationStep {
+  id: string;
+  tokenId?: number;
+  label: string;
+  k?: number;
+  zoom?: number;
+}
+
 export interface SemanticNode {
   id?: number;
   token_id: number;
