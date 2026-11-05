@@ -117,6 +117,8 @@ Precedence: **Probing (3) > Behaviour Map (2) > Reference Partition (1)**.
 - **Comparative metrics panel**: the 4 models × 5 projection configurations with co-ranking curves
 - Rendering uses a single `BufferGeometry` (one draw call) and Projector-style labels: every token is a dot, and words are drawn on one 2D canvas beside their dots, with a white outline, wherever they do not overlap (click a word to pin it); settings persist to `localStorage`
 - **TensorFlow Embedding Projector interoperability**: *Export to TF Projector* downloads vectors, metadata, a bookmark per projection with ENSy's exact layout, and `projector_config.json`; *Import from TF Embedding Projector* loads vectors and metadata TSV (and the Projector's bookmark file) and measures the bookmarked layouts as given. Details: [docs/notes/projector_review.md](docs/notes/projector_review.md)
+- **Gamepad navigation and presentation remote**: with a gamepad connected, the left stick moves, the right stick looks and the triggers ascend/descend, without pointer lock. The floating *Presentation Remote* panel saves the current view (token, $K$, zoom) as a step; `Y`/Triangle toggles presentation mode, where `L1`/`R1` step back and forward through the saved views. Steps persist in `localStorage`
+- **Deep links**: URL parameters open the app on a given state and override the stored session — `?model=` (`qwen`, `gemma2`, `gpt2`, `bert`, `ext-…`), `?algorithm=` (`umap`, `tsne`, `tsne_p30`, `pca`, `isomap`, `pca_nc`), `?k=`, `?focus=<token or id>` with `&zoom=` (<1 closer) and `&animate=false`, or an exact camera pose with all six of `camX camY camZ camRX camRY camRZ` (takes priority over `focus`)
 
 | **Front (XY)** | **Top (XZ)** |
 |:---:|:---:|
@@ -136,6 +138,10 @@ Precedence: **Probing (3) > Behaviour Map (2) > Reference Partition (1)**.
 | **`H`** | Toggle navigation HUD |
 | **`P`** | Dump diagnostics to the console |
 | **`Esc`** | Release pointer lock |
+| **Gamepad left / right stick** | Move / look |
+| **Gamepad triggers** | Ascend / descend |
+| **Gamepad `Y` / Triangle** | Toggle presentation mode |
+| **Gamepad `L1` / `R1`** | Previous / next saved view (presentation mode) |
 
 ---
 
