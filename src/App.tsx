@@ -400,6 +400,43 @@ export default function App() {
     setCameraPreset(null);
   }, []);
 
+  // Front (XY) and Top (XZ) are flat reads of a plane: they switch to the parallel
+  // camera and hide the depth axis (Z for XY, Y for XZ), which would otherwise be a
+  // line pointing straight at the viewer. The next preset restores what they changed,
+  // unless the user has since set the mode or that axis by hand.
+  const presetRestoreRef = useRef<{ mode: typeof cameraMode; axis: 'y' | 'z'; axisWasOn: boolean } | null>(null);
+  const applyPreset = useCallback((preset: 'front' | 'top' | 'side' | 'iso') => {
+    const prev = presetRestoreRef.current;
+    presetRestoreRef.current = null;
+    if (prev) {
+      setCameraMode(prev.mode);
+      (prev.axis === 'z' ? setShowZAxis : setShowYAxis)(prev.axisWasOn);
+    }
+    if (preset === 'front' || preset === 'top') {
+      const axis = preset === 'front' ? 'z' : 'y';
+      presetRestoreRef.current = {
+        mode: prev ? prev.mode : cameraMode,
+        axis,
+        axisWasOn: prev?.axis === axis ? prev.axisWasOn : axis === 'z' ? showZAxis : showYAxis,
+      };
+      setCameraMode('parallel');
+      (axis === 'z' ? setShowZAxis : setShowYAxis)(false);
+    }
+    setCameraPreset(preset);
+  }, [cameraMode, showYAxis, showZAxis]);
+  const userCameraModeChange = useCallback((m: typeof cameraMode) => {
+    presetRestoreRef.current = null;
+    setCameraMode(m);
+  }, []);
+  const userShowYAxisChange = useCallback((v: boolean) => {
+    if (presetRestoreRef.current?.axis === 'y') presetRestoreRef.current = null;
+    setShowYAxis(v);
+  }, []);
+  const userShowZAxisChange = useCallback((v: boolean) => {
+    if (presetRestoreRef.current?.axis === 'z') presetRestoreRef.current = null;
+    setShowZAxis(v);
+  }, []);
+
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-[#fcfcfc] font-serif antialiased select-none">
       
@@ -427,16 +464,16 @@ export default function App() {
         currentFilter={currentFilter}
         onFilterChange={setCurrentFilter}
         cameraMode={cameraMode}
-        onCameraModeChange={setCameraMode}
+        onCameraModeChange={userCameraModeChange}
         fov={fov}
         onFovChange={setFov}
-        onApplyPreset={setCameraPreset}
+        onApplyPreset={applyPreset}
         showXAxis={showXAxis}
         onShowXAxisChange={setShowXAxis}
         showYAxis={showYAxis}
-        onShowYAxisChange={setShowYAxis}
+        onShowYAxisChange={userShowYAxisChange}
         showZAxis={showZAxis}
-        onShowZAxisChange={setShowZAxis}
+        onShowZAxisChange={userShowZAxisChange}
         showGridPlanes={showGridPlanes}
         onShowGridPlanesChange={setShowGridPlanes}
         showPlaneBackground={showPlaneBackground}
