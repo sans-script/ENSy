@@ -61,7 +61,7 @@ class Tour:
         self.wait_for_data()
 
     def wait_for_data(self):
-        self.page.wait_for_selector("text=Co-ranking", timeout=300_000)
+        self.page.wait_for_selector("text=/co-ranking/i", timeout=300_000)
         self.page.wait_for_selector("text=Computing projection", state="detached", timeout=300_000)
         self.page.wait_for_timeout(2500)  # token positions animate into place
 
@@ -76,6 +76,24 @@ class Tour:
         self.page.get_by_role("button", name=name).click()
         self.page.wait_for_timeout(2600)  # LERP/SLERP transition
         self.page.locator("aside").first.evaluate("el => el.scrollTop = 0")  # the click scrolled it
+
+    def assert_axis_aligned_preset(self, preset: str):
+        """Fail the capture if Front/Top did not settle in orthographic mode."""
+        settings = self.page.evaluate(
+            "() => JSON.parse(localStorage.getItem('visualizerSettings') || '{}')"
+        )
+        expected_hidden_axis = {"front": "z", "top": "y"}.get(preset)
+        if expected_hidden_axis is None:
+            raise ValueError(f"Unsupported axis-aligned preset: {preset}")
+        if settings.get("cameraMode") != "parallel":
+            raise AssertionError(
+                f"{preset} preset is not parallel: cameraMode={settings.get('cameraMode')!r}"
+            )
+        hidden_axis = "show" + expected_hidden_axis.upper() + "Axis"
+        if settings.get(hidden_axis) is not False:
+            raise AssertionError(
+                f"{preset} preset must hide the depth axis ({hidden_axis})"
+            )
 
     def pin(self, word: str):
         self.page.evaluate(f"window.__selectToken({json.dumps(word)})")
@@ -226,12 +244,19 @@ def main():
 
         print("[7] camera modes")
         t.window(WINDOW_16_9)
-        # axis-aligned presets use the parallel (orthographic) camera: no perspective foreshortening
-        t.open(modelKey="qwen", projectionType="pca", showPlaneBackground=False)  # words behind a plane would fade
-        t.page.locator("button", has_text="Parallel").first.click()
-        t.page.wait_for_timeout(600)
-        for btn, name in [("Front (XY)", "fig11_front"), ("Top (XZ)", "fig12_top")]:
+        # Front/Top presets must switch themselves to parallel (orthographic)
+        # projection and hide only the axis perpendicular to the displayed plane.
+        # Start in perspective so this capture also exercises the automatic switch.
+        t.open(
+            modelKey="qwen", projectionType="pca",
+            cameraMode="perspective", showPlaneBackground=False,
+        )  # words behind a plane would fade
+        for btn, name, preset in [
+            ("Front (XY)", "fig11_front", "front"),
+            ("Top (XZ)", "fig12_top", "top"),
+        ]:
             t.preset(btn)
+            t.assert_axis_aligned_preset(preset)
             t.shot(name)
 
         browser.close()
