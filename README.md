@@ -21,26 +21,72 @@ The research question is not just "what do embeddings look like", but *how each 
 
 ### Research objectives
 
-| | Objective |
-|---|---|
-| **O1** | Full-stack rendering of LLM embeddings as navigable 3D manifold approximations |
-| **O2** | Comparative analysis across 4 algorithms × 3 models = **12 experimental configurations** |
-| **O3** | Quantitative projection quality via co-ranking: $M_T(K)$, $M_C(K)$, $B_{NX}(K)$, $Q_{NX}(K)$, plus Silhouette |
-| **O4** | Topological neighborhood inspection through a three-layer color system |
-| **O5** | Reproducible protocol: frozen Penn Treebank–derived dataset, frozen hyperparameters, fixed seeds |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="12%"></th>
+      <th width="88%">Objective</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>O1</strong></td>
+      <td>Full-stack rendering of LLM embeddings as navigable 3D manifold approximations</td>
+    </tr>
+    <tr>
+      <td><strong>O2</strong></td>
+      <td>Comparative analysis across 4 algorithms × 3 models = <strong>12 experimental configurations</strong></td>
+    </tr>
+    <tr>
+      <td><strong>O3</strong></td>
+      <td>Quantitative projection quality via co-ranking: $M_T(K)$, $M_C(K)$, $B_{NX}(K)$, $Q_{NX}(K)$, plus Silhouette</td>
+    </tr>
+    <tr>
+      <td><strong>O4</strong></td>
+      <td>Topological neighborhood inspection through a three-layer color system</td>
+    </tr>
+    <tr>
+      <td><strong>O5</strong></td>
+      <td>Reproducible protocol: frozen Penn Treebank–derived dataset, frozen hyperparameters, fixed seeds</td>
+    </tr>
+  </tbody>
+</table>
 ---
 
 ## Models
 
 Only the input embedding matrix is extracted (`get_input_embeddings().weight` for decoder-only models, `word_embeddings.weight` for BERT) — the token-to-vector lookup before any attention layer, which keeps the three architectures directly comparable. All vectors are cast to `float32` and **L2-normalized**, so cosine similarity and Euclidean distance on the unit hypersphere are equivalent.
 
-| Model | Architecture | Embedding dim $d$ | Vocabulary size |
-|---|---|---|---|
-| Qwen 2.5 0.5B-Instruct | Decoder-only | 896 | 151,936 |
-| Gemma 2B | Decoder-only | 2,048 | 256,000 |
-| BERT base uncased | Encoder-only | 768 | 30,522 |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="34%">Model</th>
+      <th width="22%">Architecture</th>
+      <th width="20%">Embedding dim $d$</th>
+      <th width="24%">Vocabulary size</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Qwen 2.5 0.5B-Instruct</td>
+      <td>Decoder-only</td>
+      <td>896</td>
+      <td>151,936</td>
+    </tr>
+    <tr>
+      <td>Gemma 2B</td>
+      <td>Decoder-only</td>
+      <td>2,048</td>
+      <td>256,000</td>
+    </tr>
+    <tr>
+      <td>BERT base uncased</td>
+      <td>Encoder-only</td>
+      <td>768</td>
+      <td>30,522</td>
+    </tr>
+  </tbody>
+</table>
 > Because the models differ in architecture, dimension, tokenizer, corpus and training recipe at once, ENSy observes whether distortion patterns *hold or vary* across models — it does not attribute causality to architecture alone.
 
 ---
@@ -55,13 +101,37 @@ Only the input embedding matrix is extracted (`get_input_embeddings().weight` fo
 
 All parameters are fixed before data collection. Library defaults are used where possible, so hyperparameters cannot be accused of being tuned after the fact to favor a result.
 
-| Algorithm | Parameter | Value |
-|---|---|---|
-| PCA | n_components / centering | 3 / yes — **PCA-NC** (non-centered) is an explicit ablation only |
-| t-SNE | perplexity / random_state / metric | 5 (small sample) / 42 / cosine |
-| UMAP | n_neighbors / min_dist / metric / random_state | 15 / 0.1 / cosine / 42 |
-| Isomap | n_neighbors / metric | 15 (comparable to UMAP) / cosine |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="15%">Algorithm</th>
+      <th width="45%">Parameter</th>
+      <th width="40%">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PCA</td>
+      <td>n_components / centering</td>
+      <td>3 / yes — <strong>PCA-NC</strong> (non-centered) is an explicit ablation only</td>
+    </tr>
+    <tr>
+      <td>t-SNE</td>
+      <td>perplexity / random_state / metric</td>
+      <td>5 (small sample) / 42 / cosine</td>
+    </tr>
+    <tr>
+      <td>UMAP</td>
+      <td>n_neighbors / min_dist / metric / random_state</td>
+      <td>15 / 0.1 / cosine / 42</td>
+    </tr>
+    <tr>
+      <td>Isomap</td>
+      <td>n_neighbors / metric</td>
+      <td>15 (comparable to UMAP) / cosine</td>
+    </tr>
+  </tbody>
+</table>
 High-dimensional neighborhoods use $D_X = D_{\cos}(X)$; evaluation in the projected space uses $D_Y = D_{\text{euclidean}}(Y)$.
 
 ---
@@ -70,14 +140,36 @@ High-dimensional neighborhoods use $D_X = D_{\cos}(X)$; evaluation in the projec
 
 Given the rank $r_{ij}$ of point $j$ relative to $i$ in high dimension and $\hat r_{ij}$ in the projection, the co-ranking matrix $Q = [q_{kl}]$ counts pairs with $r_{ij}=k$ and $\hat r_{ij}=l$. All metrics are computed as **curves over $K \in \{5, 10, 15, 20\}$** (primary $K = 10$):
 
-| Metric | Meaning |
-|---|---|
-| **Trustworthiness** $M_T(K)$ | Penalizes false neighbors (severe intrusions) |
-| **Continuity** $M_C(K)$ | Penalizes lost neighbors (severe extrusions) |
-| **Behavior** $B_{NX}(K) = U_X(K) - U_N(K)$ | $> 0$ intrusive (crowding) · $< 0$ extrusive (tearing) · $\approx 0$ balanced |
-| **Preservation** $Q_{NX}(K)$ | Overall K-ary neighborhood preservation |
-| **Silhouette** | Separation of the reference linguistic partition in the projected space |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="27%">Metric</th>
+      <th width="73%">Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Trustworthiness</strong> $M_T(K)$</td>
+      <td>Penalizes false neighbors (severe intrusions)</td>
+    </tr>
+    <tr>
+      <td><strong>Continuity</strong> $M_C(K)$</td>
+      <td>Penalizes lost neighbors (severe extrusions)</td>
+    </tr>
+    <tr>
+      <td><strong>Behavior</strong> $B_{NX}(K) = U_X(K) - U_N(K)$</td>
+      <td>$> 0$ intrusive (crowding) · $< 0$ extrusive (tearing) · $\approx 0$ balanced</td>
+    </tr>
+    <tr>
+      <td><strong>Preservation</strong> $Q_{NX}(K)$</td>
+      <td>Overall K-ary neighborhood preservation</td>
+    </tr>
+    <tr>
+      <td><strong>Silhouette</strong></td>
+      <td>Separation of the reference linguistic partition in the projected space</td>
+    </tr>
+  </tbody>
+</table>
 The sign convention of $B_{NX}$ follows the primary source (Lee & Verleysen, 2009, Eq. 22–23). A **per-token decomposition** $B_{NX,i}(K)$ drives the behaviour map, and satisfies the consistency property $B_{NX}(K) = \frac{1}{N}\sum_i B_{NX,i}(K)$, which is checked as an automated test.
 
 ---
@@ -102,12 +194,28 @@ The final $N$ is reported as it comes out of the pipeline — it is not inflated
 
 Precedence: **Probing (3) > Behaviour Map (2) > Reference Partition (1)**.
 
-| Layer | Colors |
-|---|---|
-| **1 — Reference partition** (default) | Indigo = noun · Ochre = verb · Magenta = function word |
-| **2 — Behaviour map**, local contribution to $B_{NX}(K)$ | Seven fixed steps (nearest 0.1, capped at ±0.3): blue = extrusive · mid-grey = neutral · red = intrusive; larger dots for larger $\lvert B_{NX,i}\rvert$ |
-| **3 — Neighborhood probing** (selected token only) | Green = true neighbors $T_K$ · Red = false $F_K$ · Translucent blue = missing $M_K$ |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="34%">Layer</th>
+      <th width="66%">Colors</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1 — Reference partition</strong> (default)</td>
+      <td>Indigo = noun · Ochre = verb · Magenta = function word</td>
+    </tr>
+    <tr>
+      <td><strong>2 — Behaviour map</strong>, local contribution to $B_{NX}(K)$</td>
+      <td>Seven fixed steps (nearest 0.1, capped at ±0.3): blue = extrusive · mid-grey = neutral · red = intrusive; larger dots for larger $\lvert B_{NX,i}\rvert$</td>
+    </tr>
+    <tr>
+      <td><strong>3 — Neighborhood probing</strong> (selected token only)</td>
+      <td>Green = true neighbors $T_K$ · Red = false $F_K$ · Translucent blue = missing $M_K$</td>
+    </tr>
+  </tbody>
+</table>
 ### Navigation and inspection
 
 - **6-DOF flight camera** using pointer lock; LERP/SLERP transitions to Front, Top, Side and Isometric presets
@@ -123,26 +231,74 @@ Precedence: **Probing (3) > Behaviour Map (2) > Reference Partition (1)**.
 | **Front (XY)** | **Top (XZ)** |
 |:---:|:---:|
 | ![Front View](docs/screenshots/fig11_front.png) | ![Top View](docs/screenshots/fig12_top.png) |
-
 ### Controls
 
-| Input | Action |
-|---|---|
-| **Click viewport** | Engage pointer lock (flight mode) |
-| **`W` / `S`** | Forward / backward |
-| **`A` / `D`** | Strafe left / right |
-| **`R` / `F`** | Ascend / descend |
-| **Mouse** | Pitch / yaw |
-| **Scroll** | Zoom |
-| **`T`** | Toggle behaviour map layer *(planned)* |
-| **`H`** | Toggle navigation HUD |
-| **`P`** | Dump diagnostics to the console |
-| **`Esc`** | Release pointer lock |
-| **Gamepad left / right stick** | Move / look |
-| **Gamepad triggers** | Ascend / descend |
-| **Gamepad `Y` / Triangle** | Toggle presentation mode |
-| **Gamepad `L1` / `R1`** | Previous / next saved view (presentation mode) |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="32%">Input</th>
+      <th width="68%">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Click viewport</strong></td>
+      <td>Engage pointer lock (flight mode)</td>
+    </tr>
+    <tr>
+      <td><strong><code>W</code> / <code>S</code></strong></td>
+      <td>Forward / backward</td>
+    </tr>
+    <tr>
+      <td><strong><code>A</code> / <code>D</code></strong></td>
+      <td>Strafe left / right</td>
+    </tr>
+    <tr>
+      <td><strong><code>R</code> / <code>F</code></strong></td>
+      <td>Ascend / descend</td>
+    </tr>
+    <tr>
+      <td><strong>Mouse</strong></td>
+      <td>Pitch / yaw</td>
+    </tr>
+    <tr>
+      <td><strong>Scroll</strong></td>
+      <td>Zoom</td>
+    </tr>
+    <tr>
+      <td><strong><code>T</code></strong></td>
+      <td>Toggle behaviour map layer *(planned)*</td>
+    </tr>
+    <tr>
+      <td><strong><code>H</code></strong></td>
+      <td>Toggle navigation HUD</td>
+    </tr>
+    <tr>
+      <td><strong><code>P</code></strong></td>
+      <td>Dump diagnostics to the console</td>
+    </tr>
+    <tr>
+      <td><strong><code>Esc</code></strong></td>
+      <td>Release pointer lock</td>
+    </tr>
+    <tr>
+      <td><strong>Gamepad left / right stick</strong></td>
+      <td>Move / look</td>
+    </tr>
+    <tr>
+      <td><strong>Gamepad triggers</strong></td>
+      <td>Ascend / descend</td>
+    </tr>
+    <tr>
+      <td><strong>Gamepad <code>Y</code> / Triangle</strong></td>
+      <td>Toggle presentation mode</td>
+    </tr>
+    <tr>
+      <td><strong>Gamepad <code>L1</code> / <code>R1</code></strong></td>
+      <td>Previous / next saved view (presentation mode)</td>
+    </tr>
+  </tbody>
+</table>
 ---
 
 ## Architecture
@@ -164,14 +320,36 @@ Models load in a background thread at startup. The frontend never shows placehol
 
 ### API
 
-| Endpoint | Description |
-|---|---|
-| `GET /api/projection/{model_id}/{engine_type}` | `model_id` ∈ `qwen`, `gemma2`, `gpt2`, `bert` (or an imported `ext-…`); `engine_type` ∈ `umap`, `pca`, `pca_nc`, `tsne`, `tsne_p30`, `isomap` (or a bookmark `bm0`, `bm1`, … of an imported dataset). Returns 3D coordinates, the co-ranking curves and $B_{NX,i}(K)$ for $K = 1 \ldots 50$, and 50 neighbours per token in both spaces |
-| `GET /api/export/projector?model=…` | Zip for the TF Embedding Projector: `vectors.tsv`, `metadata.tsv`, `state.txt` (one bookmark per projection), `projector_config.json` |
-| `POST /api/import/projector` | JSON with the text of the Projector's vectors TSV, metadata TSV and optional bookmark file; returns the new `ext-…` dataset and its bookmarks |
-| `GET /api/external` | Imported datasets (kept in memory until the server restarts) |
-| `POST /api/dataset` | Runs the Penn Treebank dataset pipeline; returns `dataset.json` and its SHA-256 hash |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="34%">Endpoint</th>
+      <th width="66%">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>GET /api/projection/{model_id}/{engine_type}</code></td>
+      <td><code>model_id</code> ∈ <code>qwen</code>, <code>gemma2</code>, <code>gpt2</code>, <code>bert</code> (or an imported <code>ext-…</code>); <code>engine_type</code> ∈ <code>umap</code>, <code>pca</code>, <code>pca_nc</code>, <code>tsne</code>, <code>tsne_p30</code>, <code>isomap</code> (or a bookmark <code>bm0</code>, <code>bm1</code>, … of an imported dataset). Returns 3D coordinates, the co-ranking curves and $B_{NX,i}(K)$ for $K = 1 \ldots 50$, and 50 neighbours per token in both spaces</td>
+    </tr>
+    <tr>
+      <td><code>GET /api/export/projector?model=…</code></td>
+      <td>Zip for the TF Embedding Projector: <code>vectors.tsv</code>, <code>metadata.tsv</code>, <code>state.txt</code> (one bookmark per projection), <code>projector_config.json</code></td>
+    </tr>
+    <tr>
+      <td><code>POST /api/import/projector</code></td>
+      <td>JSON with the text of the Projector's vectors TSV, metadata TSV and optional bookmark file; returns the new <code>ext-…</code> dataset and its bookmarks</td>
+    </tr>
+    <tr>
+      <td><code>GET /api/external</code></td>
+      <td>Imported datasets (kept in memory until the server restarts)</td>
+    </tr>
+    <tr>
+      <td><code>POST /api/dataset</code></td>
+      <td>Runs the Penn Treebank dataset pipeline; returns <code>dataset.json</code> and its SHA-256 hash</td>
+    </tr>
+  </tbody>
+</table>
 The full response schema is in [Appendix C of the paper](docs/DOCS.pdf).
 
 ---
@@ -203,31 +381,93 @@ python start.py --backend-only   # the backend alone also serves the built front
 healthy before starting Vite, prefixes each server's log with `[backend]` / `[frontend]`, and stops
 both (child processes included) on Ctrl+C. Separately: `npm run dev:backend` and `npm run dev`.
 
-| Script | Purpose |
-|---|---|
-| `npm run lint` | TypeScript type check |
-| `npm test` | Full Pytest suite |
-| `npm run test:api` | API contract tests |
-| `npm start` | Start the backend and the frontend (`start.py`) |
-| `npm run docs:pdf` | Rebuild `docs/DOCS.pdf` from `docs/DOCS.tex` |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="32%">Script</th>
+      <th width="68%">Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>npm run lint</code></td>
+      <td>TypeScript type check</td>
+    </tr>
+    <tr>
+      <td><code>npm test</code></td>
+      <td>Full Pytest suite</td>
+    </tr>
+    <tr>
+      <td><code>npm run test:api</code></td>
+      <td>API contract tests</td>
+    </tr>
+    <tr>
+      <td><code>npm start</code></td>
+      <td>Start the backend and the frontend (<code>start.py</code>)</td>
+    </tr>
+    <tr>
+      <td><code>npm run docs:pdf</code></td>
+      <td>Rebuild <code>docs/DOCS.pdf</code> from <code>docs/DOCS.tex</code></td>
+    </tr>
+  </tbody>
+</table>
 ---
 
 ## Implementation Status
 
 The thesis specification is ENSy v2 (see the [implementation plan](docs/ENSy_v2.1.2_plano_implementacao.md)). The current codebase is still partway through the migration from the v1 prototype:
 
-| Phase | Item | Status |
-|---|---|---|
-| 0 | Single-model (Qwen 2.5) pipeline, 4 projection engines, 3D navigation, reticle selection | ✅ Implemented (`GET /api/projection/{engine_type}`) |
-| 0 | Remove hard-coded `CLUSTER_MAP`; model abstraction layer for Qwen / Gemma / BERT | ⏳ Pending |
-| 0 | Penn Treebank dataset pipeline (`dataset_builder.py`, `POST /api/dataset`) | ⏳ Pending |
-| 0 | Single `BufferGeometry` and canvas-sprite labels | ⏳ Pending |
-| 1 | Co-ranking matrix, Trustworthiness/Continuity (`metrics.py`) | ⏳ Pending |
-| 1 | Synthetic validation of $B_{NX}(K)$ and $B_{NX,i}(K)$ (blocks the behaviour map) | ⏳ Pending |
-| 2 | Behaviour map and neighborhood probing | ⏳ Pending |
-| 3 | Silhouette and 12-configuration comparison panel | ⏳ Pending |
-
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="10%">Phase</th>
+      <th width="12%">Item</th>
+      <th width="78%">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>Single-model (Qwen 2.5) pipeline, 4 projection engines, 3D navigation, reticle selection</td>
+      <td>✅ Implemented (<code>GET /api/projection/{engine_type}</code>)</td>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>Remove hard-coded <code>CLUSTER_MAP</code>; model abstraction layer for Qwen / Gemma / BERT</td>
+      <td>⏳ Pending</td>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>Penn Treebank dataset pipeline (<code>dataset_builder.py</code>, <code>POST /api/dataset</code>)</td>
+      <td>⏳ Pending</td>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>Single <code>BufferGeometry</code> and canvas-sprite labels</td>
+      <td>⏳ Pending</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>Co-ranking matrix, Trustworthiness/Continuity (<code>metrics.py</code>)</td>
+      <td>⏳ Pending</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>Synthetic validation of $B_{NX}(K)$ and $B_{NX,i}(K)$ (blocks the behaviour map)</td>
+      <td>⏳ Pending</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Behaviour map and neighborhood probing</td>
+      <td>⏳ Pending</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Silhouette and 12-configuration comparison panel</td>
+      <td>⏳ Pending</td>
+    </tr>
+  </tbody>
+</table>
 ---
 
 ## Limitations
